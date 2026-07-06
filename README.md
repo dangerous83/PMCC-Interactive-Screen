@@ -49,7 +49,7 @@ to another color in **Settings ▸ Accent Color**.
 - **Home** — return to the dashboard.
 - **Gallery** — switch the background. The shipped photo is `assets/background.jpg` ("My Photo"); built-in scenes (Rainy Dusk, Aurora, Deep Space, Warm Sunset, Soft Slate) need no files.
 - **Settings** — username & password, volume, accent color, interface icon style (outline/filled), and a “check for updates” action. Saved to the browser (`localStorage`).
-- **Brother Thomas** — the ministry assistant. Works **offline** out of the box (built-in answers about leadership, branches, history, doctrine, and how to use the screen), and can optionally be connected to a **local OpenJarvis AI** for real conversational answers (see below). Rename it in `app.js → ASSISTANT_NAME`; edit the offline answers in `app.js → jarvisReply`.
+- **Brother Thomas** — the ministry assistant. Works **offline** out of the box (built-in answers about leadership, branches, history, doctrine, and how to use the screen), and can optionally be connected to a **local OpenJarvis AI** for real conversational answers (see below). He also **speaks his replies aloud** using the kiosk's built-in text-to-speech voices — toggle with the **VOICE ON/OFF** button in his header (voice also respects the SOUND mute). Rename him in `app.js → ASSISTANT_NAME`; edit the offline answers in `app.js → jarvisReply`.
 - **Internet Browser** — an in-app browser with an address bar (opens the church site by default). Sites that block embedding, or an offline kiosk, fall back to an “open in a new tab” button.
 
 ## How to edit the content
@@ -116,6 +116,11 @@ All data lives in `app.js → CONTENT`:
   > committed to the repo's `assets/` folder are used. Replace a photo by
   > committing a file at its path (e.g. drag it into `assets/` on GitHub, or
   > `git add`/`commit`/`push`), keeping the **same filename**.
+  >
+  > After replacing a photo, bump `ASSET_VERSION` at the top of `app.js`
+  > (e.g. 4 → 5). That forces every browser/kiosk to load the fresh image
+  > instead of a cached old copy. If a photo ever looks stale, also try a
+  > hard refresh: **Ctrl+Shift+R** (Windows) / **Cmd+Shift+R** (Mac).
 
 The existing orbital dashboard (Apostle, Bishops, Presbyters, …) is unchanged —
 the Directory is an additional, more structured way to browse the same people.
