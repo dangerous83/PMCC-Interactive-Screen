@@ -448,24 +448,7 @@ function setOrbit(expand) {
   Sound.play(expand ? "open" : "back");
   $("#hud-hint").textContent = expand ? "DRAG AN ICON · HOLD OR TAP TO OPEN" : "TAP THE LOGO TO BEGIN";
   stage.querySelectorAll("#orbit-links .link-base").forEach(b => { b.style.strokeDashoffset = expand ? 0 : parseFloat(b.style.strokeDasharray || 0); });
-  if (!expand) { $("#orbit-icons").style.transform = ""; $("#orbit-links").style.transform = ""; }  // clear parallax
 }
-
-/* ── Premium pointer parallax: the constellation gently follows the cursor ── */
-let parRAF = 0, parX = 0, parY = 0;
-function onParallaxMove(e) {
-  if (!orbitExpanded || activeOverlay || document.querySelector(".orbit-icon.dragging")) return;
-  parX = e.clientX / innerWidth - 0.5;
-  parY = e.clientY / innerHeight - 0.5;
-  if (!parRAF) parRAF = requestAnimationFrame(applyParallax);
-}
-function applyParallax() {
-  parRAF = 0;
-  const ix = (parX * 30).toFixed(1), iy = (parY * 30).toFixed(1);
-  $("#orbit-icons").style.transform = `translate(${ix}px, ${iy}px)`;
-  $("#orbit-links").style.transform = `translate(${(parX*21).toFixed(1)}px, ${(parY*21).toFixed(1)}px)`;
-}
-addEventListener("pointermove", onParallaxMove);
 
 /* ──────────── Draggable icons + long-press to open ──────────────────── */
 /* Short tap OR press-and-hold (long-press) opens the section. Dragging past

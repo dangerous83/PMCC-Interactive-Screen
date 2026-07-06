@@ -29,7 +29,6 @@ or open the file normally and press **F11** for fullscreen.
 - **Tap the center logo** to reveal the node network of section icons; tap again to collapse.
 - **Drag an icon** to move it anywhere (positions are remembered).
 - **Tap or press-and-hold** an icon to open its section — opening plays an elegant golden bloom transition with a soft chime.
-- The constellation gently **parallaxes** with your cursor/touch for a premium, alive feel.
 - **Pinch** the dashboard to stretch the whole network; pinch inside a panel to enlarge the text. Double-tap empty space to reset. (Mouse: wheel = dashboard zoom, Ctrl+wheel = panel zoom.)
 - **Bottom dock** (icons, centered) holds: Home · Gallery · Settings · Brother Thomas · Browser · Search · Sound (mute).
 - **Search** (dock, or Ctrl/⌘-K) pops up centered and blurs everything to focus the search bar.

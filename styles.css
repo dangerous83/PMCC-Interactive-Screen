@@ -177,7 +177,6 @@ input{ font-family:inherit; }
 #orbit-stage.expanded .link-node, #orbit-stage.expanded .link-node-ring{ opacity:1; }
 
 .hub{ position:absolute; left:50%; top:50%; translate:-50% -50%; width:var(--hub-size); aspect-ratio:1; display:grid; place-items:center; z-index:2; }
-#orbit-icons, #orbit-links{ transition:transform .55s var(--ease-out); }   /* parallax easing */
 /* slow-rotating gold halo behind the logo */
 .hub::before{ content:""; position:absolute; width:132%; aspect-ratio:1; border-radius:50%; background:conic-gradient(from 0deg, transparent 0%, color-mix(in srgb, var(--accent) 40%, transparent) 12%, transparent 30%, transparent 55%, color-mix(in srgb, var(--accent) 32%, transparent) 68%, transparent 88%); -webkit-mask:radial-gradient(closest-side, transparent 60%, #000 63%, #000 70%, transparent 73%); mask:radial-gradient(closest-side, transparent 60%, #000 63%, #000 70%, transparent 73%); animation:spin 20s linear infinite; opacity:.55; pointer-events:none; }
 .hub-core{
