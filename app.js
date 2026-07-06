@@ -412,33 +412,26 @@ function navSections() {
 }
 const NAV = navSections();
 
-/* Fixed, organized arrangement (deg: 0=right, 90=bottom, -90=top, 180=left):
-   Apostle top-center; Bishops↔Presbyters upper pair; Pastors↔Elders lower
-   pair; Branches↔History bottom pair. */
-// Evenly spaced ring (≈51.4° apart), still symmetric top-to-bottom.
-const ORBIT_ANGLES = {
-  apostle:    -90,
-  bishops:  -141.4, presbyters: -38.6,
-  pastors:   167.2, elders:      12.8,
-  branches:  115.8, history:     64.2,
+/* Clean grid arrangement (no connector lines): two centred rows beneath the
+   logo — row 0 has 4 tiles, row 1 has 3 tiles. [row, column]. */
+const GRID_SLOTS = {
+  apostle: [0, 0], bishops: [0, 1], presbyters: [0, 2], pastors: [0, 3],
+  elders:  [1, 0], branches: [1, 1], history: [1, 2],
 };
-// Reveal sweeps clockwise from the top, one spoke (icon + its line) at a time.
-const REVEAL_ORDER = { apostle:0, presbyters:1, elders:2, history:3, branches:4, pastors:5, bishops:6 };
+const GRID_ROW_COLS = [4, 3];
+// Reveal in calm reading order: left→right, top→bottom.
+const REVEAL_ORDER = { apostle:0, bishops:1, presbyters:2, pastors:3, elders:4, branches:5, history:6 };
 
 function buildOrbit() {
   const nav = $("#orbit-icons"), links = $("#orbit-links");
-  nav.innerHTML = ""; links.innerHTML = "";
+  nav.innerHTML = ""; if (links) links.innerHTML = "";   // grid has no lines
   NAV.forEach((sec, i) => {
-    const g = document.createElementNS(SVG_NS, "g");
-    g.innerHTML = `<line class="link-base"></line><line class="link-flow"></line><circle class="link-node" r="3.5"></circle><circle class="link-node-ring" r="8"></circle>`;
-    links.appendChild(g);
-
     const btn = document.createElement("button");
     btn.className = "orbit-icon"; btn.dataset.section = sec.id;
     btn.style.setProperty("--pulse-delay", `${(i * .45).toFixed(2)}s`);
-    // spoke-by-spoke reveal: each icon pops in in REVEAL_ORDER (sweeping the ring)
+    // gentle read-order reveal: each tile settles into place in sequence
     const ro = REVEAL_ORDER[sec.id] ?? i;
-    btn.style.transitionDelay = `${ro * 240}ms`;
+    btn.style.transitionDelay = `${ro * 85}ms`;
     btn.innerHTML = `
       <span class="press-ring"></span>
       <span class="icon-float" style="--float-delay:${(i*.7).toFixed(2)}s">
@@ -454,65 +447,59 @@ function buildOrbit() {
   layoutOrbit();
 }
 
+// Hub (logo) sits centred when collapsed, and lifts to the top when expanded so
+// the grid has room below it. Both Y positions are computed in layoutOrbit.
+let hubCollapsedY = 0, hubExpandedY = 0;
 function layoutOrbit() {
   const stage = $("#orbit-stage");
   const { width: w, height: h } = stage.getBoundingClientRect();
   if (!w || !h) return;
-  const icons = $$(".orbit-icon", stage), groups = $$("#orbit-links g", stage);
-  const n = icons.length;
+  const icons = $$(".orbit-icon", stage);
   const iconSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--icon-size")) || 160;
   const hubSize  = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hub-size")) || 300;
-  // reserve the bottom band for the dock so orbit icons never collide with it
-  const bottomReserve = Math.min(h * 0.28, iconSize * 1.5 + 140);
-  const cx = w/2;
-  const cy = Math.max(hubSize*0.55 + 20, (h - bottomReserve) / 2);
-  const rx = Math.min(w/2 - iconSize*0.8, w*0.40);
-  // size vertical radius so the top (Apostle) and deepest bottom icons
-  // (Branches/History, sin≈0.95) both stay clear of edges and the dock
-  const ryTop = cy - iconSize*0.5 - 10;
-  const ryBot = (h - Math.max(230, iconSize*1.3 + 96) - iconSize*0.5 - cy) / 0.96;
-  const ry = Math.max(120, Math.min(ryTop, ryBot));
-  // move the center hub to match the icon/link center
-  const hub = $(".hub"); if (hub) hub.style.top = `${cy}px`;
-  $("#orbit-links").setAttribute("viewBox", `0 0 ${w} ${h}`);
-  icons.forEach((btn, i) => {
-    const aDeg = ORBIT_ANGLES[btn.dataset.section];
-    const ang = ((aDeg != null ? aDeg : -90 + i * 360 / n)) * Math.PI / 180;
-    const dx = Math.cos(ang)*rx, dy = Math.sin(ang)*ry;
-    btn.style.left = `${cx}px`; btn.style.top = `${cy}px`;
-    btn.style.setProperty("--tx", `${dx}px`); btn.style.setProperty("--ty", `${dy}px`);
-    if (!btn._drag) { btn.style.setProperty("--dx", "0px"); btn.style.setProperty("--dy", "0px"); }
-    const g = groups[i]; if (!g) return;
-    const len = Math.hypot(dx, dy), ux = dx/len, uy = dy/len;
-    const x1 = cx + ux*(hubSize*0.42), y1 = cy + uy*(hubSize*0.42);
-    const x2 = cx + ux*(len - iconSize*0.62), y2 = cy + uy*(len - iconSize*0.62);
-    g._end = { x2, y2 };
-    for (const cls of ["link-base","link-flow"]) { const L = g.querySelector("."+cls); L.setAttribute("x1",x1); L.setAttribute("y1",y1); L.setAttribute("x2",x2); L.setAttribute("y2",y2); }
-    const base = g.querySelector(".link-base"); const seg = Math.hypot(x2-x1, y2-y1);
-    // each spoke's connector draws right after ITS icon pops in — one at a time
-    const ro = REVEAL_ORDER[btn.dataset.section] ?? i;
-    base.style.strokeDasharray = seg; base.style.strokeDashoffset = stage.classList.contains("expanded") ? 0 : seg; base.style.transitionDelay = `${ro*240 + 120}ms`;
-    g.querySelector(".link-flow").style.transitionDelay = `${ro*240 + 220}ms`;
-    for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx",x2); cc.setAttribute("cy",y2); cc.style.transitionDelay = `${ro*240 + 200}ms`; }
-    btn._linkGroup = g; btn._center = { cx, cy };
+  const cx = w / 2;
+
+  // vertical safe zones: clear the title up top and the dock at the bottom
+  const topSafe     = Math.max(64, h * 0.06);
+  const dockReserve = Math.max(280, iconSize * 1.25 + 120);
+  const zoneBot     = h - dockReserve;
+
+  // a tile+label visually occupies ~0.9× the icon size; space rows off that
+  const rowH   = iconSize * 0.9;
+  const gapX   = Math.max(iconSize * 0.34, 22);
+  const gapY   = Math.max(iconSize * 0.30, 20);
+  const rowPitch = rowH + gapY;
+  const gridH  = rowPitch + rowH;              // top of row 0 → bottom of row 1
+
+  // logo lifts to the top when expanded; the grid centres in the space below it
+  hubExpandedY  = topSafe + hubSize * 0.44;
+  hubCollapsedY = (topSafe + zoneBot) / 2;
+  const gridTop = hubExpandedY + hubSize * 0.44 + Math.min(28, h * 0.025);
+  const gridCy  = Math.max(gridTop + gridH / 2, Math.min((gridTop + zoneBot) / 2, zoneBot - gridH / 2));
+
+  const hub = $(".hub");
+  if (hub) hub.style.top = `${stage.classList.contains("expanded") ? hubExpandedY : hubCollapsedY}px`;
+
+  const rowCy = [gridCy - rowPitch / 2, gridCy + rowPitch / 2];
+
+  icons.forEach((btn) => {
+    const [r, c] = GRID_SLOTS[btn.dataset.section] || [0, 0];
+    const cols = GRID_ROW_COLS[r] || 1;
+    const totalW = cols * iconSize + (cols - 1) * gapX;
+    const startX = cx - totalW / 2 + iconSize / 2;
+    const x = startX + c * (iconSize + gapX);
+    const y = rowCy[r] ?? gridCy;
+    // tiles are positioned relative to the grid centre and slide out to their slot
+    btn.style.left = `${cx}px`; btn.style.top = `${gridCy}px`;
+    btn.style.setProperty("--tx", `${x - cx}px`);
+    btn.style.setProperty("--ty", `${y - gridCy}px`);
+    btn.style.setProperty("--dx", "0px");
+    btn.style.setProperty("--dy", "0px");
   });
 }
 addEventListener("resize", layoutOrbit);
 
-/* update one icon's connector line end to follow a dragged icon */
-function updateLinkFor(btn) {
-  const g = btn._linkGroup; if (!g || !btn._center) return;
-  const dx = parseFloat(btn.style.getPropertyValue("--dx")) || 0;
-  const dy = parseFloat(btn.style.getPropertyValue("--dy")) || 0;
-  const baseEnd = g._end; if (!baseEnd) return;
-  const x2 = baseEnd.x2 + dx, y2 = baseEnd.y2 + dy;
-  for (const sel of [".link-base",".link-flow"]) { const L = g.querySelector(sel); L.setAttribute("x2", x2); L.setAttribute("y2", y2); }
-  for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx", x2); cc.setAttribute("cy", y2); }
-  const base = g.querySelector(".link-base"); const seg = Math.hypot(x2 - (+g.querySelector(".link-base").getAttribute("x1")), y2 - (+g.querySelector(".link-base").getAttribute("y1")));
-  base.style.strokeDasharray = seg; base.style.strokeDashoffset = 0;
-}
-
-/* ───────────────── Expand / collapse the icon network ───────────────── */
+/* ───────────────── Expand / collapse the icon grid ──────────────────── */
 let orbitExpanded = false;
 function setOrbit(expand) {
   if (expand === orbitExpanded) return;
@@ -520,26 +507,25 @@ function setOrbit(expand) {
   const stage = $("#orbit-stage");
   stage.classList.toggle("expanded", expand);
   Sound.play(expand ? "open" : "back");
-  $("#hud-hint").textContent = expand ? "DRAG AN ICON · HOLD OR TAP TO OPEN" : "TAP THE LOGO TO BEGIN";
-  stage.querySelectorAll("#orbit-links .link-base").forEach(b => { b.style.strokeDashoffset = expand ? 0 : parseFloat(b.style.strokeDasharray || 0); });
+  $("#hud-hint").textContent = expand ? "TAP AN ICON TO OPEN" : "TAP THE LOGO TO BEGIN";
+  // lift the logo up (expanded) or re-centre it (collapsed)
+  const hub = $(".hub"); if (hub) hub.style.top = `${expand ? hubExpandedY : hubCollapsedY}px`;
 }
 
-/* ──────────── Draggable icons + long-press to open ──────────────────── */
-/* Short tap OR press-and-hold (long-press) opens the section. Dragging past
-   a small threshold moves the icon instead (and cancels the open).        */
+/* ──────────── Tap / long-press an icon to open ──────────────────────── */
+/* Tiles stay fixed in the tidy grid — a quick tap OR press-and-hold opens the
+   section. A large finger-slide (e.g. a scroll) cancels, so taps stay reliable. */
 function attachIconGestures(btn, sec) {
-  let startX, startY, baseDX, baseDY, moved, holdTimer, longFired, pid;
-  const THRESH = 10, HOLD = 500;
+  let startX, startY, moved, holdTimer, longFired, pid;
+  const THRESH = 14, HOLD = 500;
 
   const down = (e) => {
     if (!orbitExpanded) return;
     pid = e.pointerId; btn.setPointerCapture(pid);
     startX = e.clientX; startY = e.clientY; moved = false; longFired = false;
-    baseDX = parseFloat(btn.style.getPropertyValue("--dx")) || 0;
-    baseDY = parseFloat(btn.style.getPropertyValue("--dy")) || 0;
     btn.classList.add("pressing");
     Sound.play("tap");
-    holdTimer = setTimeout(() => {          // long-press → node animation + open
+    holdTimer = setTimeout(() => {          // long-press → open
       if (moved) return;
       longFired = true;
       btn.classList.remove("pressing");
@@ -547,33 +533,23 @@ function attachIconGestures(btn, sec) {
     }, HOLD);
   };
   const move = (e) => {
-    if (pid === undefined) return;
-    const dx = e.clientX - startX, dy = e.clientY - startY;
-    if (!moved && Math.hypot(dx, dy) > THRESH) { moved = true; clearTimeout(holdTimer); btn.classList.remove("pressing"); btn.classList.add("dragging"); btn._drag = true; }
-    if (moved) {
-      const zoom = stageZoom();
-      btn.style.setProperty("--dx", `${baseDX + dx / zoom}px`);
-      btn.style.setProperty("--dy", `${baseDY + dy / zoom}px`);
-      updateLinkFor(btn);
+    if (pid === undefined || moved) return;
+    if (Math.hypot(e.clientX - startX, e.clientY - startY) > THRESH) {
+      moved = true; clearTimeout(holdTimer); btn.classList.remove("pressing");
     }
   };
   const up = () => {
     if (pid === undefined) return;
     clearTimeout(holdTimer);
-    btn.classList.remove("pressing", "dragging");
+    btn.classList.remove("pressing");
     try { btn.releasePointerCapture(pid); } catch {}
     if (!moved && !longFired) openFor(sec, btn);   // quick tap = open
-    else if (moved) { store.set("pos-" + sec.id, { dx: parseFloat(btn.style.getPropertyValue("--dx")), dy: parseFloat(btn.style.getPropertyValue("--dy")) }); }
     pid = undefined;
   };
   btn.addEventListener("pointerdown", down);
   btn.addEventListener("pointermove", move);
   btn.addEventListener("pointerup", up);
   btn.addEventListener("pointercancel", up);
-
-  // restore any saved drag position
-  const saved = store.get("pos-" + sec.id, null);
-  if (saved) { btn.style.setProperty("--dx", saved.dx + "px"); btn.style.setProperty("--dy", saved.dy + "px"); btn._drag = true; }
 }
 
 function openFor(sec, btn) {
