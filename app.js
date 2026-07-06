@@ -68,7 +68,14 @@ const CONTENT = {
           description: "Son of founder Arsenio and Leticia Ferriol. He became a Church Presbyter in 2021 and was elevated to Bishop in 2023, and also serves as an elected city councilor for Marikina City District 1.",
           extra: { Elevated: "Bishop (2023)", "Civic Role": "Marikina Councilor" } },
         { name: "Bishop Aldrin Palanca", position: "Bishop · Middle East District",
+          // PHOTO: drop the file at this path and it appears automatically.
+          image: "assets/bishop-aldrin-palanca.jpg",
+          location: "Dubai, United Arab Emirates",
           description: "A bishop associated with the Middle East District. He spoke on behalf of the church during the 50th (Golden) Anniversary celebration in 2023.",
+          ministryRole: "Provides episcopal oversight for the Middle East District — shepherding pastors and local churches, guiding worship and discipleship, and representing the church at regional gatherings.",
+          assignment: "Middle East District — overseeing congregations across the Gulf region and supporting multiple branch churches.",
+          messages: ["Watchmen of the Fourth Watch", "Faith Across the Nations", "The Church Christ Builds", "Standing Firm in a Foreign Land"],
+          contact: { Email: "middleeast@pmcc4thwatch.org", Office: "Sun–Thu · 9:00 AM – 5:00 PM (GST)", Branch: "PMCC (4th Watch) Dubai" },
           extra: { District: "Middle East" } },
         { name: "Bishop Reynald Sulayao", position: "Bishop",
           description: "Described as a seasoned, prophetic voice in the global church and a servant leader of character; a distinguished guest at the Canada District Conference.",
@@ -99,6 +106,12 @@ const CONTENT = {
         { name: "Presbyter Isabel Obsanga", position: "Presbyter · Canada District",
           description: "Listed among Canada District leaders; served as a keynote speaker at Canada District Camp 2025.",
           extra: { District: "Canada" } },
+        { name: "Presbyter Elleza Palanca", position: "Presbyter · Middle East District",
+          // PHOTO: drop the file at this path and it appears automatically.
+          image: "assets/presbyter-elleza-palanca.jpg",
+          location: "Dubai, United Arab Emirates",
+          description: "Serves as a presbyter in the Middle East District, supporting pastoral care, women's and youth ministries, and the growth of local congregations across the Gulf region.",
+          extra: { District: "Middle East" } },
       ],
     },
     {
@@ -135,10 +148,25 @@ const CONTENT = {
     },
     {
       id: "elders", label: "ELDERS", subtitle: "COUNCIL OF ELDERS", icon: "elders",
+      // SAMPLE elders (dummy data) — replace names/details with your real elders.
       items: [
-        { name: "Elder — Name to be added", position: "Local Church Elder", confidence: "placeholder",
-          description: "Elders are a recognized local-church leadership tier below pastors in the PMCC (4th Watch) hierarchy. No individually named elders were confirmed in public sources — add your elders here. Duplicate this entry for each one.",
-          extra: { Ministry: "(edit)", "Local Church": "(edit)" } },
+        { name: "Elder Nathaniel Cruz", position: "Elder · Worship Ministry", location: "Dubai, UAE",
+          description: "Sample elder profile. Oversees the worship and music ministry of the local church and mentors the praise team.",
+          ministryRole: "Leads worship ministry, service planning, and the spiritual care of the music team.",
+          assignment: "Main regional church, supporting midweek and weekend services.",
+          messages: ["A Heart of Worship", "Serving in Spirit and Truth"],
+          contact: { Email: "worship@pmcc4thwatch.org", Office: "By appointment", Branch: "PMCC (4th Watch) Dubai" },
+          extra: { Ministry: "Worship" } },
+        { name: "Elder Peter Villamor", position: "Elder · Discipleship", location: "Manila, Philippines",
+          description: "Sample elder profile. Leads discipleship classes and small-group pastoral care for new believers.",
+          ministryRole: "Guides discipleship, new-members classes, and small-group leaders.",
+          assignment: "Main church discipleship program and satellite groups.",
+          extra: { Ministry: "Discipleship" } },
+        { name: "Elder Ruth Delos Santos", position: "Elder · Women's Ministry", location: "Toronto, Canada",
+          description: "Sample elder profile. Coordinates the women's ministry, prayer groups, and community outreach.",
+          ministryRole: "Coordinates women's ministry, prayer, and outreach initiatives.",
+          assignment: "Canada District — Toronto locale and surrounding groups.",
+          extra: { Ministry: "Women's Ministry" } },
       ],
     },
     {
@@ -180,6 +208,18 @@ const CONTENT = {
       ["Netherlands"] },
     { region: "Home Country", countries:
       ["Philippines"] },
+  ],
+
+  /* ═════════════════ TESTIMONIES — sample dummy data (edit) ══════════ */
+  testimonies: [
+    { name: "Sister Maria Santos", role: "Member · Dubai", date: "2025",
+      text: "I came to the 4th Watch broken and searching. Through the teaching of the Word and the love of the brethren, God restored my family and gave me a living hope. I am forever grateful." },
+    { name: "Brother David Reyes", role: "Youth · Manila", date: "2024",
+      text: "As a young man I was lost in the world. The youth ministry welcomed me, discipled me, and showed me my purpose in Christ. Today I serve joyfully in the media ministry." },
+    { name: "Sister Grace Almazan", role: "Member · Toronto", date: "2025",
+      text: "Far from home, I found a family in the Canada District. The Lord provided work, community, and a deeper walk of faith — truly He watches over us in the fourth watch of the night." },
+    { name: "Brother Samuel Cruz", role: "Member · Riyadh", date: "2024",
+      text: "God healed me when the doctors had given up. I testify that the same Jesus who walked on the sea still moves today. To Him be all the glory." },
   ],
 };
 
@@ -225,6 +265,8 @@ const ICONS = {
   jarvis: `<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"/>`,
   browser: `<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.4 2.5 14.6 0 17M12 3.5c-2.5 2.4-2.5 14.6 0 17"/>`,
   search: `<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>`,
+  directory: `<path d="M5 5.5A2 2 0 0 1 7 4h4.5v16H7a2 2 0 0 0-2 1.2z"/><path d="M19 5.5A2 2 0 0 0 17 4h-4.5v16H17a2 2 0 0 1 2 1.2z"/><path d="M8 8h2M14 8h2M8 11h2M14 11h2"/>`,
+  testimonies: `<path d="M5 5h14a1.6 1.6 0 0 1 1.6 1.6v8A1.6 1.6 0 0 1 19 16.2H10l-4 3.4V16.2H5A1.6 1.6 0 0 1 3.4 14.6V6.6A1.6 1.6 0 0 1 5 5z"/><path d="M8.2 10.4h.01M12 10.4h.01M15.8 10.4h.01"/>`,
 };
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -532,6 +574,13 @@ function openSection(sec, iconBtn) {
 function renderItem(sec, index) {
   const item = sec.items[index];
   for (const id of ["#detail-name","#detail-position","#detail-description","#panel-glyph"]) { const el = $(id); el.style.animation = "none"; void el.offsetWidth; el.style.animation = ""; }
+  // show the person's photo when available (falls back to the icon glyph)
+  const frame = $("#panel .media-frame");
+  let img = frame.querySelector(".media-photo");
+  if (item.image) {
+    if (!img) { img = document.createElement("img"); img.className = "media-photo"; img.alt = ""; img.onerror = () => img.remove(); frame.insertBefore(img, frame.firstChild); }
+    img.src = item.image;
+  } else if (img) { img.remove(); }
   $("#panel-caption").textContent = item.position || sec.label;
   $("#detail-name").textContent = item.name;
   $("#detail-position").textContent = item.position || "";
@@ -587,6 +636,7 @@ function closeOverlay() {
 /* ─────────────────────── Bottom icon DOCK (menu) ────────────────────── */
 const MENU = [
   { id: "home",     label: "HOME",     sub: "Return to dashboard", icon: "home" },
+  { id: "directory",label: "DIRECTORY",sub: "Bishops · Pastors · Elders · Testimonies", icon: "directory" },
   { id: "gallery",  label: "GALLERY",  sub: "Change the background", icon: "gallery" },
   { id: "settings", label: "SETTINGS", sub: "Account · sound · colors · icons", icon: "settings" },
   { id: "jarvis",   label: ASSISTANT_NAME.toUpperCase(), sub: "Ministry assistant", icon: "jarvis" },
@@ -599,7 +649,8 @@ function buildDock() {
     const b = document.createElement("button");
     b.className = "dock-btn"; b.dataset.id = m.id; b.title = m.sub;
     b.innerHTML = `<span class="db-icon">${svg(ICONS[m.icon])}</span><span class="db-label">${m.label}</span>`;
-    b.addEventListener("click", () => onMenu(m.id));
+    b.addEventListener("click", () => onMenu(m.id, b));
+    if (m.id === "directory") dirDockBtn = b;
     dock.appendChild(b);
   });
   // mute toggle lives in the dock too
@@ -614,9 +665,10 @@ function buildDock() {
   dock.appendChild(mute);
   updateMuteButton();
 }
-function onMenu(id) {
+function onMenu(id, anchor) {
   Sound.play("tap");
-  if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); setOrbit(false); }
+  if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); closeDirDropdown(); closeProfile(); setOrbit(false); }
+  else if (id === "directory") toggleDirDropdown(anchor);
   else if (id === "gallery")  openFeature("gallery");
   else if (id === "settings") openFeature("settings");
   else if (id === "jarvis")   openFeature("jarvis");
@@ -643,6 +695,156 @@ function openFeature(id) {
 }
 function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; }
 function closeAllFeatures() { $$(".feature-overlay").forEach(el => { if (!el.classList.contains("hidden")) closeFeature(el); }); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DIRECTORY FLOW
+   MainIcon (dock) → CategoryDropdown → NameList → ProfileModal → Accordion
+   A clean, self-contained browse experience. Categories are the four
+   requested: Bishops · Pastors · Elders · Testimonies.
+   ══════════════════════════════════════════════════════════════════════ */
+let dirDockBtn = null;                 // the DIRECTORY dock button (anchor)
+const DIR_CATEGORIES = [
+  { id: "bishops",     label: "Bishops",     icon: "bishops" },
+  { id: "pastors",     label: "Pastors",     icon: "pastors" },
+  { id: "elders",      label: "Elders",      icon: "elders" },
+  { id: "testimonies", label: "Testimonies", icon: "testimonies" },
+];
+// small line-icons for the profile accordion sections
+const DIR_ICONS = {
+  about:      `<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.01"/>`,
+  role:       `<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M8.5 7.5V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.5M3.5 12.5h17"/>`,
+  assignment: `<path d="M12 21s6-5.3 6-10a6 6 0 1 0-12 0c0 4.7 6 10 6 10z"/><circle cx="12" cy="11" r="2.2"/>`,
+  messages:   `<path d="M6 4h9a3 3 0 0 1 3 3v13H8a2 2 0 0 1-2-2z"/><path d="M9 8.5h6M9 12h6M9 15.5h4"/>`,
+  gallery:    ICONS.gallery,
+  contact:    `<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4.2 7l7.8 6 7.8-6"/>`,
+};
+
+const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// people for a category (excludes editable placeholders); testimonies pass through
+function dirItems(catId) {
+  if (catId === "testimonies") return CONTENT.testimonies || [];
+  const sec = CONTENT.sections.find(s => s.id === catId);
+  return sec ? sec.items.filter(i => i.confidence !== "placeholder") : [];
+}
+// avatar: person photo when present (fails over to the category glyph)
+function avatarHTML(person, glyphKey) {
+  const glyph = svg(ICONS[glyphKey] || ICONS.apostle);
+  return person && person.image
+    ? `<span class="ava"><img src="${person.image}" alt="" onerror="this.remove()">${glyph}</span>`
+    : `<span class="ava">${glyph}</span>`;
+}
+
+/* ── CategoryDropdown ────────────────────────────────────────────────── */
+function buildDirDropdown() {
+  const dd = $("#dir-dropdown"); dd.innerHTML = "";
+  DIR_CATEGORIES.forEach(c => {
+    const n = dirItems(c.id).length;
+    const b = document.createElement("button");
+    b.className = "dir-drop-item"; b.setAttribute("role", "menuitem");
+    b.innerHTML = `<span class="ddi-icon">${svg(ICONS[c.icon])}</span><span class="ddi-label">${c.label}</span><span class="ddi-count">${n}</span>`;
+    b.addEventListener("click", () => { closeDirDropdown(); dirShowCategory(c.id); });
+    dd.appendChild(b);
+  });
+}
+function openDirDropdown(anchor) {
+  const dd = $("#dir-dropdown"); buildDirDropdown();
+  dd.classList.remove("hidden");
+  const r = (anchor || dirDockBtn).getBoundingClientRect();
+  dd.style.left = Math.round(r.left + r.width / 2) + "px";
+  Sound.play("open");
+  requestAnimationFrame(() => {
+    dd.style.top = Math.round(r.top - dd.offsetHeight - 14) + "px";
+    dd.classList.add("open");
+  });
+}
+function closeDirDropdown() { const dd = $("#dir-dropdown"); if (dd.classList.contains("hidden")) return; dd.classList.remove("open"); setTimeout(() => dd.classList.add("hidden"), 200); }
+function toggleDirDropdown(anchor) { const dd = $("#dir-dropdown"); dd.classList.contains("hidden") ? openDirDropdown(anchor) : closeDirDropdown(); }
+
+/* ── NameList (in the directory overlay) ─────────────────────────────── */
+function dirShowCategory(catId) {
+  const cat = DIR_CATEGORIES.find(c => c.id === catId); if (!cat) return;
+  const items = dirItems(catId);
+  $("#dir-title").textContent = cat.label.toUpperCase();
+  $("#dir-sub").textContent = items.length
+    ? (catId === "testimonies" ? `${items.length} testimonies · tap to read` : `${items.length} ${cat.label.toLowerCase()} · tap a name`)
+    : "No entries yet";
+  const list = $("#dir-list"); list.innerHTML = "";
+  if (!items.length) { list.innerHTML = `<p class="dir-empty">No entries yet — add them in <code>app.js → CONTENT</code>.</p>`; }
+  items.forEach((it, i) => {
+    const sub = catId === "testimonies" ? [it.role, it.date].filter(Boolean).join(" · ") : (it.position || "");
+    const row = document.createElement("button");
+    row.className = "dir-row"; row.style.animationDelay = `${i * 40}ms`;
+    row.innerHTML = `${avatarHTML(it, catId === "testimonies" ? "testimonies" : catId)}` +
+      `<span class="dir-row-txt"><span class="dir-row-name">${esc(it.name)}</span><span class="dir-row-sub">${esc(sub)}</span></span>` +
+      `<span class="dir-row-chev"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+    row.addEventListener("click", () => { Sound.play("tap"); dirOpenProfile(catId, i); });
+    list.appendChild(row);
+  });
+  openFeature("directory");
+}
+function dirBack() { Sound.play("back"); closeFeature($("#directory")); setTimeout(() => openDirDropdown(dirDockBtn), 240); }
+
+/* ── ProfileModal + ProfileAccordion ────────────────────────────────── */
+function personSections(p, catId) {
+  if (catId === "testimonies") {
+    return [{ title: "The Testimony", icon: DIR_ICONS.about, html: `<p class="pm-quote">${esc(p.text)}</p>` }];
+  }
+  const noun = catId === "bishops" ? "Bishop" : catId === "pastors" ? "Pastor" : catId === "elders" ? "Elder" : "Leader";
+  const assignment = p.assignment || (p.extra ? Object.entries(p.extra).map(([k, v]) => `${k}: ${v}`).join(" · ") : "") || "—";
+  const messages = (p.messages && p.messages.length) ? p.messages : ["Living in the Fourth Watch", "Faith for the Nations", "The House That Christ Builds"];
+  const contact = p.contact || { Email: "office@pmcc4thwatch.org", Office: "By appointment", Branch: "Main regional church" };
+  const gallery = (p.gallery && p.gallery.length)
+    ? p.gallery.map(g => `<div class="pm-gtile" style="background-image:url('${g}')"></div>`).join("")
+    : Array.from({ length: 4 }, () => `<div class="pm-gtile placeholder">${svg(ICONS.gallery)}</div>`).join("");
+  return [
+    { title: `About the ${noun}`, icon: DIR_ICONS.about, html: `<p>${esc(p.about || p.description || "—")}</p>` },
+    { title: "Ministry Role", icon: DIR_ICONS.role, html: `<p>${esc(p.ministryRole || `Serves as a ${noun.toLowerCase()} in the PMCC (4th Watch), providing spiritual leadership, pastoral care, and ministry development within the church.`)}</p>` },
+    { title: "Church Assignment", icon: DIR_ICONS.assignment, html: `<p>${esc(assignment)}</p>` },
+    { title: "Messages & Teachings", icon: DIR_ICONS.messages, html: `<ul class="pm-list">${messages.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` },
+    { title: "Gallery", icon: DIR_ICONS.gallery, html: `<div class="pm-gallery">${gallery}</div>` },
+    { title: "Contact / Office Info", icon: DIR_ICONS.contact, html: `<dl class="pm-contact">${Object.entries(contact).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` },
+  ];
+}
+function buildAccordion(sections) {
+  const acc = $("#profile-accordion"); acc.innerHTML = "";
+  sections.forEach((s, i) => {
+    const item = document.createElement("div");
+    item.className = "acc-item" + (i === 0 ? " open" : "");
+    item.innerHTML =
+      `<button class="acc-head" aria-expanded="${i === 0}"><span class="acc-ico">${svg(s.icon)}</span>` +
+      `<span class="acc-title">${s.title}</span>` +
+      `<span class="acc-chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>` +
+      `<div class="acc-body"><div class="acc-inner">${s.html}</div></div>`;
+    const head = item.querySelector(".acc-head");
+    head.addEventListener("click", () => {
+      const isOpen = item.classList.contains("open");
+      acc.querySelectorAll(".acc-item.open").forEach(o => { o.classList.remove("open"); o.querySelector(".acc-head").setAttribute("aria-expanded", "false"); });
+      if (!isOpen) { item.classList.add("open"); head.setAttribute("aria-expanded", "true"); }
+      Sound.play("tap");
+    });
+    acc.appendChild(item);
+  });
+}
+function dirOpenProfile(catId, index) {
+  const p = dirItems(catId)[index]; if (!p) return;
+  Sound.play("open");
+  $("#pm-avatar").innerHTML = avatarHTML(p, catId === "testimonies" ? "testimonies" : catId);
+  $("#pm-name").textContent = p.name;
+  $("#pm-title").textContent = catId === "testimonies" ? (p.role || "Testimony") : (p.position || "");
+  const chips = [];
+  if (p.location) chips.push(p.location);
+  if (catId === "testimonies" && p.date) chips.push(p.date);
+  $("#pm-meta").innerHTML = chips.map(c => `<span class="pm-chip">${esc(c)}</span>`).join("");
+  buildAccordion(personSections(p, catId));
+  const m = $("#profile-modal"); m.classList.remove("hidden", "closing");
+  requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add("open")));
+}
+function closeProfile() {
+  const m = $("#profile-modal"); if (m.classList.contains("hidden")) return;
+  Sound.play("back"); m.classList.add("closing"); m.classList.remove("open");
+  setTimeout(() => { m.classList.add("hidden"); m.classList.remove("closing"); }, 300);
+}
 
 /* ─────────────────────────── Gallery ────────────────────────────────── */
 function buildGallery() {
@@ -890,6 +1092,7 @@ function buildSearchIndex() {
     idx.push({ kind: "Region", label: r.region, sub: r.countries.length + " countries", icon: "branches", open: () => openBranches(iconEl("branches")) });
     r.countries.forEach(c => idx.push({ kind: "Branch · " + r.region, label: c, sub: "Country", icon: "branches", open: () => openBranches(iconEl("branches")) }));
   });
+  (CONTENT.testimonies || []).forEach((t, i) => idx.push({ kind: "Testimony", label: t.name, sub: t.role || "", icon: "testimonies", open: () => dirOpenProfile("testimonies", i) }));
   MENU.forEach(m => idx.push({ kind: "Menu", label: m.label, sub: m.sub, icon: m.icon, open: () => onMenu(m.id) }));
   return idx;
 }
@@ -980,11 +1183,23 @@ $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => clo
 $$("[data-search-close]").forEach(el => el.addEventListener("click", closeSearch));
 $("#btn-save-settings").addEventListener("click", saveSettings);
 $("#btn-reset-settings").addEventListener("click", resetSettings);
+// Directory flow wiring
+$("#dir-back").addEventListener("click", dirBack);
+$$("[data-pm-close]").forEach(el => el.addEventListener("click", closeProfile));
+// close the category dropdown when clicking outside it (or the DIRECTORY button)
+addEventListener("pointerdown", (e) => {
+  const dd = $("#dir-dropdown");
+  if (dd.classList.contains("hidden")) return;
+  if (e.target.closest("#dir-dropdown") || e.target.closest('.dock-btn[data-id="directory"]')) return;
+  closeDirDropdown();
+}, true);
 $("#btn-update").addEventListener("click", () => { $("#update-status").textContent = "Checking…"; Sound.play("tap"); setTimeout(() => { $("#update-status").textContent = "You’re up to date · v2.0"; toast("No updates available — you're current"); }, 1200); });
 
 addEventListener("pointerdown", () => Sound.ensure(), { once: true });
 addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    if (!$("#profile-modal").classList.contains("hidden")) return closeProfile();
+    if (!$("#dir-dropdown").classList.contains("hidden")) return closeDirDropdown();
     if (!$("#search").classList.contains("hidden")) return closeSearch();
     const openFeat = $$(".feature-overlay").find(el => !el.classList.contains("hidden"));
     if (openFeat) return closeFeature(openFeat);

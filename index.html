@@ -274,6 +274,46 @@
     </div>
   </section>
 
+  <!-- ══════════════ DIRECTORY: category dropdown (popover) ════════════ -->
+  <!-- Flow: DIRECTORY dock icon → this dropdown → name list → profile modal.
+       Items injected by app.js → buildDirDropdown(). -->
+  <div id="dir-dropdown" class="dir-dropdown hidden" role="menu" aria-label="Directory categories"></div>
+
+  <!-- ══════════════ DIRECTORY: name-list overlay ══════════════════════ -->
+  <section id="directory" class="feature-overlay hidden" aria-modal="true" role="dialog">
+    <div class="feature-backdrop" data-feature-close></div>
+    <div class="feature-shell tall">
+      <header class="feature-head">
+        <button id="dir-back" class="pill" type="button" aria-label="Back to categories">
+          <svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Categories
+        </button>
+        <div><h2 id="dir-title">DIRECTORY</h2><p id="dir-sub">Select a name</p></div>
+        <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </header>
+      <div id="dir-list" class="dir-list"><!-- names injected by app.js --></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ DIRECTORY: profile modal + accordion ══════════════ -->
+  <section id="profile-modal" class="hidden" aria-modal="true" role="dialog">
+    <div class="pm-backdrop" data-pm-close></div>
+    <div class="pm-shell">
+      <button class="pm-x" data-pm-close aria-label="Close profile">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <header class="pm-head">
+        <div id="pm-avatar" class="pm-avatar"></div>
+        <div class="pm-id">
+          <h2 id="pm-name">Name</h2>
+          <p id="pm-title" class="pm-title">Title</p>
+          <div id="pm-meta" class="pm-meta"></div>
+        </div>
+      </header>
+      <div id="profile-accordion" class="pm-accordion"><!-- sections injected --></div>
+    </div>
+  </section>
+
   <!-- ════════════════════════ SEARCH OVERLAY ═════════════════════════ -->
   <!-- Center modal; blurs everything behind so focus is on the search bar. -->
   <section id="search" class="hidden" aria-modal="true" role="dialog">
