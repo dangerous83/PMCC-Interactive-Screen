@@ -64,13 +64,13 @@ Everything editable lives at the top of **`app.js`**:
 
 No photos are used for people right now — each entry shows a soft-glow icon glyph, so the app looks complete without any images to source.
 
-## Directory (Bishops · Pastors · Elders · Testimonies)
+## Directory (Bishops · Presbyters · Pastors · Elders · Testimonies)
 
 The **DIRECTORY** dock icon opens a clean, guided flow designed for touch:
 
 **Directory icon → Category dropdown → Name list → Profile modal → Accordion**
 
-1. Tap **DIRECTORY** — a dropdown shows the four categories with live counts.
+1. Tap **DIRECTORY** — a dropdown shows the five categories with live counts.
 2. Pick one (e.g. Bishops) — a clean, tappable **list of names** opens.
 3. Tap a name — a professional **profile modal** opens with the person's name,
    title, and location, plus a single-open **accordion**: *About · Ministry Role ·
@@ -90,10 +90,17 @@ All data lives in `app.js → CONTENT`:
   you omit falls back to a sensible default, so partial entries still look complete.
 - **Testimonies** (`CONTENT.testimonies`): `{ name, role, date, text }`.
 - **Photos**: add `image: "assets/your-photo.jpg"` to any person. Photos appear in
-  the name list avatars, the profile header, **and** the main dashboard panels,
-  and quietly fall back to an icon if the file is missing. Two are already wired:
-  drop **`assets/bishop-aldrin-palanca.jpg`** and
-  **`assets/presbyter-elleza-palanca.jpg`** and they show up automatically.
+  the name-list avatars, the profile header, **and** the main dashboard panels,
+  and quietly fall back to an icon if the file is missing.
+  **Bishop Aldrin Palanca** and **Presbyter Elleza Palanca** ship with a styled
+  “REPLACE WITH PHOTO” placeholder at `assets/bishop-aldrin-palanca.jpg` and
+  `assets/presbyter-elleza-palanca.jpg` — **overwrite those two files with the
+  real headshots** (any JPG, portrait works best) and they appear automatically.
+
+  > ⚠️ Images pasted into the chat are **not** added to the app — only files
+  > committed to the repo's `assets/` folder are used. Replace a photo by
+  > committing a file at its path (e.g. drag it into `assets/` on GitHub, or
+  > `git add`/`commit`/`push`), keeping the **same filename**.
 
 The existing orbital dashboard (Apostle, Bishops, Presbyters, …) is unchanged —
 the Directory is an additional, more structured way to browse the same people.

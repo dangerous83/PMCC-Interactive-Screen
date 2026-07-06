@@ -705,6 +705,7 @@ function closeAllFeatures() { $$(".feature-overlay").forEach(el => { if (!el.cla
 let dirDockBtn = null;                 // the DIRECTORY dock button (anchor)
 const DIR_CATEGORIES = [
   { id: "bishops",     label: "Bishops",     icon: "bishops" },
+  { id: "presbyters",  label: "Presbyters",  icon: "presbyters" },
   { id: "pastors",     label: "Pastors",     icon: "pastors" },
   { id: "elders",      label: "Elders",      icon: "elders" },
   { id: "testimonies", label: "Testimonies", icon: "testimonies" },
@@ -790,7 +791,7 @@ function personSections(p, catId) {
   if (catId === "testimonies") {
     return [{ title: "The Testimony", icon: DIR_ICONS.about, html: `<p class="pm-quote">${esc(p.text)}</p>` }];
   }
-  const noun = catId === "bishops" ? "Bishop" : catId === "pastors" ? "Pastor" : catId === "elders" ? "Elder" : "Leader";
+  const noun = catId === "bishops" ? "Bishop" : catId === "presbyters" ? "Presbyter" : catId === "pastors" ? "Pastor" : catId === "elders" ? "Elder" : "Leader";
   const assignment = p.assignment || (p.extra ? Object.entries(p.extra).map(([k, v]) => `${k}: ${v}`).join(" · ") : "") || "—";
   const messages = (p.messages && p.messages.length) ? p.messages : ["Living in the Fourth Watch", "Faith for the Nations", "The House That Christ Builds"];
   const contact = p.contact || { Email: "office@pmcc4thwatch.org", Office: "By appointment", Branch: "Main regional church" };
