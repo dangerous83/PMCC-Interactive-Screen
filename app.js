@@ -327,14 +327,32 @@ const Particles = (() => {
 })();
 
 /* ─────────────────────── Orbital dashboard build ────────────────────── */
+/* Icons start COLLAPSED behind the center logo. Tapping the logo expands
+   them outward and draws glowing node connector lines from the hub.      */
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
 function buildOrbit() {
   const nav = $("#orbit-icons");
+  const links = $("#orbit-links");
   nav.innerHTML = "";
+  links.innerHTML = "";
   SECTIONS.forEach((sec, i) => {
+    // connector line group: base line + flowing energy dashes + end nodes
+    const g = document.createElementNS(SVG_NS, "g");
+    g.innerHTML = `
+      <line class="link-base"></line>
+      <line class="link-flow"></line>
+      <circle class="link-node" r="3.5"></circle>
+      <circle class="link-node-ring" r="8"></circle>`;
+    links.appendChild(g);
+
     const btn = document.createElement("button");
     btn.className = "orbit-icon";
     btn.dataset.section = sec.id;
     btn.style.setProperty("--pulse-delay", `${(i * 0.45).toFixed(2)}s`);
+    // staggered expansion: each icon leaves the hub slightly after the last
+    btn.style.transitionDelay = `${i * 60}ms`;
     btn.innerHTML = `
       <span class="icon-float" style="--float-delay:${(i * 0.7).toFixed(2)}s">
         <span class="icon-tile"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[sec.icon] || ICONS.history}</svg></span>
@@ -346,26 +364,80 @@ function buildOrbit() {
   layoutOrbit();
 }
 
-/* Position the 7 icons evenly on an ellipse around the center hub.
-   Landscape screens get a wider, flatter ring so labels never clip.   */
+/* Position the 7 icons evenly on an ellipse around the center hub and
+   aim each connector line at its icon. Landscape screens get a wider,
+   flatter ring so labels never clip.                                    */
 function layoutOrbit() {
   const stage = $("#orbit-stage");
   const { width: w, height: h } = stage.getBoundingClientRect();
+  if (!w || !h) return;
   const icons = stage.querySelectorAll(".orbit-icon");
+  const linkGroups = stage.querySelectorAll("#orbit-links g");
   const n = icons.length;
   const iconSize = parseFloat(getComputedStyle(document.documentElement)
     .getPropertyValue("--icon-size")) || 160;
+  const hubSize = parseFloat(getComputedStyle(document.documentElement)
+    .getPropertyValue("--hub-size")) || 300;
   const rx = Math.min(w / 2 - iconSize * 0.75, w * 0.36); // horizontal radius
   const ry = h / 2 - iconSize * 0.85;                     // vertical radius
+  const cx = w / 2, cy = h / 2;
+  $("#orbit-links").setAttribute("viewBox", `0 0 ${w} ${h}`);
+
   icons.forEach((btn, i) => {
     const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;    // start at 12 o'clock
-    const x = w / 2 + Math.cos(ang) * rx;
-    const y = h / 2 + Math.sin(ang) * ry;
-    btn.style.left = `${x}px`;
-    btn.style.top = `${y}px`;
+    const dx = Math.cos(ang) * rx;
+    const dy = Math.sin(ang) * ry;
+    // icon sits at the center; --tx/--ty carry it outward when .expanded
+    btn.style.left = `${cx}px`;
+    btn.style.top = `${cy}px`;
+    btn.style.setProperty("--tx", `${dx}px`);
+    btn.style.setProperty("--ty", `${dy}px`);
+
+    // connector: from just outside the hub to just short of the icon tile
+    const g = linkGroups[i];
+    if (!g) return;
+    const len = Math.hypot(dx, dy);
+    const ux = dx / len, uy = dy / len;
+    const start = hubSize * 0.42;                        // hub edge
+    const end = len - iconSize * 0.62;                   // icon edge
+    const x1 = cx + ux * start, y1 = cy + uy * start;
+    const x2 = cx + ux * end,   y2 = cy + uy * end;
+    for (const cls of ["link-base", "link-flow"]) {
+      const line = g.querySelector("." + cls);
+      line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+      line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+    }
+    // the base line "draws" itself via dash offset when expanding
+    const base = g.querySelector(".link-base");
+    const seg = Math.hypot(x2 - x1, y2 - y1);
+    base.style.strokeDasharray = seg;
+    base.style.strokeDashoffset = stage.classList.contains("expanded") ? 0 : seg;
+    base.style.transitionDelay = `${i * 60}ms`;
+    // node dot + ring at the icon end of the line
+    for (const sel of [".link-node", ".link-node-ring"]) {
+      const c = g.querySelector(sel);
+      c.setAttribute("cx", x2); c.setAttribute("cy", y2);
+      c.style.transitionDelay = `${200 + i * 60}ms`;
+    }
   });
 }
 addEventListener("resize", layoutOrbit);
+
+/* ───────────────── Expand / collapse the icon network ───────────────── */
+let orbitExpanded = false;
+
+function setOrbit(expand) {
+  if (expand === orbitExpanded) return;
+  orbitExpanded = expand;
+  const stage = $("#orbit-stage");
+  stage.classList.toggle("expanded", expand);
+  Sound.play(expand ? "open" : "back");
+  $("#hud-hint").textContent = expand ? "TAP AN ICON TO EXPLORE" : "TAP THE LOGO TO BEGIN";
+  // animate the connector lines drawing out (or retracting)
+  stage.querySelectorAll("#orbit-links .link-base").forEach((base) => {
+    base.style.strokeDashoffset = expand ? 0 : parseFloat(base.style.strokeDasharray || 0);
+  });
+}
 
 /* ─────────────────────────── Section panel ──────────────────────────── */
 let activeSection = null;
@@ -387,6 +459,7 @@ function openSection(sec, iconBtn) {
   buildChips(sec);
 
   const panel = $("#panel");
+  panelStretch.reset();                       // every panel opens at 100%
   panel.classList.remove("hidden", "closing");
   requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add("open")));
 }
@@ -500,22 +573,95 @@ function finishBoot() {
     requestAnimationFrame(() => {
       layoutOrbit();                      // now that the stage has real size
       dash.classList.add("visible");
-      // staggered pop-in of the orbital icons
-      document.querySelectorAll(".orbit-icon").forEach((btn, i) => {
-        setTimeout(() => {
-          btn.classList.add("arrive");
-          btn.addEventListener("animationend", () => {
-            btn.classList.remove("arrive");
-            btn.classList.add("settled");
-          }, { once: true });
-        }, 250 + i * 110);
-      });
+      // icons stay tucked behind the logo until the logo is tapped
     });
     Sound.play("boot");                   // plays once audio is unlocked
   }, 500);
 }
 
+/* ────────────────── Pinch-to-stretch ("hologram zoom") ──────────────── */
+/* Two-finger pinch (or mouse wheel) stretches the dashboard network or an
+   open info panel so content can be enlarged for readability, with a HUD
+   readout of the current zoom level. Double-tap resets to 100%.          */
+
+const zoomBadge = $("#zoom-badge");
+let badgeTimer = null;
+
+function flashZoom(value) {
+  zoomBadge.textContent = `${Math.round(value * 100)}%`;
+  zoomBadge.classList.add("show");
+  clearTimeout(badgeTimer);
+  badgeTimer = setTimeout(() => zoomBadge.classList.remove("show"), 900);
+}
+
+function makeStretchable(surface, applyZoom, { min = 0.6, max = 1.8, wheelNeedsCtrl = false } = {}) {
+  let zoom = 1;
+  const pointers = new Map();
+  let pinchStartDist = 0, pinchStartZoom = 1;
+  let lastTap = 0;
+
+  const apply = (z) => {
+    zoom = Math.min(max, Math.max(min, z));
+    applyZoom(zoom);
+    flashZoom(zoom);
+  };
+
+  surface.addEventListener("pointerdown", (e) => {
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinchStartDist = Math.hypot(a.x - b.x, a.y - b.y);
+      pinchStartZoom = zoom;
+    }
+    // double-tap anywhere on empty surface → reset stretch
+    const now = performance.now();
+    if (pointers.size === 1 && now - lastTap < 350 &&
+        !e.target.closest(".orbit-icon, .hub, button, .list-chip")) {
+      apply(1);
+      Sound.play("tap");
+    }
+    lastTap = now;
+  });
+  surface.addEventListener("pointermove", (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2 && pinchStartDist > 0) {
+      const [a, b] = [...pointers.values()];
+      apply(pinchStartZoom * (Math.hypot(a.x - b.x, a.y - b.y) / pinchStartDist));
+    }
+  });
+  const lift = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) pinchStartDist = 0; };
+  surface.addEventListener("pointerup", lift);
+  surface.addEventListener("pointercancel", lift);
+  surface.addEventListener("pointerleave", lift);
+  // mouse-wheel stretch for desktop testing (Ctrl+wheel inside the panel,
+  // so plain wheel still scrolls the profile text)
+  surface.addEventListener("wheel", (e) => {
+    if (wheelNeedsCtrl && !e.ctrlKey) return;
+    e.preventDefault();
+    apply(zoom * (e.deltaY < 0 ? 1.07 : 0.93));
+  }, { passive: false });
+
+  return { reset: () => { zoom = 1; applyZoom(1); } };
+}
+
+// Dashboard: the whole hologram network scales around the logo.
+const stageStretch = makeStretchable(
+  $("#orbit-stage"),
+  (z) => $("#orbit-stage").style.setProperty("--zoom", z.toFixed(3)),
+  { min: 0.65, max: 1.6 });
+
+// Panel: the INFORMATION grows — text reflows and stays scrollable, so the
+// title and BACK button are never pushed off screen.
+const panelStretch = makeStretchable(
+  $("#panel .panel-shell"),
+  (z) => { $("#panel .panel-content").style.zoom = z.toFixed(3); },
+  { min: 0.8, max: 1.7, wheelNeedsCtrl: true });
+
 /* ─────────────────────────── Wire-up ────────────────────────────────── */
+// tapping the center logo reveals / hides the icon network
+$(".hub-core").addEventListener("click", () => setOrbit(!orbitExpanded));
+
 $("#panel-back").addEventListener("click", closeSection);
 $("#panel .panel-backdrop").addEventListener("click", closeSection);
 $("#btn-mute").addEventListener("click", () => { Sound.ensure(); Sound.toggleMute(); });
@@ -523,7 +669,11 @@ $("#btn-mute").addEventListener("click", () => { Sound.ensure(); Sound.toggleMut
 // Browsers only allow audio after the first user gesture — unlock it then.
 addEventListener("pointerdown", () => Sound.ensure(), { once: true });
 
-// Escape key also goes back (handy while testing on a computer)
-addEventListener("keydown", (e) => { if (e.key === "Escape") closeSection(); });
+// Escape goes back: closes the panel first, then collapses the network
+addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (activeSection) closeSection();
+  else setOrbit(false);
+});
 
 boot();
