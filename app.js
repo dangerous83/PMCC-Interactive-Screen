@@ -196,7 +196,7 @@ const SCENES = [
 
 /* ═══════════════════ 5. COLOR THEMES (accent) ═════════════════════════ */
 const THEMES = [
-  { id: "blue",  color: "#86c5e0" },   // default soft blue
+  { id: "blue",  color: "#7fd0f0" },   // default soft blue (matches --accent)
   { id: "teal",  color: "#7fe0d0" },
   { id: "amber", color: "#f2c98a" },
   { id: "violet",color: "#b9a4f0" },
@@ -249,7 +249,7 @@ const settings = {
   accent:    store.get("accent", THEMES[0].color),
   iconStyle: store.get("iconStyle", "line"),   // "line" | "solid"
   user:      store.get("user", "guest"),
-  scene:     store.get("scene", "rainy"),
+  scene:     store.get("scene", "photo"),   // ship the rainy background.jpg by default
 };
 function applyAccent(c) { document.documentElement.style.setProperty("--accent", c); }
 function applyIconStyle(s) { $$(".icon-tile").forEach(t => t.classList.toggle("solid", s === "solid")); }
@@ -279,6 +279,8 @@ const Sound = {
       tap:  [{ f:880, t:"sine", d:.09, g:.10 }, { f:1320, t:"sine", d:.07, g:.05, at:.02 }],
       open: [{ f:440, t:"sine", d:.30, g:.10, slide:880 }, { f:1760, t:"triangle", d:.18, g:.04, at:.10 }],
       back: [{ f:660, t:"sine", d:.22, g:.09, slide:330 }],
+      // cyber "scan" sweep played on the open transition
+      scan: [{ f:320, t:"sawtooth", d:.38, g:.05, slide:1400 }, { f:1600, t:"sine", d:.22, g:.05, at:.06, slide:2600 }, { f:180, t:"sine", d:.4, g:.04, at:.02, slide:90 }],
       boot: [{ f:220, t:"sine", d:.9, g:.07, slide:660 }, { f:1108, t:"triangle", d:.4, g:.03, at:.35 }, { f:1662, t:"sine", d:.5, g:.03, at:.55 }],
     };
     (R[kind] || R.tap).forEach(r => {
@@ -388,8 +390,14 @@ function layoutOrbit() {
   const n = icons.length;
   const iconSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--icon-size")) || 160;
   const hubSize  = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hub-size")) || 300;
-  const rx = Math.min(w/2 - iconSize*0.75, w*0.36), ry = h/2 - iconSize*0.85;
-  const cx = w/2, cy = h/2;
+  // reserve the bottom band for the dock so orbit icons never collide with it
+  const bottomReserve = Math.min(h * 0.28, iconSize * 1.5 + 140);
+  const cx = w/2;
+  const cy = Math.max(hubSize*0.55 + 20, (h - bottomReserve) / 2);
+  const rx = Math.min(w/2 - iconSize*0.75, w*0.36);
+  const ry = Math.min(h/2 - iconSize*0.85, cy - iconSize*0.6);
+  // move the center hub to match the icon/link center
+  const hub = $(".hub"); if (hub) hub.style.top = `${cy}px`;
   $("#orbit-links").setAttribute("viewBox", `0 0 ${w} ${h}`);
   icons.forEach((btn, i) => {
     const ang = -Math.PI/2 + (i * 2*Math.PI)/n;
@@ -499,7 +507,7 @@ let activeSection = null, activeIcon = null, activeOverlay = null;
 function openSection(sec, iconBtn) {
   if (activeOverlay) return;
   activeSection = sec; activeIcon = iconBtn; activeOverlay = "panel";
-  Sound.play("open");
+  runCyberFX(); Sound.play("open");
   if (iconBtn) iconBtn.classList.add("launching");
   $("#dashboard").classList.add("defocus");
   $("#panel-title").textContent = sec.label;
@@ -509,7 +517,7 @@ function openSection(sec, iconBtn) {
   buildChips(sec);
   panelStretch.reset();
   const panel = $("#panel"); panel.classList.remove("hidden", "closing");
-  requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add("open")));
+  setTimeout(() => panel.classList.add("open"), 190);   // let the cyber FX lead
 }
 function renderItem(sec, index) {
   const item = sec.items[index];
@@ -538,7 +546,7 @@ function buildChips(sec) {
 function openBranches(iconBtn) {
   if (activeOverlay) return;
   activeOverlay = "branches"; activeIcon = iconBtn;
-  Sound.play("open");
+  runCyberFX(); Sound.play("open");
   if (iconBtn) iconBtn.classList.add("launching");
   $("#dashboard").classList.add("defocus");
   const grid = $("#regions-grid"); grid.innerHTML = "";
@@ -551,7 +559,7 @@ function openBranches(iconBtn) {
   });
   $$("#regions-grid .country-chip").forEach(chip => chip.addEventListener("click", () => { Sound.play("tap"); toast(chip.textContent + " — branch details coming soon"); }));
   const panel = $("#branches-panel"); panel.classList.remove("hidden", "closing");
-  requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add("open")));
+  setTimeout(() => panel.classList.add("open"), 190);   // let the cyber FX lead
 }
 
 /* ─────────────── Generic overlay close (panel / branches) ────────────── */
@@ -566,39 +574,53 @@ function closeOverlay() {
   activeSection = null; activeIcon = null; activeOverlay = null;
 }
 
-/* ─────────────────────────── Menu drawer ────────────────────────────── */
+/* ─────────────────────── Bottom icon DOCK (menu) ────────────────────── */
 const MENU = [
-  { id: "home",     label: "Home",             sub: "Return to dashboard", icon: "home" },
-  { id: "gallery",  label: "Gallery",          sub: "Change the background", icon: "gallery" },
-  { id: "settings", label: "Settings",         sub: "Account · sound · colors · icons", icon: "settings" },
-  { id: "jarvis",   label: ASSISTANT_NAME,     sub: "Ministry assistant", icon: "jarvis" },
-  { id: "browser",  label: "Internet Browser", sub: "Open the web", icon: "browser" },
-  { id: "search",   label: "Search",           sub: "Find anything", icon: "search" },
+  { id: "home",     label: "HOME",     sub: "Return to dashboard", icon: "home" },
+  { id: "gallery",  label: "GALLERY",  sub: "Change the background", icon: "gallery" },
+  { id: "settings", label: "SETTINGS", sub: "Account · sound · colors · icons", icon: "settings" },
+  { id: "jarvis",   label: ASSISTANT_NAME.toUpperCase(), sub: "Ministry assistant", icon: "jarvis" },
+  { id: "browser",  label: "BROWSER",  sub: "Open the web", icon: "browser" },
+  { id: "search",   label: "SEARCH",   sub: "Find anything", icon: "search" },
 ];
-function buildMenu() {
-  const ul = $("#menu-list"); ul.innerHTML = "";
-  MENU.forEach((m, i) => {
-    const li = document.createElement("li");
+function buildDock() {
+  const dock = $("#dock"); dock.innerHTML = "";
+  MENU.forEach(m => {
     const b = document.createElement("button");
-    b.className = "menu-item"; b.style.animationDelay = `${i * 55}ms`;
-    b.innerHTML = `<span class="mi-icon">${svg(ICONS[m.icon])}</span><span>${m.label}<span class="mi-sub">${m.sub}</span></span>`;
+    b.className = "dock-btn"; b.dataset.id = m.id; b.title = m.sub;
+    b.innerHTML = `<span class="db-icon">${svg(ICONS[m.icon])}</span><span class="db-label">${m.label}</span>`;
     b.addEventListener("click", () => onMenu(m.id));
-    li.appendChild(b); ul.appendChild(li);
+    dock.appendChild(b);
   });
-  $("#menu-user").textContent = "Signed in as: " + settings.user;
+  // mute toggle lives in the dock too
+  const mute = document.createElement("button");
+  mute.className = "dock-btn"; mute.id = "btn-mute"; mute.title = "Mute / unmute";
+  mute.innerHTML =
+    `<span class="db-icon">
+       <svg id="icon-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#eaf7ff" stroke="none"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#eaf7ff" stroke-width="1.8" stroke-linecap="round"/></svg>
+       <svg id="icon-sound-off" viewBox="0 0 24 24" class="hidden"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#eaf7ff" stroke="none"/><path d="M16 9l6 6M22 9l-6 6" fill="none" stroke="#eaf7ff" stroke-width="1.8" stroke-linecap="round"/></svg>
+     </span><span class="db-label">SOUND</span>`;
+  mute.addEventListener("click", () => { Sound.ensure(); Sound.toggleMute(); });
+  dock.appendChild(mute);
+  updateMuteButton();
 }
-function openMenu() { Sound.play("open"); const d = $("#menu-drawer"); d.classList.remove("hidden"); requestAnimationFrame(() => d.classList.add("open")); }
-function closeMenu() { const d = $("#menu-drawer"); d.classList.remove("open"); setTimeout(() => d.classList.add("hidden"), 450); }
 function onMenu(id) {
-  Sound.play("tap"); closeMenu();
-  setTimeout(() => {
-    if (id === "home")     { closeOverlay(); closeAllFeatures(); setOrbit(false); }
-    else if (id === "gallery")  openFeature("gallery");
-    else if (id === "settings") openFeature("settings");
-    else if (id === "jarvis")   openFeature("jarvis");
-    else if (id === "browser")  openFeature("browser");
-    else if (id === "search")   openSearch();
-  }, 200);
+  Sound.play("tap");
+  if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); setOrbit(false); }
+  else if (id === "gallery")  openFeature("gallery");
+  else if (id === "settings") openFeature("settings");
+  else if (id === "jarvis")   openFeature("jarvis");
+  else if (id === "browser")  openFeature("browser");
+  else if (id === "search")   openSearch();
+}
+
+/* ───────────────────── Cyber-style open transition ──────────────────── */
+function runCyberFX() {
+  const fx = $("#cyber-fx");
+  fx.classList.remove("run"); void fx.offsetWidth;   // restart the animation
+  fx.classList.add("run");
+  Sound.play("scan");
+  setTimeout(() => fx.classList.remove("run"), 650);
 }
 
 /* ─────────────────────── Feature overlays (generic) ─────────────────── */
@@ -662,14 +684,13 @@ function saveSettings() {
   store.set("volume", settings.volume); store.set("accent", settings.accent);
   store.set("iconStyle", settings.iconStyle); store.set("user", settings.user);
   if (pass) store.set("passSet", true);   // note: demo only — do not store real passwords in a kiosk
-  $("#menu-user").textContent = "Signed in as: " + settings.user;
   Sound.play("open"); toast("Settings saved");
 }
 function resetSettings() {
   settings.volume = 70; settings.accent = THEMES[0].color; settings.iconStyle = "line"; settings.user = "guest";
   ["volume","accent","iconStyle","user","passSet"].forEach(k => store.set(k, k === "volume" ? 70 : k === "accent" ? THEMES[0].color : k === "iconStyle" ? "line" : k === "user" ? "guest" : false));
   applyAccent(settings.accent); applyIconStyle(settings.iconStyle); buildSettings();
-  $("#menu-user").textContent = "Signed in as: guest"; toast("Settings reset");
+  toast("Settings reset");
 }
 
 /* ─────────────────── Jarvis / Brother Thomas (offline) ───────────────── */
@@ -810,7 +831,7 @@ function tickClock() {
 /* ───────────────────────── Boot sequence ────────────────────────────── */
 const BOOT = [ [10,"INITIALIZING…"], [30,"LOADING INTERFACE…"], [52,"PREPARING SCENE…"], [74,"SYNCING DIRECTORY…"], [93,"RENDERING NETWORK…"], [100,"WELCOME"] ];
 function boot() {
-  buildOrbit(); buildMenu(); buildGallery(); buildSettings();
+  buildOrbit(); buildDock(); buildGallery(); buildSettings();
   SEARCH_INDEX = buildSearchIndex();
   applyScene(settings.scene);
   tickClock(); setInterval(tickClock, 1000);
@@ -831,12 +852,8 @@ function finishBoot() {
 /* ─────────────────────────── Wire-up ────────────────────────────────── */
 $(".hub-core").addEventListener("click", () => setOrbit(!orbitExpanded));
 $$("[data-close]").forEach(el => el.addEventListener("click", closeOverlay));
-$("#btn-menu").addEventListener("click", openMenu);
-$$("[data-menu-close]").forEach(el => el.addEventListener("click", closeMenu));
 $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => closeFeature(e.target.closest(".feature-overlay"))));
 $$("[data-search-close]").forEach(el => el.addEventListener("click", closeSearch));
-$("#btn-search-open").addEventListener("click", openSearch);
-$("#btn-mute").addEventListener("click", () => { Sound.ensure(); Sound.toggleMute(); });
 $("#btn-save-settings").addEventListener("click", saveSettings);
 $("#btn-reset-settings").addEventListener("click", resetSettings);
 $("#btn-update").addEventListener("click", () => { $("#update-status").textContent = "Checking…"; Sound.play("tap"); setTimeout(() => { $("#update-status").textContent = "You’re up to date · v2.0"; toast("No updates available — you're current"); }, 1200); });
@@ -847,7 +864,6 @@ addEventListener("keydown", (e) => {
     if (!$("#search").classList.contains("hidden")) return closeSearch();
     const openFeat = $$(".feature-overlay").find(el => !el.classList.contains("hidden"));
     if (openFeat) return closeFeature(openFeat);
-    if (!$("#menu-drawer").classList.contains("hidden")) return closeMenu();
     if (activeOverlay) return closeOverlay();
     return setOrbit(false);
   }
