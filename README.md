@@ -26,8 +26,7 @@ or open the file normally and press **F11** for fullscreen.
 
 ## How to use it (touch gestures)
 
-- **Tap the center logo** to reveal the node network of section icons; tap again to collapse.
-- **Drag an icon** to move it anywhere (positions are remembered).
+- **Tap the center logo** to reveal the organized grid of section icons; tap again to collapse.
 - **Tap or press-and-hold** an icon to open its section — opening plays an elegant golden bloom transition with a soft chime.
 - **Pinch** the dashboard to stretch the whole network; pinch inside a panel to enlarge the text. Double-tap empty space to reset. (Mouse: wheel = dashboard zoom, Ctrl+wheel = panel zoom.)
 - **Bottom dock** (icons, centered) holds: Home · Gallery · Settings · Brother Thomas · Browser · Search · Sound (mute).
@@ -66,13 +65,13 @@ No photos are used for people right now — each entry shows a soft-glow icon gl
 
 ## Dashboard layout & interactions
 
-The orbital dashboard is arranged as an organized hierarchy: **Apostle** at
-top-center, **Bishops ↔ Presbyters** as the upper pair, **Pastors ↔ Elders** as
-the lower pair, and **Branches ↔ History** at the bottom.
+Tapping the logo reveals a clean, organized **grid** of section tiles beneath it:
+a top row of **Apostle · Bishops · Presbyters · Pastors** and a centered lower
+row of **Elders · Branches · History** — no connector lines, no clutter.
 
-- **Tap the center logo** → the network reveals **one spoke at a time** — each
-  icon pops in and its glowing connector line draws to it before the next appears,
-  sweeping evenly around the ring.
+- **Tap the center logo** → the logo lifts to the top and the section tiles fade
+  in one after another in reading order (left→right, top→bottom), settling into
+  the grid. Tap the logo again to collapse it back to the centre.
 - **Tap a leadership icon** (Apostle / Bishops / Presbyters / Pastors / Elders)
   → an animated **name dropdown** opens beside it listing everyone in that group;
   tap a name → the **profile modal** opens with a **large portrait on the left**.

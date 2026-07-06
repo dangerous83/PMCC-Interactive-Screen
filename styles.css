@@ -166,8 +166,8 @@ input{ font-family:inherit; }
 /* — orbit stage — */
 #orbit-stage{ position:relative; flex:1; transform:scale(var(--zoom,1)); transition:transform .18s ease-out; touch-action:none; }
 
-/* node connector lines */
-#orbit-links{ position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; overflow:visible; }
+/* node connector lines — not used in the clean grid layout */
+#orbit-links{ display:none; }
 .link-base{ stroke:color-mix(in srgb, var(--accent) 55%, transparent); stroke-width:1.5; fill:none; filter:drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 55%, transparent)); transition:stroke-dashoffset .9s var(--ease-out); }
 .link-flow{ stroke:var(--accent-2); stroke-width:2; fill:none; stroke-dasharray:3 24; stroke-linecap:round; opacity:0; transition:opacity .6s ease; animation:link-flow 1.4s linear infinite; }
 @keyframes link-flow{ to{ stroke-dashoffset:-27; } }
@@ -176,7 +176,7 @@ input{ font-family:inherit; }
 #orbit-stage.expanded .link-flow{ opacity:.85; }
 #orbit-stage.expanded .link-node, #orbit-stage.expanded .link-node-ring{ opacity:1; }
 
-.hub{ position:absolute; left:50%; top:50%; translate:-50% -50%; width:var(--hub-size); aspect-ratio:1; display:grid; place-items:center; z-index:2; }
+.hub{ position:absolute; left:50%; top:50%; translate:-50% -50%; width:var(--hub-size); aspect-ratio:1; display:grid; place-items:center; z-index:2; transition:top .6s var(--ease-out); }
 /* slow-rotating gold halo behind the logo */
 .hub::before{ content:""; position:absolute; width:132%; aspect-ratio:1; border-radius:50%; background:conic-gradient(from 0deg, transparent 0%, color-mix(in srgb, var(--accent) 40%, transparent) 12%, transparent 30%, transparent 55%, color-mix(in srgb, var(--accent) 32%, transparent) 68%, transparent 88%); -webkit-mask:radial-gradient(closest-side, transparent 60%, #000 63%, #000 70%, transparent 73%); mask:radial-gradient(closest-side, transparent 60%, #000 63%, #000 70%, transparent 73%); animation:spin 20s linear infinite; opacity:.55; pointer-events:none; }
 .hub-core{
@@ -248,8 +248,8 @@ input{ font-family:inherit; }
 .icon-tile svg{ position:relative; width:50%; height:50%; stroke:#fff6e2; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 90%, transparent)); }
 .icon-tile.solid svg{ fill:color-mix(in srgb, var(--accent) 34%, transparent); }
 .icon-label{ font-size:clamp(13px,1.6vmin,34px); font-weight:700; letter-spacing:.16em; color:#fff8ea; text-shadow:0 2px 10px rgba(0,0,0,.9), 0 0 20px color-mix(in srgb, var(--accent) 55%, transparent); white-space:nowrap; }
-.icon-float{ display:flex; flex-direction:column; align-items:center; gap:1.1vmin; animation:float 6s ease-in-out infinite; animation-delay:var(--float-delay,0s); }
-@keyframes float{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-1vmin);} }
+/* tiles stay still in the grid (no bob) so the layout reads as organized */
+.icon-float{ display:flex; flex-direction:column; align-items:center; gap:1.1vmin; }
 @media (hover:hover){
   #orbit-stage.expanded .orbit-icon:hover:not(.dragging){ --s:1.1; }
   .orbit-icon:hover .icon-tile{ border-color:var(--accent); box-shadow:0 10px 30px rgba(0,0,0,.35), 0 0 4vmin color-mix(in srgb, var(--accent) 55%, transparent); animation-play-state:paused; }
