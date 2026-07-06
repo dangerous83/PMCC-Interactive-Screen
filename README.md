@@ -70,12 +70,15 @@ The orbital dashboard is arranged as an organized hierarchy: **Apostle** at
 top-center, **Bishops ↔ Presbyters** as the upper pair, **Pastors ↔ Elders** as
 the lower pair, and **Branches ↔ History** at the bottom.
 
-- **Tap the center logo** → the section icons reveal **one by one**, then the
-  glowing node lines connect them.
+- **Tap the center logo** → the network reveals **one spoke at a time** — each
+  icon pops in and its glowing connector line draws to it before the next appears,
+  sweeping evenly around the ring.
 - **Tap a leadership icon** (Apostle / Bishops / Presbyters / Pastors / Elders)
   → an animated **name dropdown** opens beside it listing everyone in that group;
   tap a name → the **profile modal** opens with a **large portrait on the left and
-  all details shown at once** on the right (each section can still be collapsed).
+  every detail shown at once** on the right — a clean stack of titled sections
+  (*About · Ministry Role · Church Assignment · Messages & Teachings · Gallery ·
+  Contact*), **no dropdowns to open**.
 - **Brother Thomas** floats as a looping widget on the right edge (and is in the
   dock). Tapping it opens the assistant with **voice active** — he **speaks his
   replies** in a natural British voice. Toggle voice with the header button.
@@ -89,13 +92,14 @@ the lower pair, and **Branches ↔ History** at the bottom.
 
 The **DIRECTORY** dock icon opens a clean, guided flow designed for touch:
 
-**Directory icon → Category dropdown → Name list → Profile modal → Accordion**
+**Directory icon → Category dropdown → Name list → Profile modal**
 
 1. Tap **DIRECTORY** — a dropdown shows the five categories with live counts.
 2. Pick one (e.g. Bishops) — a clean, tappable **list of names** opens.
-3. Tap a name — a professional **profile modal** opens with the person's name,
-   title, and location, plus a single-open **accordion**: *About · Ministry Role ·
-   Church Assignment · Messages & Teachings · Gallery · Contact / Office Info*.
+3. Tap a name — a professional **profile modal** opens with a **large portrait**
+   and the person's name, title, and location, with **all details laid out at
+   once** (no dropdowns): *About · Ministry Role · Church Assignment · Messages &
+   Teachings · Gallery · Contact / Office Info*.
    Testimonies open a simple testimony card instead.
 4. Close with the **✕**, **Esc**, or tapping outside; the dropdown also closes on
    an outside tap. **“Categories”** returns to the dropdown.
