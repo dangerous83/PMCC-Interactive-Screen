@@ -14,6 +14,11 @@
 /* ═══════════════════ 1. ASSISTANT (JARVIS) NAME — EDIT ════════════════ */
 const ASSISTANT_NAME = "Brother Thomas";   // ← rename your assistant here
 
+/* Bump this number whenever you replace a photo in assets/ — it forces every
+   browser/kiosk to fetch the fresh image instead of showing a cached old one. */
+const ASSET_VERSION = 4;
+const withV = (src) => src + (src.includes("?") ? "&" : "?") + "v=" + ASSET_VERSION;
+
 /* ═══════════════════ 2. LEADERSHIP CONTENT — EDIT ════════════════════ */
 /* Facts below are drawn from pmcc4thwatch.org / Wikipedia (public sources).
    Replace or extend freely. Entries marked "(edit)" are editable slots.   */
@@ -340,7 +345,7 @@ const Sound = {
       o.connect(g).connect(ctx.destination); o.start(t0); o.stop(t0 + r.d + .05);
     });
   },
-  toggleMute() { this.muted = !this.muted; store.set("muted", this.muted); updateMuteButton(); if (!this.muted) this.play("tap"); },
+  toggleMute() { this.muted = !this.muted; store.set("muted", this.muted); updateMuteButton(); if (this.muted && typeof Voice !== "undefined") Voice.stop(); if (!this.muted) this.play("tap"); },
 };
 function updateMuteButton() {
   $("#btn-mute").classList.toggle("muted", Sound.muted);
@@ -379,12 +384,12 @@ function applyScene(id) {
   const scene = SCENES.find(s => s.id === id) || SCENES[0];
   const photo = $("#bg-photo"), cssLayers = $$(".bg-sky, .bg-buildings, .bg-bokeh");
   if (scene.type === "photo") {
-    photo.style.backgroundImage = `url("${scene.src}")`;
-    // verify the file exists; if not, fall back to the rainy scene
+    photo.style.backgroundImage = `url("${withV(scene.src)}")`;
+    // verify the file exists; if not, fall back to the royal CSS scene
     const img = new Image();
     img.onload = () => photo.classList.add("active");
-    img.onerror = () => { photo.classList.remove("active"); toast("No photo at " + scene.src + " — using Rainy Dusk"); applyScene("rainy"); };
-    img.src = scene.src;
+    img.onerror = () => { photo.classList.remove("active"); toast("No photo at " + scene.src + " — using Royal Night"); applyScene("royal"); };
+    img.src = withV(scene.src);
   } else if (scene.type === "css") {
     photo.style.backgroundImage = scene.css;
     photo.classList.add("active");
@@ -738,7 +743,7 @@ function renderItem(sec, index) {
   let img = frame.querySelector(".media-photo");
   if (item.image) {
     if (!img) { img = document.createElement("img"); img.className = "media-photo"; img.alt = ""; img.onerror = () => img.remove(); frame.insertBefore(img, frame.firstChild); }
-    img.src = item.image;
+    img.src = withV(item.image);
   } else if (img) { img.remove(); }
   $("#panel-caption").textContent = item.position || sec.label;
   $("#detail-name").textContent = item.name;
@@ -852,7 +857,7 @@ function openFeature(id) {
   if (id === "jarvis" && !$("#jarvis-log").childElementCount) jarvisGreet();
   if (id === "browser") { /* lazy-load on open */ browserGo($("#browser-url").value); }
 }
-function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; if (el.id === "globe") Globe.stop(); }
+function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; if (el.id === "globe") Globe.stop(); if (el.id === "jarvis") Voice.stop(); }
 function closeAllFeatures() { $$(".feature-overlay").forEach(el => { if (!el.classList.contains("hidden")) closeFeature(el); }); }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -887,11 +892,13 @@ function dirItems(catId) {
   const sec = CONTENT.sections.find(s => s.id === catId);
   return sec ? sec.items.filter(i => i.confidence !== "placeholder") : [];
 }
-// avatar: person photo when present (fails over to the category glyph)
+// avatar: person photo when present (fails over to the category glyph).
+// The glyph is hidden by CSS while the photo is present (`.ava img ~ svg`),
+// and reappears automatically if the photo file is missing.
 function avatarHTML(person, glyphKey) {
   const glyph = svg(ICONS[glyphKey] || ICONS.apostle);
   return person && person.image
-    ? `<span class="ava"><img src="${person.image}" alt="" onerror="this.remove()">${glyph}</span>`
+    ? `<span class="ava"><img src="${withV(person.image)}" alt="" onerror="this.remove()">${glyph}</span>`
     : `<span class="ava">${glyph}</span>`;
 }
 
@@ -989,7 +996,11 @@ function buildAccordion(sections) {
 function dirOpenProfile(catId, index) {
   const p = dirItems(catId)[index]; if (!p) return;
   Sound.play("open");
-  $("#pm-avatar").innerHTML = avatarHTML(p, catId === "testimonies" ? "testimonies" : catId);
+  // large portrait: the person's photo, or a dignified glyph card if absent
+  const glyph = svg(ICONS[catId === "testimonies" ? "testimonies" : catId] || ICONS.apostle);
+  $("#pm-portrait").innerHTML = p.image
+    ? `<img src="${withV(p.image)}" alt="${esc(p.name)}" onerror="this.remove()">${glyph}`
+    : glyph;
   $("#pm-name").textContent = p.name;
   $("#pm-title").textContent = catId === "testimonies" ? (p.role || "Testimony") : (p.position || "");
   const chips = [];
@@ -1101,10 +1112,54 @@ function resetSettings() {
 }
 
 /* ─────────────────── Jarvis / Brother Thomas (offline) ───────────────── */
+
+/* ── Voice (text-to-speech): Brother Thomas SPEAKS his replies ─────────
+   Uses the browser's built-in speechSynthesis (offline — the voices come
+   from the kiosk's operating system; Windows/macOS/Chrome all include
+   English voices). Toggle with the VOICE button in his header.           */
+const Voice = {
+  enabled: store.get("voiceOn", true),
+  voice: null,
+  supported: "speechSynthesis" in window,
+  pick() {
+    if (!this.supported) return;
+    const vs = speechSynthesis.getVoices();
+    // prefer a natural male English voice, then any English, then default
+    this.voice =
+      vs.find(v => /^en/i.test(v.lang) && /(david|guy|george|james|daniel|male|ryan)/i.test(v.name)) ||
+      vs.find(v => /^en/i.test(v.lang)) || vs[0] || null;
+  },
+  speak(text) {
+    if (!this.enabled || !this.supported || Sound.muted) return;
+    speechSynthesis.cancel();                       // don't overlap replies
+    const clean = String(text).replace(/[“”"]/g, "").replace(/[⚠︎🌍]/g, "");
+    const u = new SpeechSynthesisUtterance(clean);
+    if (!this.voice) this.pick();
+    if (this.voice) u.voice = this.voice;
+    u.rate = 1; u.pitch = 0.95;
+    u.volume = Math.max(0, Math.min(1, settings.volume / 100));
+    speechSynthesis.speak(u);
+  },
+  stop() { if (this.supported) speechSynthesis.cancel(); },
+  toggle() {
+    this.enabled = !this.enabled; store.set("voiceOn", this.enabled);
+    if (!this.enabled) this.stop();
+    updateVoiceButton();
+    if (this.enabled) this.speak("Voice is on.");
+  },
+};
+if (Voice.supported) speechSynthesis.onvoiceschanged = () => Voice.pick();
+function updateVoiceButton() {
+  const b = $("#jarvis-voice"); if (!b) return;
+  b.classList.toggle("off", !Voice.enabled);
+  $("#jarvis-voice-label").textContent = Voice.enabled ? "VOICE ON" : "VOICE OFF";
+}
+
 function jarvisSay(cls, text) {
   const log = $("#jarvis-log");
   const div = document.createElement("div"); div.className = "j-msg " + cls; div.textContent = text;
   log.appendChild(div); log.scrollTop = log.scrollHeight;
+  if (cls === "bot") Voice.speak(text);            // Brother Thomas speaks
 }
 function jarvisGreet() {
   updateJarvisMode();
@@ -1343,6 +1398,9 @@ $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => clo
 $$("[data-search-close]").forEach(el => el.addEventListener("click", closeSearch));
 $("#btn-save-settings").addEventListener("click", saveSettings);
 $("#btn-reset-settings").addEventListener("click", resetSettings);
+// Brother Thomas voice toggle
+$("#jarvis-voice").addEventListener("click", () => { Sound.play("tap"); Voice.toggle(); });
+updateVoiceButton();
 // Directory flow wiring
 $("#dir-back").addEventListener("click", dirBack);
 $$("[data-pm-close]").forEach(el => el.addEventListener("click", closeProfile));

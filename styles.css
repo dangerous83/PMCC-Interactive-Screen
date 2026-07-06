@@ -424,6 +424,9 @@ input{ font-family:inherit; }
 .set-hint code{ background:var(--glass); padding:.15em .45em; border-radius:6px; color:var(--accent-2); }
 
 /* — jarvis / brother thomas — */
+.jv-toggle{ margin-left:auto; font-size:clamp(10px,1.15vmin,22px) !important; letter-spacing:.12em; color:var(--accent-2); border-color:var(--accent); }
+.jv-toggle.off{ color:var(--text-dim); border-color:var(--glass-line); opacity:.75; }
+.jv-toggle + .feature-x{ margin-left:1vmin; }
 .jarvis-orb{ width:clamp(40px,4.4vmin,84px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 40% 35%, var(--accent-2), var(--accent) 60%, #2b5f78); box-shadow:0 0 2.4vmin color-mix(in srgb, var(--accent) 60%, transparent); display:grid; place-items:center; }
 .jarvis-orb span{ width:40%; aspect-ratio:1; border-radius:50%; background:rgba(255,255,255,.85); animation:orb-pulse 2.6s ease-in-out infinite; }
 @keyframes orb-pulse{ 0%,100%{ transform:scale(.8); opacity:.7; } 50%{ transform:scale(1); opacity:1; } }
@@ -579,6 +582,9 @@ input{ font-family:inherit; }
 .dir-row:active{ transform:scale(.98); }
 .ava{ position:relative; display:grid; place-items:center; overflow:hidden; border-radius:50%; background:var(--tile); border:1.5px solid var(--tile-line); flex:0 0 auto; box-shadow:inset 0 1px 0 rgba(255,255,255,.22); }
 .ava img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 20%; }
+/* when a photo is present, hide the fallback glyph so it never overlaps the
+   face; if the file is missing the img removes itself and the glyph returns */
+.ava img ~ svg{ display:none; }
 .ava svg{ width:52%; height:52%; stroke:#fff6e2; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent)); }
 .dir-row .ava{ width:clamp(46px,4.6vmin,92px); aspect-ratio:1; }
 .dir-row-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.3vmin; }
@@ -591,7 +597,7 @@ input{ font-family:inherit; }
 #profile-modal{ position:fixed; inset:0; z-index:42; display:flex; align-items:center; justify-content:center; }
 .pm-backdrop{ position:absolute; inset:0; background:rgba(4,8,20,.62); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); opacity:0; transition:opacity .35s ease; }
 #profile-modal.open .pm-backdrop{ opacity:1; }
-.pm-shell{ position:relative; width:min(88vw, 132vh); max-height:90vh; display:flex; flex-direction:column; overflow:hidden;
+.pm-shell{ position:relative; width:min(88vw, 150vh); height:min(86vh, 56vw); max-height:90vh; display:flex; flex-direction:column; overflow:hidden;
   border-radius:var(--radius); background:var(--panel); border:1px solid var(--panel-line);
   backdrop-filter:blur(calc(var(--glass-blur)+8px)); -webkit-backdrop-filter:blur(calc(var(--glass-blur)+8px));
   box-shadow:0 40px 100px rgba(0,0,0,.65), 0 0 6vmin color-mix(in srgb, var(--accent) 16%, transparent), inset 0 1px 0 rgba(255,255,255,.2);
@@ -601,16 +607,23 @@ input{ font-family:inherit; }
 .pm-shell::before{ content:""; position:absolute; top:0; left:8%; right:8%; height:1px; background:linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow:0 0 14px var(--accent); opacity:.75; }
 .pm-x{ position:absolute; top:clamp(12px,1.6vmin,32px); right:clamp(12px,1.6vmin,32px); z-index:3; width:clamp(44px,4.4vmin,88px); aspect-ratio:1; border-radius:50%; background:var(--glass); border:1px solid var(--panel-line); display:grid; place-items:center; color:var(--text); transition:transform .2s var(--ease-spring), background .2s; }
 .pm-x svg{ width:44%; height:44%; } .pm-x:hover{ background:var(--glass-2); } .pm-x:active{ transform:scale(.9); }
-.pm-head{ display:flex; align-items:center; gap:clamp(16px,2.4vmin,52px); padding:clamp(20px,3vmin,60px) clamp(20px,3vmin,64px); border-bottom:1px solid rgba(255,255,255,.12);
-  background:radial-gradient(120% 140% at 12% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%); }
-.pm-avatar{ width:clamp(84px,10vmin,220px); aspect-ratio:1; }
-.pm-avatar.ava, .pm-avatar > .ava{ width:100%; height:100%; }
-.pm-avatar .ava{ width:100%; aspect-ratio:1; } .pm-avatar svg{ width:48%; height:48%; }
-.pm-id{ min-width:0; }
-#pm-name{ font-size:clamp(24px,3.4vmin,72px); font-weight:800; letter-spacing:.02em; color:#fff8ea; text-shadow:0 2px 14px rgba(0,0,0,.5); }
-.pm-title{ margin-top:.5vmin; font-size:clamp(14px,1.7vmin,36px); letter-spacing:.16em; color:var(--accent); }
-.pm-meta{ margin-top:1.2vmin; display:flex; flex-wrap:wrap; gap:.9vmin; }
+/* two-column body: LARGE portrait left · accordion right */
+.pm-body{ flex:1; display:flex; min-height:0; }
+.pm-photo-col{ flex:0 0 clamp(240px,30%,440px); display:flex; flex-direction:column; align-items:center; text-align:center;
+  gap:1.2vmin; padding:clamp(20px,3vmin,60px) clamp(18px,2.4vmin,48px); border-right:1px solid rgba(255,255,255,.12);
+  background:radial-gradient(140% 120% at 30% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 62%); overflow-y:auto; }
+.pm-portrait{ position:relative; width:100%; max-width:clamp(200px,24vmin,380px); aspect-ratio:3/4; border-radius:calc(var(--radius)*.7);
+  overflow:hidden; display:grid; place-items:center; background:var(--tile); border:1.5px solid var(--tile-line);
+  box-shadow:0 16px 44px rgba(0,0,0,.5), 0 0 3vmin color-mix(in srgb, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255,255,255,.25);
+  animation:fade-up .45s var(--ease-out) both; }
+.pm-portrait img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 18%; }
+.pm-portrait svg{ width:36%; height:auto; stroke:var(--accent-2); fill:none; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 60%, transparent)); }
+.pm-portrait img ~ svg{ display:none; }   /* glyph only shows when no photo */
+#pm-name{ font-size:clamp(20px,2.5vmin,52px); font-weight:800; letter-spacing:.02em; color:#fff8ea; text-shadow:0 2px 14px rgba(0,0,0,.5); }
+.pm-title{ font-size:clamp(12px,1.45vmin,30px); letter-spacing:.16em; color:var(--accent); }
+.pm-meta{ display:flex; flex-wrap:wrap; justify-content:center; gap:.9vmin; }
 .pm-chip{ font-size:clamp(11px,1.25vmin,26px); color:var(--text-dim); background:var(--glass); border:1px solid var(--glass-line); border-radius:999px; padding:.35em 1em; }
+.pm-main-col{ flex:1; min-width:0; display:flex; flex-direction:column; padding-top:clamp(44px,4.6vmin,92px); }   /* clears the ✕ button */
 
 /* — ProfileAccordion — */
 .pm-accordion{ overflow-y:auto; padding:clamp(14px,2vmin,44px) clamp(18px,2.6vmin,60px) clamp(20px,3vmin,60px); display:flex; flex-direction:column; gap:1.1vmin; }
@@ -643,8 +656,9 @@ input{ font-family:inherit; }
 
 /* ══════════════════════════ RESPONSIVE (laptop preview) ══════════════ */
 @media (max-width:900px){
-  .pm-head{ flex-direction:column; text-align:center; }
-  .pm-meta{ justify-content:center; }
+  .pm-body{ flex-direction:column; overflow-y:auto; }
+  .pm-photo-col{ flex:0 0 auto; border-right:none; border-bottom:1px solid rgba(255,255,255,.12); }
+  .pm-portrait{ max-width:min(60vw, 300px); }
   .panel-body{ flex-direction:column; overflow-y:auto; }
   .panel-media{ flex:0 0 auto; height:34vh; }
   .panel-shell, .panel-shell.wide{ width:94vw; height:90vh; }
