@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<!-- ==========================================================================
+     PMCC 4TH WATCH — INTERACTIVE LEADERSHIP DIRECTORY
+     Designed for an 85-inch landscape touch screen (16:9, 4K-friendly).
+
+     HOW TO CUSTOMIZE
+     ────────────────
+     • LOGO ............ replace  assets/logo.png            (square PNG, transparent bg)
+     • PEOPLE PHOTOS ... replace  assets/placeholder-person.png  or add your own files
+                         and point to them in app.js → SECTIONS → items → image
+     • BRANCH PHOTOS ... replace  assets/placeholder-branch.svg
+     • HISTORY PHOTOS .. replace  assets/placeholder-history.svg
+     • ALL TEXT ........ edit    app.js → SECTIONS  (names, positions, descriptions…)
+     • CHURCH NAME ..... edit the <header> text just below, and app.js → APP_TITLE
+     • SOUNDS .......... built-in synthesized UI sounds work offline with no files.
+                         To use your own audio files, see app.js → SOUND SETTINGS.
+
+     KIOSK TIP: open this file in Chrome/Edge and press F11 for fullscreen,
+     or launch with:  chrome --kiosk index.html
+     ========================================================================== -->
+<title>PMCC 4th Watch — Leadership Directory</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Ambient background: particle field + grid, drawn on canvas -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-vignette" aria-hidden="true"></div>
+
+  <!-- ════════════════════════ LOADING SCREEN ════════════════════════ -->
+  <div id="loader">
+    <div class="loader-logo-wrap">
+      <div class="loader-ring ring-a"></div>
+      <div class="loader-ring ring-b"></div>
+      <div class="loader-ring ring-c"></div>
+      <!-- REPLACE LOGO: swap the file assets/logo.png -->
+      <img class="loader-logo" src="assets/logo.png" alt="Church logo">
+    </div>
+    <div class="loader-title">
+      <!-- EDIT: church name shown during loading -->
+      <h1>PENTECOSTAL MISSIONARY CHURCH OF CHRIST</h1>
+      <p>4TH WATCH &nbsp;•&nbsp; LEADERSHIP DIRECTORY</p>
+    </div>
+    <div class="loader-bar"><span id="loader-progress"></span></div>
+    <p class="loader-status" id="loader-status">INITIALIZING SYSTEM…</p>
+  </div>
+
+  <!-- ════════════════════════ MAIN DASHBOARD ════════════════════════ -->
+  <main id="dashboard" class="hidden" aria-label="Main directory dashboard">
+
+    <!-- Top header strip -->
+    <header class="hud-header">
+      <div class="hud-line left"></div>
+      <div class="hud-title">
+        <!-- EDIT: main on-screen title -->
+        <h1>PMCC <span>4TH WATCH</span></h1>
+        <p>LEADERSHIP &amp; MINISTRY DIRECTORY</p>
+      </div>
+      <div class="hud-line right"></div>
+    </header>
+
+    <!-- Center hub: logo + orbit rings. Nav icons are injected by app.js -->
+    <div id="orbit-stage">
+      <div class="hub">
+        <div class="hub-ring hub-ring-1"></div>
+        <div class="hub-ring hub-ring-2"></div>
+        <div class="hub-ring hub-ring-3"></div>
+        <div class="hub-core">
+          <!-- REPLACE LOGO: swap the file assets/logo.png -->
+          <img src="assets/logo.png" alt="Church logo" draggable="false">
+        </div>
+      </div>
+      <nav id="orbit-icons" aria-label="Directory sections"><!-- icons injected by app.js --></nav>
+    </div>
+
+    <!-- Bottom status strip -->
+    <footer class="hud-footer">
+      <span id="hud-clock">--:--</span>
+      <span class="hud-hint">TAP AN ICON TO EXPLORE</span>
+      <span id="hud-date">—</span>
+    </footer>
+  </main>
+
+  <!-- ════════════════════════ SECTION PANEL ════════════════════════ -->
+  <!-- One reusable overlay; app.js fills it with the tapped section's content -->
+  <section id="panel" class="hidden" aria-modal="true" role="dialog">
+    <div class="panel-backdrop"></div>
+    <div class="panel-shell">
+      <header class="panel-head">
+        <button id="panel-back" class="btn-back" aria-label="Back to dashboard">
+          <svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>BACK</span>
+        </button>
+        <div class="panel-title-wrap">
+          <h2 id="panel-title">SECTION</h2>
+          <p id="panel-subtitle">—</p>
+        </div>
+        <div class="panel-head-deco" aria-hidden="true"></div>
+      </header>
+
+      <div class="panel-body">
+        <!-- Large image area -->
+        <figure class="panel-media">
+          <div class="media-frame">
+            <img id="panel-image" src="assets/placeholder-person.png" alt="">
+            <div class="media-scanline" aria-hidden="true"></div>
+          </div>
+          <figcaption id="panel-caption">—</figcaption>
+        </figure>
+
+        <!-- Profile / content area -->
+        <article class="panel-content">
+          <h3 id="detail-name">—</h3>
+          <p id="detail-position" class="detail-position">—</p>
+          <div class="detail-divider" aria-hidden="true"></div>
+          <p id="detail-description">—</p>
+          <dl id="detail-extra" class="detail-extra"><!-- extra fields injected --></dl>
+        </article>
+      </div>
+
+      <!-- Thumbnail selector: appears when a section has multiple entries -->
+      <footer id="panel-list" class="panel-list" aria-label="Entries"></footer>
+    </div>
+  </section>
+
+  <!-- Mute / unmute toggle (persists across reloads) -->
+  <button id="btn-mute" aria-label="Mute sounds" title="Mute / unmute">
+    <svg id="icon-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <svg id="icon-sound-off" viewBox="0 0 24 24" class="hidden"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+
+<script src="app.js"></script>
+</body>
+</html>
