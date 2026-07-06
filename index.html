@@ -4,22 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <!-- ==========================================================================
-     PMCC 4TH WATCH — INTERACTIVE LEADERSHIP DIRECTORY
+     PMCC 4TH WATCH — INTERACTIVE LEADERSHIP DIRECTORY  (Glass / rainy edition)
      Designed for an 85-inch landscape touch screen (16:9, 4K-friendly).
 
      HOW TO CUSTOMIZE
      ────────────────
      • LOGO ............ replace  assets/logo.png            (square PNG, transparent bg)
-     • PEOPLE PHOTOS ... replace  assets/placeholder-person.png  or add your own files
-                         and point to them in app.js → SECTIONS → items → image
-     • BRANCH PHOTOS ... replace  assets/placeholder-branch.svg
-     • HISTORY PHOTOS .. replace  assets/placeholder-history.svg
-     • ALL TEXT ........ edit    app.js → SECTIONS  (names, positions, descriptions…)
-     • CHURCH NAME ..... edit the <header> text just below, and app.js → APP_TITLE
+     • BACKGROUND ...... drop your photo at  assets/background.jpg  — it is used
+                         automatically. You can also switch scenes live from the
+                         in-app  MENU ▸ GALLERY.  (Built-in CSS scenes need no files.)
+     • ALL TEXT ........ edit  app.js → CONTENT  (names, positions, descriptions…)
+     • BRANCHES ........ edit  app.js → BRANCHES  (regions and countries)
      • SOUNDS .......... built-in synthesized UI sounds work offline with no files.
-                         To use your own audio files, see app.js → SOUND SETTINGS.
+                         To use your own audio files, see app.js → SOUND_FILES.
+     • JARVIS NAME ..... edit  app.js → ASSISTANT_NAME  (currently "Brother Thomas")
 
-     KIOSK TIP: open this file in Chrome/Edge and press F11 for fullscreen,
+     KIOSK TIP: open in Chrome/Edge and press F11 for fullscreen,
      or launch with:  chrome --kiosk index.html
      ========================================================================== -->
 <title>PMCC 4th Watch — Leadership Directory</title>
@@ -28,62 +28,76 @@
 </head>
 <body>
 
-  <!-- Ambient background: particle field + grid, drawn on canvas -->
-  <canvas id="bg-canvas" aria-hidden="true"></canvas>
-  <div class="bg-grid" aria-hidden="true"></div>
-  <div class="bg-vignette" aria-hidden="true"></div>
+  <!-- ══════════════════════ AMBIENT BACKGROUND ══════════════════════ -->
+  <!-- Layered rainy-city scene. #bg-photo shows assets/background.jpg (or a
+       Gallery choice) when available; the CSS scene layers sit behind it so
+       the app never looks empty even with no photo. -->
+  <div id="bg-scene" aria-hidden="true">
+    <div class="bg-sky"></div>
+    <div class="bg-buildings"></div>
+    <div class="bg-bokeh"></div>
+    <canvas id="rain-canvas"></canvas>
+    <div class="bg-fog"></div>
+    <div id="bg-photo"></div>       <!-- user photo layer, set by app.js -->
+    <div class="bg-tint"></div>
+  </div>
 
   <!-- ════════════════════════ LOADING SCREEN ════════════════════════ -->
   <div id="loader">
     <div class="loader-logo-wrap">
       <div class="loader-ring ring-a"></div>
       <div class="loader-ring ring-b"></div>
-      <div class="loader-ring ring-c"></div>
-      <!-- REPLACE LOGO: swap the file assets/logo.png -->
       <img class="loader-logo" src="assets/logo.png" alt="Church logo">
     </div>
     <div class="loader-title">
-      <!-- EDIT: church name shown during loading -->
       <h1>PENTECOSTAL MISSIONARY CHURCH OF CHRIST</h1>
       <p>4TH WATCH &nbsp;•&nbsp; LEADERSHIP DIRECTORY</p>
     </div>
     <div class="loader-bar"><span id="loader-progress"></span></div>
-    <p class="loader-status" id="loader-status">INITIALIZING SYSTEM…</p>
+    <p class="loader-status" id="loader-status">INITIALIZING…</p>
   </div>
 
   <!-- ════════════════════════ MAIN DASHBOARD ════════════════════════ -->
   <main id="dashboard" class="hidden" aria-label="Main directory dashboard">
 
-    <!-- Top header strip -->
-    <header class="hud-header">
-      <div class="hud-line left"></div>
-      <div class="hud-title">
-        <!-- EDIT: main on-screen title -->
+    <!-- Top bar: menu button · title · search + mute -->
+    <header class="topbar">
+      <button id="btn-menu" class="chip-btn" aria-label="Open menu">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>MENU</span>
+      </button>
+      <div class="topbar-title">
         <h1>PMCC <span>4TH WATCH</span></h1>
         <p>LEADERSHIP &amp; MINISTRY DIRECTORY</p>
       </div>
-      <div class="hud-line right"></div>
+      <div class="topbar-right">
+        <button id="btn-search-open" class="chip-btn round" aria-label="Search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button id="btn-mute" class="chip-btn round" aria-label="Mute sounds" title="Mute / unmute">
+          <svg id="icon-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <svg id="icon-sound-off" viewBox="0 0 24 24" class="hidden"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
     </header>
 
-    <!-- Center hub: logo + orbit rings. Nav icons are injected by app.js.
-         TAP THE LOGO to expand the icon network; node connector lines are
-         drawn into the SVG below by app.js. -->
+    <!-- Center hub + draggable node icons. Icons start hidden behind the logo;
+         TAP THE LOGO to expand the network. Drag an icon to move it; long-press
+         (hold) an icon to focus + open it. -->
     <div id="orbit-stage">
       <svg id="orbit-links" aria-hidden="true"></svg>
       <div class="hub">
         <div class="hub-ring hub-ring-1"></div>
         <div class="hub-ring hub-ring-2"></div>
-        <div class="hub-ring hub-ring-3"></div>
         <div class="hub-core">
-          <!-- REPLACE LOGO: swap the file assets/logo.png -->
           <img src="assets/logo.png" alt="Church logo" draggable="false">
         </div>
       </div>
-      <nav id="orbit-icons" aria-label="Directory sections"><!-- icons injected by app.js --></nav>
+      <nav id="orbit-icons" aria-label="Directory sections"><!-- injected by app.js --></nav>
     </div>
 
     <!-- Bottom status strip -->
-    <footer class="hud-footer">
+    <footer class="statusbar">
       <span id="hud-clock">--:--</span>
       <span class="hud-hint" id="hud-hint">TAP THE LOGO TO BEGIN</span>
       <span id="hud-date">—</span>
@@ -91,12 +105,12 @@
   </main>
 
   <!-- ════════════════════════ SECTION PANEL ════════════════════════ -->
-  <!-- One reusable overlay; app.js fills it with the tapped section's content -->
+  <!-- Reusable overlay for leadership sections. Icon glyph (no photos for now). -->
   <section id="panel" class="hidden" aria-modal="true" role="dialog">
-    <div class="panel-backdrop"></div>
+    <div class="panel-backdrop" data-close></div>
     <div class="panel-shell">
       <header class="panel-head">
-        <button id="panel-back" class="btn-back" aria-label="Back to dashboard">
+        <button class="btn-back" data-close aria-label="Back to dashboard">
           <svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span>BACK</span>
         </button>
@@ -108,10 +122,10 @@
       </header>
 
       <div class="panel-body">
-        <!-- Large image area -->
+        <!-- Icon / visual area (placeholder glyph instead of a photo) -->
         <figure class="panel-media">
           <div class="media-frame">
-            <img id="panel-image" src="assets/placeholder-person.png" alt="">
+            <div id="panel-glyph" class="media-glyph"><svg viewBox="0 0 24 24"></svg></div>
             <div class="media-scanline" aria-hidden="true"></div>
           </div>
           <figcaption id="panel-caption">—</figcaption>
@@ -123,23 +137,168 @@
           <p id="detail-position" class="detail-position">—</p>
           <div class="detail-divider" aria-hidden="true"></div>
           <p id="detail-description">—</p>
-          <dl id="detail-extra" class="detail-extra"><!-- extra fields injected --></dl>
+          <dl id="detail-extra" class="detail-extra"></dl>
         </article>
       </div>
 
-      <!-- Thumbnail selector: appears when a section has multiple entries -->
       <footer id="panel-list" class="panel-list" aria-label="Entries"></footer>
+    </div>
+  </section>
+
+  <!-- ════════════════ BRANCHES PANEL (regions ▸ countries) ═══════════ -->
+  <section id="branches-panel" class="hidden" aria-modal="true" role="dialog">
+    <div class="panel-backdrop" data-close></div>
+    <div class="panel-shell wide">
+      <header class="panel-head">
+        <button class="btn-back" data-close aria-label="Back to dashboard">
+          <svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>BACK</span>
+        </button>
+        <div class="panel-title-wrap">
+          <h2>BRANCHES</h2>
+          <p>GLOBAL CONGREGATIONS</p>
+        </div>
+        <div class="panel-head-deco" aria-hidden="true"></div>
+      </header>
+      <div id="regions-grid" class="regions-grid"><!-- injected by app.js --></div>
+    </section>
+  </section>
+
+  <!-- ════════════════════════ MENU DRAWER ════════════════════════════ -->
+  <aside id="menu-drawer" class="hidden" aria-label="Main menu">
+    <div class="menu-backdrop" data-menu-close></div>
+    <nav class="menu-shell">
+      <div class="menu-head">
+        <img src="assets/logo.png" alt="" class="menu-logo">
+        <div>
+          <h2>MENU</h2>
+          <p>PMCC 4TH WATCH</p>
+        </div>
+        <button class="menu-x" data-menu-close aria-label="Close menu">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <ul class="menu-list" id="menu-list"><!-- items injected by app.js --></ul>
+      <div class="menu-foot"><span id="menu-user">Signed in as: guest</span></div>
+    </nav>
+  </aside>
+
+  <!-- ════════════════════════ GALLERY OVERLAY ════════════════════════ -->
+  <section id="gallery" class="feature-overlay hidden" aria-modal="true" role="dialog">
+    <div class="feature-backdrop" data-feature-close></div>
+    <div class="feature-shell">
+      <header class="feature-head">
+        <h2>GALLERY</h2><p>Choose a background scene</p>
+        <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </header>
+      <div id="gallery-grid" class="gallery-grid"><!-- injected --></div>
+      <p class="feature-note">Tip: drop your own photo at <code>assets/background.jpg</code> and pick “My Photo”.</p>
+    </div>
+  </section>
+
+  <!-- ════════════════════════ SETTINGS OVERLAY ═══════════════════════ -->
+  <section id="settings" class="feature-overlay hidden" aria-modal="true" role="dialog">
+    <div class="feature-backdrop" data-feature-close></div>
+    <div class="feature-shell">
+      <header class="feature-head">
+        <h2>SETTINGS</h2><p>Personalize the interface</p>
+        <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </header>
+      <div class="settings-body">
+        <div class="set-group">
+          <h3>Credentials</h3>
+          <label>Username<input id="set-user" type="text" autocomplete="off" placeholder="username"></label>
+          <label>Password<input id="set-pass" type="password" autocomplete="off" placeholder="••••••••"></label>
+        </div>
+        <div class="set-group">
+          <h3>Sound</h3>
+          <label>Volume <span id="vol-val">70%</span>
+            <input id="set-vol" type="range" min="0" max="100" value="70">
+          </label>
+        </div>
+        <div class="set-group">
+          <h3>Accent Color</h3>
+          <div id="color-swatches" class="swatches"><!-- injected --></div>
+        </div>
+        <div class="set-group">
+          <h3>Interface Icons</h3>
+          <div id="iconstyle-opts" class="seg"><!-- injected --></div>
+        </div>
+        <div class="set-group">
+          <h3>Updates</h3>
+          <div class="update-row">
+            <span id="update-status">You’re up to date · v2.0</span>
+            <button id="btn-update" class="pill">Check for updates</button>
+          </div>
+        </div>
+        <div class="set-actions">
+          <button id="btn-save-settings" class="pill primary">Save</button>
+          <button id="btn-reset-settings" class="pill">Reset</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ JARVIS / BROTHER THOMAS OVERLAY ══════════════ -->
+  <section id="jarvis" class="feature-overlay hidden" aria-modal="true" role="dialog">
+    <div class="feature-backdrop" data-feature-close></div>
+    <div class="feature-shell tall">
+      <header class="feature-head">
+        <div class="jarvis-orb" aria-hidden="true"><span></span></div>
+        <div><h2 id="jarvis-name">BROTHER THOMAS</h2><p>Your ministry assistant</p></div>
+        <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </header>
+      <div id="jarvis-log" class="jarvis-log"></div>
+      <form id="jarvis-form" class="jarvis-input">
+        <input id="jarvis-text" type="text" autocomplete="off" placeholder="Ask Brother Thomas…">
+        <button type="submit" class="pill primary" aria-label="Send">
+          <svg viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="currentColor"/></svg>
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ════════════════════════ BROWSER OVERLAY ════════════════════════ -->
+  <section id="browser" class="feature-overlay hidden" aria-modal="true" role="dialog">
+    <div class="feature-backdrop" data-feature-close></div>
+    <div class="feature-shell full">
+      <header class="browser-bar">
+        <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <form id="browser-form" class="browser-addr">
+          <span class="lock" aria-hidden="true">🔒</span>
+          <input id="browser-url" type="text" spellcheck="false" value="https://pmcc4thwatch.org/">
+          <button type="submit" class="pill">Go</button>
+        </form>
+        <button id="browser-newtab" class="pill" title="Open in a new tab">Open ↗</button>
+      </header>
+      <div class="browser-view">
+        <iframe id="browser-frame" title="In-app browser" referrerpolicy="no-referrer"></iframe>
+        <div id="browser-fallback" class="browser-fallback hidden">
+          <p>This page can’t be shown inside the kiosk browser (the site blocks embedding, or this display is offline).</p>
+          <button id="browser-open2" class="pill primary">Open in a new tab ↗</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════ SEARCH OVERLAY ═════════════════════════ -->
+  <!-- Center modal; blurs everything behind so focus is on the search bar. -->
+  <section id="search" class="hidden" aria-modal="true" role="dialog">
+    <div class="search-backdrop" data-search-close></div>
+    <div class="search-box">
+      <div class="search-field">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="search-input" type="text" autocomplete="off" placeholder="Search leaders, branches, sections…">
+        <button data-search-close class="feature-x" aria-label="Close search"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </div>
+      <ul id="search-results" class="search-results"></ul>
     </div>
   </section>
 
   <!-- Zoom readout: flashes while pinch-stretching the dashboard or a panel -->
   <div id="zoom-badge" aria-hidden="true">100%</div>
-
-  <!-- Mute / unmute toggle (persists across reloads) -->
-  <button id="btn-mute" aria-label="Mute sounds" title="Mute / unmute">
-    <svg id="icon-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    <svg id="icon-sound-off" viewBox="0 0 24 24" class="hidden"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-  </button>
+  <!-- Toast for small confirmations (saved, updated…) -->
+  <div id="toast" class="hidden"></div>
 
 <script src="app.js"></script>
 </body>
