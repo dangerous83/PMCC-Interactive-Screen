@@ -162,22 +162,72 @@ button{ font-family:inherit; cursor:pointer; }
 }
 
 /* — orbit stage — */
-#orbit-stage{ position:relative; flex:1; }
+#orbit-stage{
+  position:relative; flex:1;
+  transform:scale(var(--zoom, 1));       /* pinch-to-stretch target */
+  transition:transform .18s ease-out;
+  touch-action:none;                      /* allow 2-finger pinch gestures */
+}
+
+/* node-network connector lines (drawn by app.js into this SVG) */
+#orbit-links{
+  position:absolute; inset:0; width:100%; height:100%;
+  z-index:0; pointer-events:none; overflow:visible;
+}
+.link-base{
+  stroke:rgba(89,216,255,.45); stroke-width:1.5; fill:none;
+  filter:drop-shadow(0 0 5px rgba(89,216,255,.5));
+  transition:stroke-dashoffset .9s var(--ease-out);
+}
+.link-flow{
+  stroke:rgba(143,230,255,.95); stroke-width:2; fill:none;
+  stroke-dasharray:3 24; stroke-linecap:round;
+  opacity:0; transition:opacity .6s ease;
+  animation:link-flow 1.4s linear infinite;   /* energy pulses along the line */
+}
+@keyframes link-flow{ to{ stroke-dashoffset:-27; } }
+.link-node{
+  fill:var(--cyan); opacity:0; transition:opacity .45s ease;
+  filter:drop-shadow(0 0 7px var(--cyan));
+}
+.link-node-ring{
+  fill:none; stroke:rgba(89,216,255,.5); stroke-width:1;
+  opacity:0; transition:opacity .45s ease;
+}
+#orbit-stage.expanded .link-flow{ opacity:.85; }
+#orbit-stage.expanded .link-node,
+#orbit-stage.expanded .link-node-ring{ opacity:1; }
 
 .hub{
   position:absolute; left:50%; top:50%; translate:-50% -50%;
   width:var(--hub-size); aspect-ratio:1;
   display:grid; place-items:center;
+  z-index:2;                              /* keeps collapsed icons hidden behind */
 }
 .hub-core{
+  position:relative;
   width:74%; aspect-ratio:1; border-radius:50%;
   display:grid; place-items:center;
-  background:radial-gradient(circle, rgba(13,32,54,.9) 0%, rgba(7,17,32,.7) 100%);
+  background:radial-gradient(circle, rgba(13,32,54,.98) 0%, rgba(7,17,32,.96) 100%);
   border:1px solid var(--line);
   box-shadow:0 0 6vmin rgba(89,216,255,.25), inset 0 0 4vmin rgba(89,216,255,.12);
   animation:hub-pulse 4.5s ease-in-out infinite;
+  cursor:pointer;
+  transition:transform .3s var(--ease-spring), box-shadow .3s ease;
 }
+.hub-core:hover{ box-shadow:0 0 9vmin rgba(89,216,255,.5), inset 0 0 5vmin rgba(89,216,255,.2); }
+.hub-core:active{ transform:scale(.94); }
 .hub-core img{ width:82%; border-radius:50%; }
+/* "tap me" ripple shown while the network is collapsed */
+.hub-core::after{
+  content:""; position:absolute; inset:-6%; border-radius:50%;
+  border:1px solid rgba(89,216,255,.55); opacity:0;
+}
+#orbit-stage:not(.expanded) .hub-core::after{ animation:hub-ripple 2.4s ease-out infinite; }
+@keyframes hub-ripple{
+  0%{ opacity:.7; transform:scale(.96); }
+  70%,100%{ opacity:0; transform:scale(1.25); }
+}
 @keyframes hub-pulse{
   0%,100%{ box-shadow:0 0 6vmin rgba(89,216,255,.25), inset 0 0 4vmin rgba(89,216,255,.12); }
   50%    { box-shadow:0 0 9vmin rgba(89,216,255,.45), inset 0 0 5vmin rgba(89,216,255,.2); }
@@ -202,24 +252,29 @@ button{ font-family:inherit; cursor:pointer; }
   animation:spin 22s linear infinite;
 }
 
-/* — orbital nav icons (positioned by app.js) — */
-#orbit-icons{ position:absolute; inset:0; }
+/* — orbital nav icons (positioned by app.js) —
+   Icons live at the stage center and slide out along --tx/--ty when the
+   hub logo is tapped (#orbit-stage gains .expanded). While collapsed they
+   sit shrunken BEHIND the logo. */
+#orbit-icons{ position:absolute; inset:0; z-index:1; }
 .orbit-icon{
-  position:absolute; left:0; top:0;   /* JS sets translate() */
+  position:absolute; left:0; top:0;   /* JS pins this to the stage center */
   width:var(--icon-size);
   margin-left:calc(var(--icon-size) / -2);
   margin-top:calc(var(--icon-size) / -2);
   background:none; border:none; color:var(--text);
   display:flex; flex-direction:column; align-items:center; gap:1.2vmin;
+  --tx:0px; --ty:0px;                 /* orbit offset, set by app.js       */
+  --k:0;                              /* 0 = collapsed at center, 1 = out  */
+  --s:.12;                            /* icon scale                        */
   opacity:0;
-  transition:transform .45s var(--ease-spring);
+  pointer-events:none;
+  transform:translate(calc(var(--tx) * var(--k)), calc(var(--ty) * var(--k))) scale(var(--s));
+  transition:transform .8s var(--ease-spring), opacity .4s ease;
 }
-.orbit-icon.arrive{ animation:icon-pop .7s var(--ease-spring) both; }
-@keyframes icon-pop{
-  from{ opacity:0; transform:scale(.3); }
-  to  { opacity:1; transform:scale(1); }
+#orbit-stage.expanded .orbit-icon{
+  --k:1; --s:1; opacity:1; pointer-events:auto;
 }
-.orbit-icon.settled{ opacity:1; }
 
 /* glass tile */
 .icon-tile{
@@ -271,19 +326,19 @@ button{ font-family:inherit; cursor:pointer; }
   50%    { transform:translateY(-1.1vmin); }
 }
 
-/* hover / touch feedback */
+/* hover / touch feedback (scale composes with the orbit translation) */
 @media (hover:hover){
-  .orbit-icon:hover{ transform:scale(1.12); }
+  #orbit-stage.expanded .orbit-icon:hover{ --s:1.12; }
   .orbit-icon:hover .icon-tile{
     border-color:var(--cyan);
     box-shadow:0 8px 30px rgba(0,0,0,.5), 0 0 4.5vmin rgba(89,216,255,.6), inset 0 1px 0 rgba(255,255,255,.15);
     animation-play-state:paused;
   }
 }
-.orbit-icon:active{ transform:scale(1.22); transition-duration:.18s; }
+#orbit-stage.expanded .orbit-icon:active{ --s:1.22; transition-duration:.18s; }
 /* the tapped icon zooms toward the viewer while the panel opens */
-.orbit-icon.launching{
-  transform:scale(1.9); opacity:0;
+#orbit-stage.expanded .orbit-icon.launching{
+  --s:1.9; opacity:0;
   transition:transform .5s var(--ease-out), opacity .45s ease;
   z-index:5;
 }
@@ -322,6 +377,7 @@ button{ font-family:inherit; cursor:pointer; }
   overflow:hidden;
   opacity:0; transform:scale(.88) translateY(3vmin);
   transition:opacity .5s var(--ease-out), transform .55s var(--ease-spring);
+  touch-action:none;                 /* allow pinch-to-stretch on the panel */
 }
 #panel.open .panel-shell{ opacity:1; transform:none; }
 #panel.closing .panel-shell{ opacity:0; transform:scale(.92) translateY(2vmin); transition-duration:.35s; }
@@ -486,6 +542,25 @@ button{ font-family:inherit; cursor:pointer; }
   border-color:var(--cyan); color:var(--cyan-soft);
   box-shadow:0 0 2vmin rgba(89,216,255,.35);
 }
+
+/* ══════════════════════════ ZOOM READOUT ══════════════════════════════ */
+/* HUD chip that flashes the current stretch level while pinching */
+#zoom-badge{
+  position:fixed; top:clamp(18px, 2.4vmin, 50px); right:clamp(18px, 2.4vmin, 50px);
+  z-index:45;
+  padding:clamp(8px, 1vmin, 20px) clamp(14px, 1.8vmin, 36px);
+  border-radius:999px;
+  background:var(--glass); border:1px solid var(--line);
+  color:var(--cyan-soft);
+  font-size:clamp(11px, 1.3vmin, 28px); letter-spacing:.3em; text-indent:.15em;
+  font-variant-numeric:tabular-nums;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 0 2.5vmin rgba(89,216,255,.3);
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease;
+}
+#zoom-badge.show{ opacity:1; }
 
 /* ══════════════════════════ MUTE BUTTON ═══════════════════════════════ */
 #btn-mute{

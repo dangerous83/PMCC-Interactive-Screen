@@ -62,6 +62,19 @@ choice across restarts.
 Edit the CSS variables at the top of `styles.css` (`--cyan`, `--gold`,
 `--hub-size`, `--icon-size`, …) to re-theme the whole app.
 
+## Touch gestures
+
+- **Tap the logo** — the seven section icons are hidden behind the logo on
+  startup; tapping the logo expands them outward with glowing node
+  connector lines linking each icon to the hub. Tapping the logo again
+  collapses the network.
+- **Pinch to stretch** — two-finger pinch on the dashboard scales the whole
+  network (65%–160%); pinch inside an open panel enlarges the profile text
+  for readability. A HUD chip shows the current zoom level.
+- **Double-tap** an empty area to reset the stretch to 100%.
+- On a computer: mouse wheel stretches the dashboard, **Ctrl+wheel**
+  stretches panel text, and **Esc** goes back / collapses the network.
+
 ## Notes for the touch screen
 
 - Layout scales automatically from 1080p to 4K (`vmin`/`clamp()` based).

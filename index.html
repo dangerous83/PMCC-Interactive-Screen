@@ -65,8 +65,11 @@
       <div class="hud-line right"></div>
     </header>
 
-    <!-- Center hub: logo + orbit rings. Nav icons are injected by app.js -->
+    <!-- Center hub: logo + orbit rings. Nav icons are injected by app.js.
+         TAP THE LOGO to expand the icon network; node connector lines are
+         drawn into the SVG below by app.js. -->
     <div id="orbit-stage">
+      <svg id="orbit-links" aria-hidden="true"></svg>
       <div class="hub">
         <div class="hub-ring hub-ring-1"></div>
         <div class="hub-ring hub-ring-2"></div>
@@ -82,7 +85,7 @@
     <!-- Bottom status strip -->
     <footer class="hud-footer">
       <span id="hud-clock">--:--</span>
-      <span class="hud-hint">TAP AN ICON TO EXPLORE</span>
+      <span class="hud-hint" id="hud-hint">TAP THE LOGO TO BEGIN</span>
       <span id="hud-date">—</span>
     </footer>
   </main>
@@ -128,6 +131,9 @@
       <footer id="panel-list" class="panel-list" aria-label="Entries"></footer>
     </div>
   </section>
+
+  <!-- Zoom readout: flashes while pinch-stretching the dashboard or a panel -->
+  <div id="zoom-badge" aria-hidden="true">100%</div>
 
   <!-- Mute / unmute toggle (persists across reloads) -->
   <button id="btn-mute" aria-label="Mute sounds" title="Mute / unmute">
