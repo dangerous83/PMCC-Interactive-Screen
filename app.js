@@ -412,26 +412,32 @@ function navSections() {
 }
 const NAV = navSections();
 
-/* Clean grid arrangement (no connector lines): two centred rows beneath the
-   logo — row 0 has 4 tiles, row 1 has 3 tiles. [row, column]. */
-const GRID_SLOTS = {
-  apostle: [0, 0], bishops: [0, 1], presbyters: [0, 2], pastors: [0, 3],
-  elders:  [1, 0], branches: [1, 1], history: [1, 2],
+/* Organized node network (deg: 0=right, 90=bottom, -90=top, 180=left).
+   Evenly spaced ring (≈51.4° apart), symmetric top-to-bottom, with glowing
+   connector lines from the logo to each node. */
+const ORBIT_ANGLES = {
+  apostle:    -90,
+  bishops:  -141.4, presbyters: -38.6,
+  pastors:   167.2, elders:      12.8,
+  branches:  115.8, history:     64.2,
 };
-const GRID_ROW_COLS = [4, 3];
-// Reveal in calm reading order: left→right, top→bottom.
-const REVEAL_ORDER = { apostle:0, bishops:1, presbyters:2, pastors:3, elders:4, branches:5, history:6 };
+// Reveal sweeps from the top, one node (icon + its line) at a time.
+const REVEAL_ORDER = { apostle:0, presbyters:1, elders:2, history:3, branches:4, pastors:5, bishops:6 };
 
 function buildOrbit() {
   const nav = $("#orbit-icons"), links = $("#orbit-links");
-  nav.innerHTML = ""; if (links) links.innerHTML = "";   // grid has no lines
+  nav.innerHTML = ""; links.innerHTML = "";
   NAV.forEach((sec, i) => {
+    const g = document.createElementNS(SVG_NS, "g");
+    g.innerHTML = `<line class="link-base"></line><line class="link-flow"></line><circle class="link-node" r="3.5"></circle><circle class="link-node-ring" r="8"></circle>`;
+    links.appendChild(g);
+
     const btn = document.createElement("button");
     btn.className = "orbit-icon"; btn.dataset.section = sec.id;
     btn.style.setProperty("--pulse-delay", `${(i * .45).toFixed(2)}s`);
-    // gentle read-order reveal: each tile settles into place in sequence
+    // node-by-node reveal: each icon glides out in sequence around the ring
     const ro = REVEAL_ORDER[sec.id] ?? i;
-    btn.style.transitionDelay = `${ro * 85}ms`;
+    btn.style.transitionDelay = `${ro * 200}ms`;
     btn.innerHTML = `
       <span class="press-ring"></span>
       <span class="icon-float" style="--float-delay:${(i*.7).toFixed(2)}s">
@@ -447,59 +453,52 @@ function buildOrbit() {
   layoutOrbit();
 }
 
-// Hub (logo) sits centred when collapsed, and lifts to the top when expanded so
-// the grid has room below it. Both Y positions are computed in layoutOrbit.
-let hubCollapsedY = 0, hubExpandedY = 0;
 function layoutOrbit() {
   const stage = $("#orbit-stage");
   const { width: w, height: h } = stage.getBoundingClientRect();
   if (!w || !h) return;
-  const icons = $$(".orbit-icon", stage);
+  const icons = $$(".orbit-icon", stage), groups = $$("#orbit-links g", stage);
+  const n = icons.length;
   const iconSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--icon-size")) || 160;
   const hubSize  = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hub-size")) || 300;
-  const cx = w / 2;
-
-  // vertical safe zones: clear the title up top and the dock at the bottom
-  const topSafe     = Math.max(64, h * 0.06);
-  const dockReserve = Math.max(280, iconSize * 1.25 + 120);
-  const zoneBot     = h - dockReserve;
-
-  // a tile+label visually occupies ~0.9× the icon size; space rows off that
-  const rowH   = iconSize * 0.9;
-  const gapX   = Math.max(iconSize * 0.34, 22);
-  const gapY   = Math.max(iconSize * 0.30, 20);
-  const rowPitch = rowH + gapY;
-  const gridH  = rowPitch + rowH;              // top of row 0 → bottom of row 1
-
-  // logo lifts to the top when expanded; the grid centres in the space below it
-  hubExpandedY  = topSafe + hubSize * 0.44;
-  hubCollapsedY = (topSafe + zoneBot) / 2;
-  const gridTop = hubExpandedY + hubSize * 0.44 + Math.min(28, h * 0.025);
-  const gridCy  = Math.max(gridTop + gridH / 2, Math.min((gridTop + zoneBot) / 2, zoneBot - gridH / 2));
-
-  const hub = $(".hub");
-  if (hub) hub.style.top = `${stage.classList.contains("expanded") ? hubExpandedY : hubCollapsedY}px`;
-
-  const rowCy = [gridCy - rowPitch / 2, gridCy + rowPitch / 2];
-
-  icons.forEach((btn) => {
-    const [r, c] = GRID_SLOTS[btn.dataset.section] || [0, 0];
-    const cols = GRID_ROW_COLS[r] || 1;
-    const totalW = cols * iconSize + (cols - 1) * gapX;
-    const startX = cx - totalW / 2 + iconSize / 2;
-    const x = startX + c * (iconSize + gapX);
-    const y = rowCy[r] ?? gridCy;
-    // tiles are positioned relative to the grid centre and slide out to their slot
-    btn.style.left = `${cx}px`; btn.style.top = `${gridCy}px`;
-    btn.style.setProperty("--tx", `${x - cx}px`);
-    btn.style.setProperty("--ty", `${y - gridCy}px`);
-    btn.style.setProperty("--dx", "0px");
-    btn.style.setProperty("--dy", "0px");
+  // reserve the bottom band for the dock so orbit icons never collide with it
+  const bottomReserve = Math.min(h * 0.28, iconSize * 1.5 + 140);
+  const cx = w/2;
+  const cy = Math.max(hubSize*0.55 + 20, (h - bottomReserve) / 2);
+  const rx = Math.min(w/2 - iconSize*0.8, w*0.40);
+  // size vertical radius so the top (Apostle) and deepest bottom icons
+  // (Branches/History, sin≈0.95) both stay clear of edges and the dock
+  const ryTop = cy - iconSize*0.5 - 10;
+  const ryBot = (h - Math.max(230, iconSize*1.3 + 96) - iconSize*0.5 - cy) / 0.96;
+  const ry = Math.max(120, Math.min(ryTop, ryBot));
+  // move the center hub to match the icon/link center
+  const hub = $(".hub"); if (hub) hub.style.top = `${cy}px`;
+  $("#orbit-links").setAttribute("viewBox", `0 0 ${w} ${h}`);
+  icons.forEach((btn, i) => {
+    const aDeg = ORBIT_ANGLES[btn.dataset.section];
+    const ang = ((aDeg != null ? aDeg : -90 + i * 360 / n)) * Math.PI / 180;
+    const dx = Math.cos(ang)*rx, dy = Math.sin(ang)*ry;
+    btn.style.left = `${cx}px`; btn.style.top = `${cy}px`;
+    btn.style.setProperty("--tx", `${dx}px`); btn.style.setProperty("--ty", `${dy}px`);
+    btn.style.setProperty("--dx", "0px"); btn.style.setProperty("--dy", "0px");
+    const g = groups[i]; if (!g) return;
+    const len = Math.hypot(dx, dy), ux = dx/len, uy = dy/len;
+    const x1 = cx + ux*(hubSize*0.42), y1 = cy + uy*(hubSize*0.42);
+    const x2 = cx + ux*(len - iconSize*0.62), y2 = cy + uy*(len - iconSize*0.62);
+    g._end = { x2, y2 };
+    for (const cls of ["link-base","link-flow"]) { const L = g.querySelector("."+cls); L.setAttribute("x1",x1); L.setAttribute("y1",y1); L.setAttribute("x2",x2); L.setAttribute("y2",y2); }
+    const base = g.querySelector(".link-base"); const seg = Math.hypot(x2-x1, y2-y1);
+    // each node's connector draws right after ITS icon glides in — one at a time
+    const ro = REVEAL_ORDER[btn.dataset.section] ?? i;
+    base.style.strokeDasharray = seg; base.style.strokeDashoffset = stage.classList.contains("expanded") ? 0 : seg; base.style.transitionDelay = `${ro*200 + 120}ms`;
+    g.querySelector(".link-flow").style.transitionDelay = `${ro*200 + 220}ms`;
+    for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx",x2); cc.setAttribute("cy",y2); cc.style.transitionDelay = `${ro*200 + 200}ms`; }
+    btn._linkGroup = g; btn._center = { cx, cy };
   });
 }
 addEventListener("resize", layoutOrbit);
 
-/* ───────────────── Expand / collapse the icon grid ──────────────────── */
+/* ───────────────── Expand / collapse the icon network ───────────────── */
 let orbitExpanded = false;
 function setOrbit(expand) {
   if (expand === orbitExpanded) return;
@@ -507,9 +506,8 @@ function setOrbit(expand) {
   const stage = $("#orbit-stage");
   stage.classList.toggle("expanded", expand);
   Sound.play(expand ? "open" : "back");
-  $("#hud-hint").textContent = expand ? "TAP AN ICON TO OPEN" : "TAP THE LOGO TO BEGIN";
-  // lift the logo up (expanded) or re-centre it (collapsed)
-  const hub = $(".hub"); if (hub) hub.style.top = `${expand ? hubExpandedY : hubCollapsedY}px`;
+  $("#hud-hint").textContent = expand ? "TAP OR HOLD AN ICON TO OPEN" : "TAP THE LOGO TO BEGIN";
+  stage.querySelectorAll("#orbit-links .link-base").forEach(b => { b.style.strokeDashoffset = expand ? 0 : parseFloat(b.style.strokeDasharray || 0); });
 }
 
 /* ──────────── Tap / long-press an icon to open ──────────────────────── */
@@ -604,6 +602,41 @@ const Globe = (() => {
     "Pakistan":[30,70],"Sri Lanka":[7.9,80.8],"USA":[39,-98],"Canada":[56,-106],
     "Australia":[-25,133],"Netherlands":[52.3,5.6],"Philippines":[12.9,121.8],
   };
+  // Simplified continent outlines ([lat,lng] polygons) for a recognizable Earth.
+  const LAND = [
+    // North America
+    [[72,-125],[70,-142],[65,-166],[60,-164],[58,-152],[59,-138],[54,-130],[49,-124],
+     [40,-124],[33,-118],[28,-114],[23,-110],[20,-105],[18,-96],[16,-95],[18,-90],
+     [21,-87],[25,-80],[30,-84],[28,-82],[31,-81],[36,-76],[41,-74],[45,-66],[48,-59],
+     [52,-56],[56,-62],[60,-66],[63,-78],[67,-84],[70,-100],[72,-125]],
+    // Greenland
+    [[83,-32],[80,-18],[70,-22],[61,-42],[66,-53],[76,-58],[82,-46],[83,-32]],
+    // South America
+    [[12,-71],[10,-61],[6,-50],[0,-49],[-5,-35],[-13,-38],[-23,-41],[-34,-54],[-42,-63],
+     [-52,-69],[-55,-71],[-49,-75],[-38,-73],[-28,-71],[-18,-70],[-8,-79],[-2,-81],[5,-77],[9,-77],[12,-71]],
+    // Africa
+    [[37,10],[34,22],[31,32],[24,36],[12,44],[10,51],[2,42],[-5,40],[-16,40],[-26,33],
+     [-34,26],[-34,18],[-28,16],[-18,12],[-6,9],[4,9],[5,-4],[10,-16],[15,-17],[21,-17],
+     [28,-13],[33,-9],[37,-5],[37,10]],
+    // Europe
+    [[60,4],[64,24],[58,28],[54,20],[46,30],[41,28],[38,23],[40,15],[43,7],[47,-1],
+     [50,-5],[58,-6],[60,4]],
+    // Asia
+    [[66,32],[70,62],[73,92],[72,142],[66,172],[61,160],[63,135],[54,142],[52,158],
+     [45,135],[40,128],[34,122],[24,119],[22,108],[10,105],[8,98],[16,95],[22,90],
+     [19,85],[15,80],[8,78],[9,74],[16,72],[24,66],[26,58],[31,50],[38,48],[42,52],
+     [46,48],[47,40],[50,36],[58,32],[66,32]],
+    // Indonesia / SE-Asia islands
+    [[-2,100],[2,104],[0,111],[-4,116],[-8,115],[-8,105],[-5,101],[-2,100]],
+    [[-5,120],[1,121],[-2,133],[-8,140],[-9,129],[-5,120]],
+    // Australia
+    [[-12,131],[-11,142],[-18,146],[-25,153],[-34,151],[-38,145],[-35,138],[-32,132],
+     [-34,123],[-31,115],[-22,114],[-16,123],[-12,131]],
+    // Japan
+    [[45,142],[40,140],[35,136],[33,131],[36,138],[41,141],[45,142]],
+    // British Isles
+    [[58,-5],[54,-2],[51,1],[50,-5],[55,-8],[58,-5]],
+  ];
   let canvas, ctx, raf = 0, W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1;
   let yaw = 0, pitch = 0.28, auto = true, dragging = false, lastX = 0, lastY = 0, moved = 0, t = 0;
   let points = [], screen = [], selected = -1, targetYaw = null, targetPitch = null, resumeTimer = 0, inited = false;
@@ -631,18 +664,46 @@ const Globe = (() => {
   }
   function meridian(lng) { ctx.beginPath(); let on = false; for (let la = -90; la <= 90; la += 4) { const s = project(la, lng); if (s.z > 0) { on ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); on = true; } else on = false; } ctx.stroke(); }
   function parallel(lat) { ctx.beginPath(); let on = false; for (let ln = -180; ln <= 180; ln += 4) { const s = project(lat, ln); if (s.z > 0) { on ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); on = true; } else on = false; } ctx.stroke(); }
+  // trace a land polygon; back-facing vertices are pinned to the horizon rim so
+  // continents correctly slide off the edge as the globe turns
+  function landPath(poly) {
+    ctx.beginPath();
+    for (let k = 0; k < poly.length; k++) {
+      const s = project(poly[k][0], poly[k][1]);
+      let x = s.x, y = s.y;
+      if (s.z < 0) { const a = Math.atan2(y - cy, x - cx); x = cx + Math.cos(a) * R; y = cy + Math.sin(a) * R; }
+      k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+  }
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    let g = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 1.3);
-    g.addColorStop(0, "rgba(232,198,106,0)"); g.addColorStop(0.72, "rgba(232,198,106,0.06)"); g.addColorStop(1, "rgba(232,198,106,0)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.3, 0, 7); ctx.fill();
-    const sg = ctx.createRadialGradient(cx - R * 0.32, cy - R * 0.32, R * 0.1, cx, cy, R);
-    sg.addColorStop(0, "#213a80"); sg.addColorStop(0.6, "#0e1c48"); sg.addColorStop(1, "#070f2a");
+    // outer atmosphere halo
+    let g = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.32);
+    g.addColorStop(0, "rgba(120,180,255,0)"); g.addColorStop(0.55, "rgba(96,150,240,0.16)"); g.addColorStop(1, "rgba(120,180,255,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.32, 0, 7); ctx.fill();
+    // ocean sphere (lit from upper-left)
+    const sg = ctx.createRadialGradient(cx - R * 0.34, cy - R * 0.34, R * 0.08, cx, cy, R * 1.05);
+    sg.addColorStop(0, "#2f6bd8"); sg.addColorStop(0.5, "#12437f"); sg.addColorStop(0.82, "#0a2350"); sg.addColorStop(1, "#061534");
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fillStyle = sg; ctx.fill();
-    ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(232,198,106,0.5)"; ctx.stroke();
-    ctx.lineWidth = 1; ctx.strokeStyle = "rgba(232,198,106,0.13)";
+    // continents (clipped to the globe disc)
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.clip();
+    const lg = ctx.createRadialGradient(cx - R * 0.34, cy - R * 0.34, R * 0.08, cx, cy, R);
+    lg.addColorStop(0, "#4fb06a"); lg.addColorStop(0.6, "#2f8850"); lg.addColorStop(1, "#1c5c39");
+    ctx.fillStyle = lg; ctx.strokeStyle = "rgba(180,225,190,0.35)"; ctx.lineWidth = 1;
+    LAND.forEach(poly => { landPath(poly); ctx.fill(); ctx.stroke(); });
+    // faint graticule over land + ocean
+    ctx.lineWidth = 1; ctx.strokeStyle = "rgba(210,230,255,0.10)";
     for (let ln = -180; ln < 180; ln += 30) meridian(ln);
     for (let la = -60; la <= 60; la += 30) parallel(la);
+    // shading: darken the day/night terminator toward lower-right
+    const tg = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.2, cx + R * 0.15, cy + R * 0.15, R * 1.15);
+    tg.addColorStop(0, "rgba(0,0,0,0)"); tg.addColorStop(0.7, "rgba(0,0,0,0.12)"); tg.addColorStop(1, "rgba(2,6,20,0.55)");
+    ctx.fillStyle = tg; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+    ctx.restore();
+    // crisp rim
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(150,190,255,0.5)"; ctx.stroke();
     screen = [];
     const sc = R / 300;
     points.forEach((p, i) => {
@@ -841,6 +902,7 @@ function openFeature(id) {
   if (id === "jarvis") {
     Voice.enabled = true; store.set("voiceOn", true); updateVoiceButton();  // opening = voice active
     if (Voice.supported) { try { speechSynthesis.resume(); } catch {} Voice.pick(); }
+    if (Listen.supported && !Listen.wantOn) Listen.start();   // activate voice input on open
     if (!$("#jarvis-log").childElementCount) jarvisGreet(); else Voice.speak("Peace be with you. How may I help?");
   }
   if (id === "browser") { /* lazy-load on open */ browserGo($("#browser-url").value); }
@@ -1162,6 +1224,60 @@ function updateVoiceButton() {
   $("#jarvis-voice-label").textContent = Voice.enabled ? "VOICE ON" : "VOICE OFF";
 }
 
+/* ── Speech recognition: talk to Brother Thomas + wake word ──────────────
+   One continuous recogniser. When the assistant is CLOSED it listens for the
+   wake word ("Brother Thomas" / "Jarvis") and opens him; when OPEN, spoken
+   phrases become questions. Requires a browser with SpeechRecognition (Chrome/
+   Edge) and microphone permission; degrades gracefully otherwise. */
+const Listen = {
+  SR: window.SpeechRecognition || window.webkitSpeechRecognition,
+  rec: null, wantOn: false, on: false,
+  get supported() { return !!this.SR; },
+  WAKE: /\b(brother\s+thomas|brother\s+tom|jarvis|hey\s+thomas|hello\s+thomas)\b/,
+  init() {
+    if (!this.supported || this.rec) return;
+    const r = new this.SR();
+    r.continuous = true; r.interimResults = false; r.lang = "en-GB"; r.maxAlternatives = 1;
+    r.onstart = () => { this.on = true; updateMicButton(); };
+    r.onresult = (e) => { const res = e.results[e.results.length - 1]; if (res && res[0]) this.handle(res[0].transcript); };
+    r.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") { this.wantOn = false; toast("Allow microphone access to talk to Brother Thomas."); }
+      // "no-speech"/"aborted"/"network" are transient — onend will restart if wanted
+    };
+    r.onend = () => { this.on = false; updateMicButton(); if (this.wantOn) { try { r.start(); } catch {} } };
+    this.rec = r;
+  },
+  start() {
+    if (!this.supported) { toast("Voice input isn't supported in this browser — please use Chrome or Edge."); return; }
+    this.init(); this.wantOn = true;
+    try { this.rec.start(); } catch {}
+    updateMicButton();
+  },
+  stop() { this.wantOn = false; if (this.rec) { try { this.rec.stop(); } catch {} } this.on = false; updateMicButton(); },
+  toggle() { this.wantOn ? this.stop() : this.start(); },
+  handle(raw) {
+    const txt = (raw || "").trim(); if (!txt) return;
+    const low = " " + txt.toLowerCase() + " ";
+    const jarvisOpen = !$("#jarvis").classList.contains("hidden");
+    if (!jarvisOpen) {
+      if (this.WAKE.test(low)) {                 // summoned by name
+        Sound.ensure(); openFeature("jarvis");
+        const q = txt.replace(this.WAKE, "").trim();
+        if (q.length > 3) setTimeout(() => submitJarvis(q), 800);   // "Brother Thomas, who is the apostle?"
+      }
+      return;
+    }
+    // panel open → treat speech as a question (strip a leading wake word)
+    const q = txt.replace(this.WAKE, "").trim();
+    if (q) submitJarvis(q);
+  },
+};
+function updateMicButton() {
+  const b = $("#jarvis-mic"); if (!b) return;
+  b.classList.toggle("live", Listen.on && Listen.wantOn);
+  b.title = Listen.wantOn ? "Listening… tap to stop (or say “Brother Thomas”)" : "Speak — or say “Brother Thomas”";
+}
+
 function jarvisSay(cls, text) {
   const log = $("#jarvis-log");
   const div = document.createElement("div"); div.className = "j-msg " + cls; div.textContent = text;
@@ -1225,35 +1341,88 @@ async function callOpenJarvis(history) {
     return text.trim();
   } finally { clearTimeout(timer); }
 }
+/* Look up a specific person by name across every leadership section. */
+const NAME_STOP = /^(bishop|archbishop|presbyter|pastor|elder|apostle|brother|sister|deacon|minister)$/;
+function jarvisFindPerson(t) {
+  for (const sec of CONTENT.sections) {
+    for (const p of (sec.items || [])) {
+      if (!p.name) continue;
+      // match on a distinctive part of their name (≥4 letters), not their title
+      const words = p.name.toLowerCase().replace(/[".“”()]/g, "").split(/\s+/)
+        .filter(w => w.length >= 4 && !NAME_STOP.test(w));
+      if (words.some(w => t.includes(w))) return { p, sec };
+    }
+  }
+  return null;
+}
+/* List the names in a section, or point to it if only placeholders exist. */
+function jarvisNames(sec) {
+  const real = (sec.items || []).filter(i => i.name && i.confidence !== "placeholder");
+  if (!real.length) return `Tap the ${sec.label.toUpperCase()} icon to view this group.`;
+  const names = real.map(i => i.name).join(", ");
+  return `Our ${sec.label} include: ${names}. Tap the ${sec.label.toUpperCase()} icon (or use the Directory) to open any profile.`;
+}
 function jarvisReply(q) {
-  const t = q.toLowerCase();
+  const t = " " + q.toLowerCase().replace(/[".“”]/g, "") + " ";
   const c = CONTENT.church;
-  if (/hello|hi|peace|good (morning|evening|afternoon)/.test(t)) return "Peace be with you! How may I help you today?";
-  if (/apostle|leader|chief|minister|ferriol/.test(t)) return `Our Chief Executive Minister is ${CONTENT.sections[0].items[0].name}. The church was founded in ${c.founded} by Apostle Arsenio T. Ferriol.`;
-  if (/bishop/.test(t)) return "You can view the Bishops from the BISHOPS icon on the dashboard. Add their names in the content file to complete their profiles.";
-  if (/branch|country|location|where|middle east|asia|dubai|philippines/.test(t)) return `We have congregations in ${c.countries}. Open the BRANCHES icon to browse regions and countries.`;
-  if (/history|found|1972|began|start/.test(t)) return `The PMCC (4th Watch) was founded in ${c.founded} in the Philippines and has grown into a global fellowship. Tap HISTORY to read the timeline.`;
-  if (/member|how many|people/.test(t)) return `The church has ${c.members} across ${c.countries}.`;
-  if (/head ?quarter|based|office/.test(t)) return `Our headquarters is in ${c.headquarters}.`;
-  if (/4th watch|fourth watch|watch mean|name mean/.test(t)) return c.meaningOf4thWatch;
-  if (/believe|doctrine|teach|baptism|holy spirit/.test(t)) return c.doctrineSummary;
-  if (/motto|tagline|mission|vision/.test(t)) return `Our guiding call is: “${c.tagline}.”`;
-  if (/background|wallpaper|theme|color|gallery/.test(t)) return "Open MENU ▸ Gallery to change the background, or MENU ▸ Settings to change the accent color and icons.";
-  if (/help|how|use|navigate/.test(t)) return "Tap the center logo to reveal the icons. Drag an icon to move it, or hold/tap it to open a section. Use the MENU for Gallery, Settings, me, the Browser, and Search.";
-  if (/thank/.test(t)) return "You are most welcome. God bless you!";
-  if (/name|who are you/.test(t)) return `I am ${ASSISTANT_NAME}, here to help you explore the PMCC (4th Watch) directory.`;
-  return `I'm still learning. Try asking me about our Apostle, Bishops, Branches, History, or how to use this screen. (You can teach me more in app.js → jarvisReply.)`;
+  const sec = (id) => CONTENT.sections.find(s => s.id === id);
+
+  // 1) A specific person by name → give their profile summary
+  const hit = jarvisFindPerson(t);
+  if (hit && !/\b(all|list|who are the)\b/.test(t)) {
+    const p = hit.p;
+    const bits = [p.about || p.description].filter(Boolean);
+    const role = p.ministryRole ? ` ${p.ministryRole}` : "";
+    const loc = p.location ? ` Based in ${p.location}.` : "";
+    return `${p.name}${p.position ? " — " + p.position : ""}.${loc} ${bits.join(" ")}${role}`.replace(/\s+/g, " ").trim();
+  }
+
+  // 2) Greetings / identity / thanks
+  if (/\b(hello|hi|hey|peace|salam|good (morning|evening|afternoon))\b/.test(t)) return "Peace be with you! I am Brother Thomas. How may I help you today — our leadership, branches, history, beliefs, or using this screen?";
+  if (/\b(who are you|your name|what are you|brother thomas|jarvis)\b/.test(t)) return `I am ${ASSISTANT_NAME}, the ministry assistant for the ${c.name}. Ask me about our Apostle, Bishops, Presbyters, Pastors, Elders, our branches around the world, our history, or our beliefs.`;
+  if (/\bthank/.test(t)) return "You are most welcome. God bless you and keep you.";
+
+  // 3) Leadership groups
+  if (/\b(apostle|founder|chief|executive minister|ferriol|leader of the church)\b/.test(t)) return `The church was founded in ${c.founded} by Apostle Arsenio T. Ferriol. ${jarvisNames(sec("apostle")).replace(/^Our Apostle include: /, "Our Apostle: ")}`;
+  if (/\bbishop/.test(t)) return jarvisNames(sec("bishops"));
+  if (/\bpresbyter/.test(t)) return jarvisNames(sec("presbyters"));
+  if (/\bpastor/.test(t)) return jarvisNames(sec("pastors"));
+  if (/\belder/.test(t)) return jarvisNames(sec("elders"));
+  if (/\btestimon/.test(t)) return "We have testimonies of God's faithfulness from members around the world. Open the Directory and choose Testimonies to read them.";
+
+  // 4) Branches / locations
+  if (/\b(middle east|dubai|abu dhabi|qatar|saudi|kuwait|gulf|uae)\b/.test(t)) return `Yes — we have congregations across the Middle East District, including Dubai, Abu Dhabi, Qatar, Saudi Arabia and more. Tap BRANCHES to spin the globe and tap the Middle East points.`;
+  if (/\b(branch|congregation|country|countries|location|where|globe|philippines|asia|europe|america|canada|australia|netherlands)\b/.test(t)) return `We have congregations in ${c.countries}. Tap the BRANCHES icon to open the 3D globe — spin it and tap a glowing point, or search a country.`;
+
+  // 5) History / facts / doctrine
+  if (/\b(history|founded|found|1972|began|start|origin|timeline)\b/.test(t)) return `The PMCC (4th Watch) was founded in ${c.founded} in the Philippines and has grown into a global fellowship. Tap HISTORY to read the full timeline.`;
+  if (/\b(member|members|how many|congregants|people|size)\b/.test(t)) return `The church has ${c.members} across ${c.countries}.`;
+  if (/\b(head ?quarter|based|main office|central)\b/.test(t)) return `Our headquarters is in ${c.headquarters}.`;
+  if (/\b(4th watch|fourth watch|watch mean|name mean|why called|meaning)\b/.test(t)) return c.meaningOf4thWatch;
+  if (/\b(believe|belief|doctrine|teach|teaching|baptism|holy spirit|salvation|gospel|god|jesus|christ|bible|scripture)\b/.test(t)) return c.doctrineSummary;
+  if (/\b(motto|tagline|mission|vision|slogan|purpose)\b/.test(t)) return `Our guiding call is: “${c.tagline}.”`;
+  if (/\b(service|worship|mass|schedule|time|sunday)\b/.test(t)) return "Service times vary by branch. Open BRANCHES, select a congregation, and its details will show on the left (add exact times per branch in the content file).";
+
+  // 6) Using the screen
+  if (/\b(background|wallpaper|theme|colour|color|gallery)\b/.test(t)) return "Open the GALLERY icon in the dock to change the background, or SETTINGS to change the gold accent colour and icon style.";
+  if (/\b(setting|password|volume|update|admin)\b/.test(t)) return "Open the SETTINGS icon in the dock for the username & password, volume, accent colour, icon style, and updates.";
+  if (/\b(search|find)\b/.test(t)) return "Tap the SEARCH icon in the dock (or press Ctrl/⌘-K) to search people, branches and sections.";
+  if (/\b(browser|internet|website|web)\b/.test(t)) return "Tap the BROWSER icon in the dock to open the in-app web browser.";
+  if (/\b(voice|speak|talk|listen|microphone|mic)\b/.test(t)) return "Tap the microphone by the message box and simply speak your question — I'll listen and answer aloud. You can also just say “Brother Thomas” to call me.";
+  if (/\b(help|how do i|how to|use|navigate|start|open)\b/.test(t)) return "Tap the centre logo to reveal the section icons, then tap one to open it — Apostle, Bishops, Presbyters, Pastors, Elders, Branches or History. The bottom dock has Home, Directory, Gallery, Settings, me, Browser and Search.";
+
+  return "I can tell you about our Apostle, Bishops, Presbyters, Pastors, Elders, a specific minister by name, our branches worldwide, our history, our beliefs, or how to use this screen. What would you like to know?";
 }
 let jarvisBusy = false;
-$("#jarvis-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const input = $("#jarvis-text"), q = input.value.trim();
+/* Handle one question (from the text box OR from the voice mic). */
+async function submitJarvis(q) {
+  q = (q || "").trim();
   if (!q || jarvisBusy) return;
-  jarvisSay("me", q); input.value = ""; Sound.play("tap");
+  jarvisSay("me", q); $("#jarvis-text").value = ""; Sound.play("tap");
 
-  // Offline path: instant canned reply grounded in the church content.
+  // Offline path: instant answer grounded in the church content.
   if (!settings.jarvisEnabled || !settings.jarvisEndpoint) {
-    setTimeout(() => { jarvisSay("bot", jarvisReply(q)); Sound.play("open"); }, 420);
+    setTimeout(() => { jarvisSay("bot", jarvisReply(q)); Sound.play("open"); }, 380);
     return;
   }
   // Online path: ask the local OpenJarvis AI, fall back gracefully on failure.
@@ -1274,7 +1443,8 @@ $("#jarvis-form").addEventListener("submit", async (e) => {
     jarvisHistory.push({ role: "assistant", content: fb });
     setJarvisStatus(false); Sound.play("open");
   } finally { jarvisBusy = false; }
-});
+}
+$("#jarvis-form").addEventListener("submit", (e) => { e.preventDefault(); submitJarvis($("#jarvis-text").value); });
 
 /* ─────────────────────────── Browser ────────────────────────────────── */
 function normalizeUrl(u) {
@@ -1407,6 +1577,8 @@ $("#btn-save-settings").addEventListener("click", saveSettings);
 $("#btn-reset-settings").addEventListener("click", resetSettings);
 // Brother Thomas voice toggle + floating widget
 $("#jarvis-voice").addEventListener("click", () => { Sound.play("tap"); Voice.toggle(); });
+$("#jarvis-mic").addEventListener("click", () => { Sound.play("tap"); Listen.toggle(); });
+updateMicButton();
 $("#bt-widget").addEventListener("click", () => { Sound.ensure(); Sound.play("open"); openFeature("jarvis"); });
 updateVoiceButton();
 // Directory flow wiring
