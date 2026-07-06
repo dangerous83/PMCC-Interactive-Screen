@@ -250,6 +250,10 @@ const settings = {
   iconStyle: store.get("iconStyle", "line"),   // "line" | "solid"
   user:      store.get("user", "guest"),
   scene:     store.get("scene", "photo"),   // ship the rainy background.jpg by default
+  // ── Brother Thomas / OpenJarvis (local AI) ──────────────────────────
+  jarvisEnabled:  store.get("jarvisEnabled", false),
+  jarvisEndpoint: store.get("jarvisEndpoint", "http://localhost:8000/v1/chat/completions"),
+  jarvisModel:    store.get("jarvisModel", ""),
 };
 function applyAccent(c) { document.documentElement.style.setProperty("--accent", c); }
 function applyIconStyle(s) { $$(".icon-tile").forEach(t => t.classList.toggle("solid", s === "solid")); }
@@ -683,6 +687,31 @@ function buildSettings() {
   });
   $("#set-vol").oninput = (e) => { settings.volume = +e.target.value; $("#vol-val").textContent = settings.volume + "%"; };
   $("#set-vol").onchange = () => Sound.play("tap");
+  // Assistant / OpenJarvis
+  const je = $("#set-jarvis-enabled"), jep = $("#set-jarvis-endpoint"), jm = $("#set-jarvis-model");
+  je.checked = settings.jarvisEnabled; jep.value = settings.jarvisEndpoint; jm.value = settings.jarvisModel;
+  je.onchange = () => { settings.jarvisEnabled = je.checked; updateJarvisMode(); Sound.play("tap"); };
+  jep.oninput = () => { settings.jarvisEndpoint = jep.value.trim(); };
+  jm.oninput = () => { settings.jarvisModel = jm.value.trim(); };
+  $("#btn-jarvis-test").onclick = testJarvis;
+}
+async function testJarvis() {
+  const s = $("#jarvis-test-status");
+  settings.jarvisEndpoint = $("#set-jarvis-endpoint").value.trim();
+  settings.jarvisModel = $("#set-jarvis-model").value.trim();
+  if (!settings.jarvisEndpoint) { s.textContent = "Enter an API endpoint first"; return; }
+  s.textContent = "Testing…"; Sound.play("tap");
+  try {
+    const text = await callOpenJarvis([
+      { role: "system", content: "You are a health check. Reply with exactly one word." },
+      { role: "user", content: "Reply with the single word: ready" },
+    ]);
+    s.textContent = "✓ Connected — model replied: " + text.slice(0, 40);
+    setJarvisStatus(true); toast("OpenJarvis connected");
+  } catch (err) {
+    s.textContent = "✗ " + err.message + " — is `jarvis serve` running and is this origin allowed by CORS?";
+    setJarvisStatus(false);
+  }
 }
 function saveSettings() {
   settings.user = $("#set-user").value.trim() || "guest";
@@ -690,12 +719,22 @@ function saveSettings() {
   store.set("volume", settings.volume); store.set("accent", settings.accent);
   store.set("iconStyle", settings.iconStyle); store.set("user", settings.user);
   if (pass) store.set("passSet", true);   // note: demo only — do not store real passwords in a kiosk
+  settings.jarvisEnabled = $("#set-jarvis-enabled").checked;
+  settings.jarvisEndpoint = $("#set-jarvis-endpoint").value.trim();
+  settings.jarvisModel = $("#set-jarvis-model").value.trim();
+  store.set("jarvisEnabled", settings.jarvisEnabled);
+  store.set("jarvisEndpoint", settings.jarvisEndpoint);
+  store.set("jarvisModel", settings.jarvisModel);
+  jarvisResetHistory(); updateJarvisMode();
   Sound.play("open"); toast("Settings saved");
 }
 function resetSettings() {
   settings.volume = 70; settings.accent = THEMES[0].color; settings.iconStyle = "line"; settings.user = "guest";
+  settings.jarvisEnabled = false; settings.jarvisEndpoint = "http://localhost:8000/v1/chat/completions"; settings.jarvisModel = "";
   ["volume","accent","iconStyle","user","passSet"].forEach(k => store.set(k, k === "volume" ? 70 : k === "accent" ? THEMES[0].color : k === "iconStyle" ? "line" : k === "user" ? "guest" : false));
+  store.set("jarvisEnabled", false); store.set("jarvisEndpoint", settings.jarvisEndpoint); store.set("jarvisModel", "");
   applyAccent(settings.accent); applyIconStyle(settings.iconStyle); buildSettings();
+  jarvisResetHistory(); updateJarvisMode();
   toast("Settings reset");
 }
 
@@ -706,7 +745,61 @@ function jarvisSay(cls, text) {
   log.appendChild(div); log.scrollTop = log.scrollHeight;
 }
 function jarvisGreet() {
-  jarvisSay("bot", `Peace be with you. I am ${ASSISTANT_NAME}, your ministry assistant. Ask me about our leadership, branches, history, or how to use this directory.`);
+  updateJarvisMode();
+  const extra = settings.jarvisEnabled ? "" : " (Tip: an administrator can connect me to a local OpenJarvis AI in Settings.)";
+  jarvisSay("bot", `Peace be with you. I am ${ASSISTANT_NAME}, your ministry assistant. Ask me about our leadership, branches, history, or how to use this directory.${extra}`);
+}
+/* Grounds a local model as Brother Thomas using the church content. */
+function jarvisSystemPrompt() {
+  const c = CONTENT.church;
+  const leaders = CONTENT.sections
+    .filter(s => s.items && s.items.length && s.items[0].confidence !== "placeholder")
+    .map(s => `${s.label} — ${s.items.map(i => i.name).join("; ")}`).join(" | ");
+  return `You are ${ASSISTANT_NAME}, the warm, respectful ministry assistant on an information kiosk for the ${c.name} (PMCC 4th Watch). ` +
+    `Answer concisely (2-4 sentences), reverently, and helpfully. Never invent church leaders or facts not given here. ` +
+    `Church facts: founded ${c.founded}; headquarters ${c.headquarters}; ${c.members}; present in ${c.countries}; motto "${c.tagline}". ` +
+    `Meaning of "4th Watch": ${c.meaningOf4thWatch} Beliefs: ${c.doctrineSummary} ` +
+    `Known leadership — ${leaders}. If asked to navigate the screen: tapping the center logo reveals the section icons; the bottom dock has Home, Gallery, Settings, me, Browser and Search.`;
+}
+let jarvisHistory = [];
+function jarvisResetHistory() { jarvisHistory = [{ role: "system", content: jarvisSystemPrompt() }]; }
+jarvisResetHistory();
+
+function updateJarvisMode() {
+  const on = settings.jarvisEnabled && settings.jarvisEndpoint;
+  const dot = $("#jarvis-dot"), mode = $("#jarvis-mode");
+  if (!dot || !mode) return;
+  dot.className = "j-dot" + (on ? " ready" : "");
+  mode.childNodes[1] && (mode.childNodes[1].nodeValue = on ? "Local AI · OpenJarvis" : "Offline assistant");
+}
+function setJarvisStatus(online) {
+  const dot = $("#jarvis-dot"); if (dot) dot.className = "j-dot " + (online ? "on" : "off");
+}
+/* animated "typing" bubble; returns a remover */
+function jarvisTyping() {
+  const log = $("#jarvis-log");
+  const div = document.createElement("div"); div.className = "j-msg bot j-typing";
+  div.innerHTML = `<span></span><span></span><span></span>`;
+  log.appendChild(div); log.scrollTop = log.scrollHeight;
+  return () => div.remove();
+}
+/* Call a local OpenJarvis server (OpenAI-compatible /v1/chat/completions). */
+async function callOpenJarvis(history) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 40000);
+  try {
+    const body = { messages: history, stream: false, temperature: 0.4 };
+    if (settings.jarvisModel) body.model = settings.jarvisModel;
+    const r = await fetch(settings.jarvisEndpoint, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body), signal: ctrl.signal,
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+    if (!text || !text.trim()) throw new Error("empty response");
+    return text.trim();
+  } finally { clearTimeout(timer); }
 }
 function jarvisReply(q) {
   const t = q.toLowerCase();
@@ -727,11 +820,36 @@ function jarvisReply(q) {
   if (/name|who are you/.test(t)) return `I am ${ASSISTANT_NAME}, here to help you explore the PMCC (4th Watch) directory.`;
   return `I'm still learning. Try asking me about our Apostle, Bishops, Branches, History, or how to use this screen. (You can teach me more in app.js → jarvisReply.)`;
 }
-$("#jarvis-form").addEventListener("submit", (e) => {
+let jarvisBusy = false;
+$("#jarvis-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const input = $("#jarvis-text"), q = input.value.trim(); if (!q) return;
+  const input = $("#jarvis-text"), q = input.value.trim();
+  if (!q || jarvisBusy) return;
   jarvisSay("me", q); input.value = ""; Sound.play("tap");
-  setTimeout(() => { jarvisSay("bot", jarvisReply(q)); Sound.play("open"); }, 420);
+
+  // Offline path: instant canned reply grounded in the church content.
+  if (!settings.jarvisEnabled || !settings.jarvisEndpoint) {
+    setTimeout(() => { jarvisSay("bot", jarvisReply(q)); Sound.play("open"); }, 420);
+    return;
+  }
+  // Online path: ask the local OpenJarvis AI, fall back gracefully on failure.
+  jarvisBusy = true;
+  jarvisHistory.push({ role: "user", content: q });
+  const stopTyping = jarvisTyping();
+  try {
+    const text = await callOpenJarvis(jarvisHistory);
+    stopTyping(); jarvisSay("bot", text);
+    jarvisHistory.push({ role: "assistant", content: text });
+    if (jarvisHistory.length > 21) jarvisHistory.splice(1, jarvisHistory.length - 21); // keep system + last ~20
+    setJarvisStatus(true); Sound.play("open");
+  } catch (err) {
+    stopTyping();
+    const fb = jarvisReply(q);
+    jarvisSay("bot", fb);
+    jarvisSay("note", "⚠︎ Couldn’t reach the local AI (" + err.message + ") — answered from the built-in guide. Check MENU ▸ Settings ▸ Assistant.");
+    jarvisHistory.push({ role: "assistant", content: fb });
+    setJarvisStatus(false); Sound.play("open");
+  } finally { jarvisBusy = false; }
 });
 
 /* ─────────────────────────── Browser ────────────────────────────────── */
@@ -841,7 +959,7 @@ function boot() {
   SEARCH_INDEX = buildSearchIndex();
   applyScene(settings.scene);
   tickClock(); setInterval(tickClock, 1000);
-  updateMuteButton();
+  updateMuteButton(); updateJarvisMode();
   let step = 0; const bar = $("#loader-progress"), status = $("#loader-status");
   const advance = () => { if (step >= BOOT.length) return finishBoot(); const [p, l] = BOOT[step++]; bar.style.width = p + "%"; status.textContent = l; setTimeout(advance, 420 + Math.random()*280); };
   setTimeout(advance, 500);

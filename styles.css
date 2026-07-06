@@ -412,6 +412,16 @@ input{ font-family:inherit; }
 .seg-opt.active{ background:color-mix(in srgb, var(--accent) 28%, var(--glass)); border-color:var(--accent); color:#08131f; font-weight:600; }
 .update-row{ display:flex; align-items:center; justify-content:space-between; gap:1.4vmin; flex-wrap:wrap; font-size:clamp(12px,1.4vmin,28px); color:var(--text-dim); }
 .set-actions{ display:flex; gap:1.2vmin; justify-content:flex-end; }
+/* toggle switch */
+.switch-row{ flex-direction:row !important; align-items:center !important; justify-content:space-between; }
+.switch-row input{ position:absolute; opacity:0; width:0; height:0; }
+.switch{ position:relative; width:clamp(48px,4.6vmin,94px); height:clamp(26px,2.5vmin,50px); border-radius:999px; background:var(--glass-2); border:1px solid var(--glass-line); transition:background .25s, border-color .25s; flex:0 0 auto; }
+.switch::after{ content:""; position:absolute; top:50%; left:3px; translate:0 -50%; width:calc(clamp(26px,2.5vmin,50px) - 8px); aspect-ratio:1; border-radius:50%; background:var(--text-dim); transition:left .25s var(--ease-spring), background .25s; }
+.switch-row input:checked ~ .switch{ background:color-mix(in srgb, var(--accent) 40%, var(--glass-2)); border-color:var(--accent); }
+.switch-row input:checked ~ .switch::after{ left:calc(100% - clamp(26px,2.5vmin,50px) + 3px); background:var(--accent); }
+/* settings hint text */
+.set-hint{ margin-top:1vmin; font-size:clamp(10px,1.1vmin,22px); color:var(--text-dim); line-height:1.55; }
+.set-hint code{ background:var(--glass); padding:.15em .45em; border-radius:6px; color:var(--accent-2); }
 
 /* — jarvis / brother thomas — */
 .jarvis-orb{ width:clamp(40px,4.4vmin,84px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 40% 35%, var(--accent-2), var(--accent) 60%, #2b5f78); box-shadow:0 0 2.4vmin color-mix(in srgb, var(--accent) 60%, transparent); display:grid; place-items:center; }
@@ -424,6 +434,18 @@ input{ font-family:inherit; }
 .jarvis-input{ display:flex; gap:1.2vmin; padding:clamp(14px,1.8vmin,40px) clamp(20px,3vmin,60px); border-top:1px solid rgba(255,255,255,.14); }
 .jarvis-input input{ flex:1; padding:clamp(11px,1.4vmin,28px) clamp(16px,2vmin,40px); background:var(--glass-2); border:1px solid var(--glass-line); border-radius:999px; color:var(--text); font-size:clamp(13px,1.5vmin,30px); }
 .jarvis-input input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 1.6vmin color-mix(in srgb, var(--accent) 35%, transparent); }
+/* connection status dot in the assistant header */
+.j-dot{ display:inline-block; width:.72em; height:.72em; border-radius:50%; margin-right:.5em; vertical-align:middle; background:var(--text-dim); box-shadow:0 0 7px currentColor; }
+.j-dot.ready{ background:var(--accent); color:var(--accent); }
+.j-dot.on{ background:#63d38f; color:#63d38f; }
+.j-dot.off{ background:var(--red); color:var(--red); }
+/* small centered note bubble (fallback warnings) */
+.j-msg.note{ align-self:center; text-align:center; background:color-mix(in srgb, var(--red) 14%, var(--glass)); border:1px solid color-mix(in srgb, var(--red) 40%, transparent); color:var(--text-dim); font-size:clamp(11px,1.2vmin,24px); max-width:92%; }
+/* animated typing indicator */
+.j-typing{ display:flex; gap:.6vmin; align-items:center; }
+.j-typing span{ width:8px; height:8px; border-radius:50%; background:var(--accent-2); animation:j-typing 1.2s infinite ease-in-out; }
+.j-typing span:nth-child(2){ animation-delay:.18s; } .j-typing span:nth-child(3){ animation-delay:.36s; }
+@keyframes j-typing{ 0%,60%,100%{ opacity:.3; transform:translateY(0);} 30%{ opacity:1; transform:translateY(-4px);} }
 
 /* — browser — */
 .browser-bar{ display:flex; align-items:center; gap:1.2vmin; padding:clamp(12px,1.6vmin,34px) clamp(16px,2vmin,44px); border-bottom:1px solid rgba(255,255,255,.14); }

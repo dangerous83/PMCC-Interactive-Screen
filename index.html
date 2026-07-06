@@ -203,6 +203,21 @@
           <div id="iconstyle-opts" class="seg"><!-- injected --></div>
         </div>
         <div class="set-group">
+          <h3>Assistant · Brother Thomas (OpenJarvis)</h3>
+          <label class="switch-row">
+            <span>Use local OpenJarvis AI</span>
+            <input id="set-jarvis-enabled" type="checkbox">
+            <span class="switch"></span>
+          </label>
+          <label>API endpoint<input id="set-jarvis-endpoint" type="text" spellcheck="false" autocomplete="off" placeholder="http://localhost:8000/v1/chat/completions"></label>
+          <label>Model (optional)<input id="set-jarvis-model" type="text" spellcheck="false" autocomplete="off" placeholder="e.g. qwen3:8b — leave blank for the server default"></label>
+          <div class="update-row">
+            <span id="jarvis-test-status">Not tested</span>
+            <button id="btn-jarvis-test" class="pill" type="button">Test connection</button>
+          </div>
+          <p class="set-hint">Run <code>jarvis serve --port 8000</code> on this PC. If the kiosk page isn't served from an OpenJarvis-allowed origin, add it to the server's <code>server.cors_origins</code> (or serve the kiosk on <code>localhost:5173</code>, which is allowed by default).</p>
+        </div>
+        <div class="set-group">
           <h3>Updates</h3>
           <div class="update-row">
             <span id="update-status">You’re up to date · v2.0</span>
@@ -223,7 +238,7 @@
     <div class="feature-shell tall">
       <header class="feature-head">
         <div class="jarvis-orb" aria-hidden="true"><span></span></div>
-        <div><h2 id="jarvis-name">BROTHER THOMAS</h2><p>Your ministry assistant</p></div>
+        <div><h2 id="jarvis-name">BROTHER THOMAS</h2><p id="jarvis-mode"><span id="jarvis-dot" class="j-dot"></span>Offline assistant</p></div>
         <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       </header>
       <div id="jarvis-log" class="jarvis-log"></div>

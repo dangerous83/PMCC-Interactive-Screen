@@ -49,7 +49,7 @@ to another color in **Settings ▸ Accent Color**.
 - **Home** — return to the dashboard.
 - **Gallery** — switch the background. The shipped photo is `assets/background.jpg` ("My Photo"); built-in scenes (Rainy Dusk, Aurora, Deep Space, Warm Sunset, Soft Slate) need no files.
 - **Settings** — username & password, volume, accent color, interface icon style (outline/filled), and a “check for updates” action. Saved to the browser (`localStorage`).
-- **Brother Thomas** — an offline ministry assistant. Ask about leadership, branches, history, doctrine, or how to use the screen. Rename it in `app.js → ASSISTANT_NAME`; teach it new answers in `app.js → jarvisReply`.
+- **Brother Thomas** — the ministry assistant. Works **offline** out of the box (built-in answers about leadership, branches, history, doctrine, and how to use the screen), and can optionally be connected to a **local OpenJarvis AI** for real conversational answers (see below). Rename it in `app.js → ASSISTANT_NAME`; edit the offline answers in `app.js → jarvisReply`.
 - **Internet Browser** — an in-app browser with an address bar (opens the church site by default). Sites that block embedding, or an offline kiosk, fall back to an “open in a new tab” button.
 
 ## How to edit the content
@@ -63,6 +63,40 @@ Everything editable lives at the top of **`app.js`**:
 - `ASSISTANT_NAME`, `SOUND_FILES`, `ICONS` — assistant name, custom audio files, and icon artwork.
 
 No photos are used for people right now — each entry shows a soft-glow icon glyph, so the app looks complete without any images to source.
+
+## Connecting Brother Thomas to a local AI (OpenJarvis)
+
+Brother Thomas can talk to **[OpenJarvis](https://github.com/open-jarvis/OpenJarvis)** —
+a local-first AI framework — so answers come from a real language model running
+**privately on the kiosk's own PC** (no cloud). OpenJarvis is a server-side
+program; it can't run inside the browser, so it runs alongside the kiosk and the
+app talks to its local OpenAI-compatible API. If it isn't running, Brother Thomas
+automatically falls back to the built-in offline answers.
+
+**On the kiosk PC (one-time):**
+
+1. Install OpenJarvis (installs `uv`, Python, Ollama, and a starter model):
+   ```
+   curl -fsSL https://open-jarvis.github.io/OpenJarvis/install.sh | bash
+   ```
+   (Windows: `irm https://open-jarvis.github.io/OpenJarvis/install.ps1 | iex`)
+2. Start its OpenAI-compatible server:
+   ```
+   jarvis serve --port 8000 --engine ollama --model qwen3:8b
+   ```
+3. **Allow the kiosk's origin (CORS).** Easiest: serve this app from
+   `http://localhost:5173` (already allow-listed by OpenJarvis). Otherwise add
+   your kiosk's origin to `server.cors_origins` in the OpenJarvis config. Opening
+   the app via `file://` won't work for the live AI because its origin is `null` —
+   serve it from a local web server for the OpenJarvis connection.
+
+**In the app:** open **Settings ▸ Assistant · Brother Thomas**, turn on
+**“Use local OpenJarvis AI”**, confirm the endpoint
+(`http://localhost:8000/v1/chat/completions`), optionally set a model, **Save**,
+then **Test connection**. The assistant header shows a status dot:
+gold = configured, green = last reply succeeded, red = unreachable (offline
+fallback in use). The assistant is grounded with the church's own facts so it
+answers in character as Brother Thomas.
 
 ## Content sourcing
 
