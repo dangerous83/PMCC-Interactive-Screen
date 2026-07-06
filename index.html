@@ -60,24 +60,11 @@
   <!-- ════════════════════════ MAIN DASHBOARD ════════════════════════ -->
   <main id="dashboard" class="hidden" aria-label="Main directory dashboard">
 
-    <!-- Top bar: menu button · title · search + mute -->
+    <!-- Top bar: centered title (clock/date sit in the bottom status bar) -->
     <header class="topbar">
-      <button id="btn-menu" class="chip-btn" aria-label="Open menu">
-        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <span>MENU</span>
-      </button>
       <div class="topbar-title">
         <h1>PMCC <span>4TH WATCH</span></h1>
         <p>LEADERSHIP &amp; MINISTRY DIRECTORY</p>
-      </div>
-      <div class="topbar-right">
-        <button id="btn-search-open" class="chip-btn round" aria-label="Search">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-        <button id="btn-mute" class="chip-btn round" aria-label="Mute sounds" title="Mute / unmute">
-          <svg id="icon-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          <svg id="icon-sound-off" viewBox="0 0 24 24" class="hidden"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </button>
       </div>
     </header>
 
@@ -96,12 +83,18 @@
       <nav id="orbit-icons" aria-label="Directory sections"><!-- injected by app.js --></nav>
     </div>
 
-    <!-- Bottom status strip -->
+    <!-- Bottom status strip: clock (left) · date (right) -->
     <footer class="statusbar">
       <span id="hud-clock">--:--</span>
-      <span class="hud-hint" id="hud-hint">TAP THE LOGO TO BEGIN</span>
       <span id="hud-date">—</span>
     </footer>
+
+    <!-- Bottom-center icon DOCK (replaces the old slide-out menu).
+         Buttons injected by app.js → buildDock(). -->
+    <div class="dock-wrap">
+      <p class="hud-hint" id="hud-hint">TAP THE LOGO TO BEGIN</p>
+      <nav id="dock" aria-label="Menu"></nav>
+    </div>
   </main>
 
   <!-- ════════════════════════ SECTION PANEL ════════════════════════ -->
@@ -118,7 +111,9 @@
           <h2 id="panel-title">SECTION</h2>
           <p id="panel-subtitle">—</p>
         </div>
-        <div class="panel-head-deco" aria-hidden="true"></div>
+        <button class="panel-x" data-close aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
       </header>
 
       <div class="panel-body">
@@ -158,30 +153,13 @@
           <h2>BRANCHES</h2>
           <p>GLOBAL CONGREGATIONS</p>
         </div>
-        <div class="panel-head-deco" aria-hidden="true"></div>
+        <button class="panel-x" data-close aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
       </header>
       <div id="regions-grid" class="regions-grid"><!-- injected by app.js --></div>
     </section>
   </section>
-
-  <!-- ════════════════════════ MENU DRAWER ════════════════════════════ -->
-  <aside id="menu-drawer" class="hidden" aria-label="Main menu">
-    <div class="menu-backdrop" data-menu-close></div>
-    <nav class="menu-shell">
-      <div class="menu-head">
-        <img src="assets/logo.png" alt="" class="menu-logo">
-        <div>
-          <h2>MENU</h2>
-          <p>PMCC 4TH WATCH</p>
-        </div>
-        <button class="menu-x" data-menu-close aria-label="Close menu">
-          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-      </div>
-      <ul class="menu-list" id="menu-list"><!-- items injected by app.js --></ul>
-      <div class="menu-foot"><span id="menu-user">Signed in as: guest</span></div>
-    </nav>
-  </aside>
 
   <!-- ════════════════════════ GALLERY OVERLAY ════════════════════════ -->
   <section id="gallery" class="feature-overlay hidden" aria-modal="true" role="dialog">
@@ -294,6 +272,15 @@
       <ul id="search-results" class="search-results"></ul>
     </div>
   </section>
+
+  <!-- Cyber-style transition overlay: scan sweep + expanding ring + flash
+       played when an icon is opened. Driven by app.js → runCyberFX(). -->
+  <div id="cyber-fx" aria-hidden="true">
+    <div class="fx-flash"></div>
+    <div class="fx-scan"></div>
+    <div class="fx-ring"></div>
+    <div class="fx-grid"></div>
+  </div>
 
   <!-- Zoom readout: flashes while pinch-stretching the dashboard or a panel -->
   <div id="zoom-badge" aria-hidden="true">100%</div>

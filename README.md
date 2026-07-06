@@ -28,16 +28,23 @@ or open the file normally and press **F11** for fullscreen.
 
 - **Tap the center logo** to reveal the node network of section icons; tap again to collapse.
 - **Drag an icon** to move it anywhere (positions are remembered).
-- **Tap or press-and-hold** an icon to open its section (long-press plays the focus/node animation).
+- **Tap or press-and-hold** an icon to open its section — opening plays a cyber-style scan/flash transition with sound.
 - **Pinch** the dashboard to stretch the whole network; pinch inside a panel to enlarge the text. Double-tap empty space to reset. (Mouse: wheel = dashboard zoom, Ctrl+wheel = panel zoom.)
-- **MENU** (top-left) opens: Home · Gallery · Settings · Brother Thomas · Internet Browser · Search.
-- **Search** (top-right magnifier, or Ctrl/⌘-K) pops up centered and blurs everything to focus the search bar.
-- **Esc** steps back out of any panel/overlay.
+- **Bottom dock** (icons, centered) holds: Home · Gallery · Settings · Brother Thomas · Browser · Search · Sound (mute).
+- **Search** (dock, or Ctrl/⌘-K) pops up centered and blurs everything to focus the search bar.
+- Every panel has an **X** (top-right) and a **BACK** button. **Esc** also steps back out.
 
-## The MENU features
+## Background
+
+The app ships with a rainy-dusk cityscape at `assets/background.jpg` (used by
+default). **To use your own photo, just overwrite that file** (any 16:9 image),
+or drop a file and pick it from **Gallery ▸ My Photo**. Gallery also offers
+built-in CSS scenes that need no image file.
+
+## The dock features
 
 - **Home** — return to the dashboard.
-- **Gallery** — switch the background. Built-in scenes (Rainy Dusk, Aurora, Deep Space, Warm Sunset, Soft Slate) need no files. Drop your own photo at `assets/background.jpg` and pick **“My Photo.”**
+- **Gallery** — switch the background. The shipped photo is `assets/background.jpg` ("My Photo"); built-in scenes (Rainy Dusk, Aurora, Deep Space, Warm Sunset, Soft Slate) need no files.
 - **Settings** — username & password, volume, accent color, interface icon style (outline/filled), and a “check for updates” action. Saved to the browser (`localStorage`).
 - **Brother Thomas** — an offline ministry assistant. Ask about leadership, branches, history, doctrine, or how to use the screen. Rename it in `app.js → ASSISTANT_NAME`; teach it new answers in `app.js → jarvisReply`.
 - **Internet Browser** — an in-app browser with an address bar (opens the church site by default). Sites that block embedding, or an offline kiosk, fall back to an “open in a new tab” button.
