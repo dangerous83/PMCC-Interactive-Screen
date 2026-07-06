@@ -75,10 +75,10 @@ the lower pair, and **Branches ↔ History** at the bottom.
   sweeping evenly around the ring.
 - **Tap a leadership icon** (Apostle / Bishops / Presbyters / Pastors / Elders)
   → an animated **name dropdown** opens beside it listing everyone in that group;
-  tap a name → the **profile modal** opens with a **large portrait on the left and
-  every detail shown at once** on the right — a clean stack of titled sections
-  (*About · Ministry Role · Church Assignment · Messages & Teachings · Gallery ·
-  Contact*), **no dropdowns to open**.
+  tap a name → the **profile modal** opens with a **large portrait on the left**.
+  The right side shows the person's **About** description by default, with a row
+  of tab buttons to switch to *Ministry Role · Church Assignment · Messages &
+  Teachings · Activities* (the person's photo gallery).
 - **Brother Thomas** floats as a looping widget on the right edge (and is in the
   dock). Tapping it opens the assistant with **voice active** — he **speaks his
   replies** in a natural British voice. Toggle voice with the header button.
@@ -97,9 +97,9 @@ The **DIRECTORY** dock icon opens a clean, guided flow designed for touch:
 1. Tap **DIRECTORY** — a dropdown shows the five categories with live counts.
 2. Pick one (e.g. Bishops) — a clean, tappable **list of names** opens.
 3. Tap a name — a professional **profile modal** opens with a **large portrait**
-   and the person's name, title, and location, with **all details laid out at
-   once** (no dropdowns): *About · Ministry Role · Church Assignment · Messages &
-   Teachings · Gallery · Contact / Office Info*.
+   and the person's name, title, and location. The **About** description shows
+   first; tap a button to switch section: *Ministry Role · Church Assignment ·
+   Messages & Teachings · Activities* (the photo gallery).
    Testimonies open a simple testimony card instead.
 4. Close with the **✕**, **Esc**, or tapping outside; the dropdown also closes on
    an outside tap. **“Categories”** returns to the dropdown.
@@ -110,9 +110,9 @@ All data lives in `app.js → CONTENT`:
 
 - **People** (`CONTENT.sections` → `bishops` / `pastors` / `elders`): each entry
   can have `name`, `position`, `location`, `description` (→ *About*),
-  `ministryRole`, `assignment`, `messages: [ … ]` (→ *Messages & Teachings*),
-  `gallery: [ imageURLs ]`, and `contact: { Email, Office, Branch }`. Any field
-  you omit falls back to a sensible default, so partial entries still look complete.
+  `ministryRole`, `assignment`, `messages: [ … ]` (→ *Messages & Teachings*), and
+  `gallery: [ imageURLs ]` (→ the *Activities* tab). Any field you omit falls back
+  to a sensible default, so partial entries still look complete.
 - **Testimonies** (`CONTENT.testimonies`): `{ name, role, date, text }`.
 - **Photos**: add `image: "assets/your-photo.jpg"` to any person. Photos appear in
   the name-list avatars, the profile header, **and** the main dashboard panels,
@@ -178,6 +178,10 @@ are left as clearly-labelled editable slots for you to complete.
 
 ## Notes for the touch screen
 
+- **Runs full-screen.** On the **first tap/touch** the app requests browser
+  full-screen automatically, so the toolbar/tabs disappear — it fills the whole
+  85" display like a native kiosk app (press **F11** to toggle manually). For a
+  guaranteed chrome-free launch, start it with `--kiosk` (see *Run it* above).
 - Scales automatically from 1080p to 4K (`vmin`/`clamp()` based).
 - Double-tap zoom and text selection are disabled for kiosk use.
 - Browsers only allow audio after the first touch, so the boot sound plays once someone interacts (or use the `--autoplay-policy` flag above).

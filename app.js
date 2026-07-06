@@ -894,6 +894,7 @@ const DIR_ICONS = {
   messages:   `<path d="M6 4h9a3 3 0 0 1 3 3v13H8a2 2 0 0 1-2-2z"/><path d="M9 8.5h6M9 12h6M9 15.5h4"/>`,
   gallery:    ICONS.gallery,
   contact:    `<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4.2 7l7.8 6 7.8-6"/>`,
+  activities: `<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.8 15.5l4.4-4 3.3 3 3.7-4.6 4.8 5.6"/><circle cx="8.6" cy="9" r="1.5"/>`,
 };
 
 const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -972,32 +973,48 @@ function personSections(p, catId) {
   const noun = catId === "bishops" ? "Bishop" : catId === "presbyters" ? "Presbyter" : catId === "pastors" ? "Pastor" : catId === "elders" ? "Elder" : "Leader";
   const assignment = p.assignment || (p.extra ? Object.entries(p.extra).map(([k, v]) => `${k}: ${v}`).join(" · ") : "") || "—";
   const messages = (p.messages && p.messages.length) ? p.messages : ["Living in the Fourth Watch", "Faith for the Nations", "The House That Christ Builds"];
-  const contact = p.contact || { Email: "office@pmcc4thwatch.org", Office: "By appointment", Branch: "Main regional church" };
   const gallery = (p.gallery && p.gallery.length)
-    ? p.gallery.map(g => `<div class="pm-gtile" style="background-image:url('${g}')"></div>`).join("")
+    ? p.gallery.map(g => `<div class="pm-gtile" style="background-image:url('${withV(g)}')"></div>`).join("")
     : Array.from({ length: 4 }, () => `<div class="pm-gtile placeholder">${svg(ICONS.gallery)}</div>`).join("");
+  // Tabs: "About" is shown first; the rest switch in on tap. (No gallery/contact
+  // sections — the person's photo gallery now lives under "Activities".)
   return [
-    { title: `About the ${noun}`, icon: DIR_ICONS.about, html: `<p>${esc(p.about || p.description || "—")}</p>` },
+    { title: "About", icon: DIR_ICONS.about, html: `<p>${esc(p.about || p.description || "—")}</p>` },
     { title: "Ministry Role", icon: DIR_ICONS.role, html: `<p>${esc(p.ministryRole || `Serves as a ${noun.toLowerCase()} in the PMCC (4th Watch), providing spiritual leadership, pastoral care, and ministry development within the church.`)}</p>` },
     { title: "Church Assignment", icon: DIR_ICONS.assignment, html: `<p>${esc(assignment)}</p>` },
     { title: "Messages & Teachings", icon: DIR_ICONS.messages, html: `<ul class="pm-list">${messages.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` },
-    { title: "Gallery", icon: DIR_ICONS.gallery, html: `<div class="pm-gallery">${gallery}</div>` },
-    { title: "Contact / Office Info", icon: DIR_ICONS.contact, html: `<dl class="pm-contact">${Object.entries(contact).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` },
+    { title: "Activities", icon: DIR_ICONS.activities, html: `<div class="pm-gallery">${gallery}</div>` },
   ];
 }
-// Every detail is laid out flat next to the big portrait — NO dropdowns, NO
-// collapsing. Each block is a titled card and all of them are visible at once.
+// The right column shows ONE section at a time. "About" (the description) is
+// shown first; a row of tab buttons switches to Ministry Role, Church
+// Assignment, Messages & Teachings, or Activities. A single section (a
+// testimony) is just shown on its own with no tab bar.
 function buildAccordion(sections) {
   const acc = $("#profile-accordion"); acc.innerHTML = "";
-  sections.forEach((s, i) => {
-    const sec = document.createElement("section");
-    sec.className = "pf-sec";
-    sec.style.animationDelay = `${i * 70}ms`;
-    sec.innerHTML =
-      `<h3 class="pf-label"><span class="pf-ico">${svg(s.icon)}</span>${s.title}</h3>` +
-      `<div class="pf-content">${s.html}</div>`;
-    acc.appendChild(sec);
-  });
+  if (!sections.length) return;
+  const panel = document.createElement("div"); panel.className = "pf-panel";
+  const show = (s) => { panel.innerHTML = s.html; panel.classList.remove("pf-anim"); void panel.offsetWidth; panel.classList.add("pf-anim"); };
+
+  if (sections.length > 1) {
+    const tabs = document.createElement("div"); tabs.className = "pf-tabs";
+    sections.forEach((s, i) => {
+      const btn = document.createElement("button");
+      btn.className = "pf-tab" + (i === 0 ? " active" : "");
+      btn.innerHTML = `<span class="pf-ico">${svg(s.icon)}</span><span class="pf-tab-txt">${s.title}</span>`;
+      btn.addEventListener("click", () => {
+        if (btn.classList.contains("active")) return;
+        tabs.querySelectorAll(".pf-tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        Sound.play("tap");
+        show(s);
+      });
+      tabs.appendChild(btn);
+    });
+    acc.appendChild(tabs);
+  }
+  acc.appendChild(panel);
+  show(sections[0]);
 }
 function dirOpenProfile(catId, index) {
   const p = dirItems(catId)[index]; if (!p) return;
@@ -1435,7 +1452,16 @@ addEventListener("pointerdown", (e) => {
 }, true);
 $("#btn-update").addEventListener("click", () => { $("#update-status").textContent = "Checking…"; Sound.play("tap"); setTimeout(() => { $("#update-status").textContent = "You’re up to date · v2.0"; toast("No updates available — you're current"); }, 1200); });
 
-addEventListener("pointerdown", () => Sound.ensure(), { once: true });
+// Kiosk full-screen: browsers only allow fullscreen from a user gesture, so we
+// request it on the very first tap/click (no browser tab/toolbar after that).
+function goFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if (req && !document.fullscreenElement) { try { req.call(el); } catch {} }
+}
+addEventListener("pointerdown", () => { Sound.ensure(); goFullscreen(); }, { once: true });
+// F11-style manual toggle for the kiosk operator
+addEventListener("keydown", (e) => { if (e.key === "F11") { e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : goFullscreen(); } });
 addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (!$("#profile-modal").classList.contains("hidden")) return closeProfile();
