@@ -8,26 +8,30 @@
    ========================================================================== */
 :root{
   /* ── PALETTE (soft bluish, drawn from a rainy-dusk cityscape) ─────────── */
-  --ink:        #0b1622;              /* deepest tone                        */
-  --accent:     #7fd0f0;             /* primary soft-blue accent (editable) */
-  --accent-2:   #d6eefb;             /* bright pale highlight (text/icons)  */
-  --amber:      #f2c98a;             /* warm streetlight accent             */
-  --text:       #f6fbff;             /* main text (high contrast)           */
-  --text-dim:   #c2d6e8;             /* secondary text (readable)           */
+  /* ── BRAND PALETTE — drawn from the PMCC 4th Watch logo:
+        royal navy · gold · red · white. Regal / premium mood. ─────────── */
+  --ink:        #05091a;             /* deepest royal navy                  */
+  --accent:     #e8c66a;             /* GOLD — primary accent (editable)    */
+  --accent-2:   #ffe6ab;             /* bright cream-gold highlight         */
+  --gold-deep:  #b8912f;             /* deep gold for gradients             */
+  --royal:      #24397e;             /* royal navy-blue mid tone            */
+  --red:        #d8342a;             /* logo red (used sparingly)           */
+  --text:       #f7f1e3;             /* warm ivory main text                */
+  --text-dim:   #b7c1dd;             /* muted cool secondary text           */
 
-  /* glassmorphism — light chrome for buttons/chips */
-  --glass:      rgba(180, 205, 230, 0.12);
-  --glass-2:    rgba(210, 228, 244, 0.20);
-  --glass-line: rgba(255, 255, 255, 0.30);
+  /* glassmorphism — gold-lined chrome for buttons/chips */
+  --glass:      rgba(214, 226, 255, 0.09);
+  --glass-2:    rgba(220, 232, 255, 0.15);
+  --glass-line: rgba(232, 198, 106, 0.40);
   --glass-blur: 22px;
 
-  /* DARK frosted glass for panels/overlays — keeps white text crisp over
-     the busy background photo */
-  --panel:      linear-gradient(165deg, rgba(22,42,66,.80), rgba(9,18,32,.88));
-  --panel-line: rgba(127,208,240,.35);
-  /* solid, high-visibility icon tile */
-  --tile:       linear-gradient(158deg, rgba(38,64,92,.72), rgba(15,28,46,.80));
-  --tile-line:  rgba(127,208,240,.55);
+  /* DARK royal-navy frosted glass for panels/overlays — keeps ivory text
+     crisp, with a gold hairline */
+  --panel:      linear-gradient(165deg, rgba(20,34,78,.82), rgba(6,12,30,.90));
+  --panel-line: rgba(232,198,106,.38);
+  /* solid, high-visibility navy icon tile with gold edge */
+  --tile:       linear-gradient(158deg, rgba(32,52,110,.78), rgba(9,16,42,.86));
+  --tile-line:  rgba(232,198,106,.62);
 
   /* sizing */
   --hub-size:   clamp(200px, 22vmin, 480px);
@@ -57,37 +61,33 @@ input{ font-family:inherit; }
 /* ══════════════════════════ BACKGROUND SCENE ═════════════════════════ */
 #bg-scene{ position:fixed; inset:0; z-index:0; overflow:hidden; background:#0b1622; }
 #bg-scene > *{ position:absolute; inset:0; }
-/* misty sky gradient */
+/* royal-navy field (fallback when no photo is set) */
 .bg-sky{
   background:
-    radial-gradient(120% 80% at 62% 30%, rgba(214,228,240,.30) 0%, rgba(120,150,178,.12) 35%, transparent 62%),
-    linear-gradient(180deg, #9fb4c8 0%, #7d97b0 30%, #4f6980 62%, #2b3d51 100%);
+    radial-gradient(120% 90% at 50% 44%, rgba(240,208,120,.18) 0%, rgba(36,57,126,.28) 30%, transparent 62%),
+    linear-gradient(180deg, #1a2e6e 0%, #12204f 32%, #0a1436 64%, #05091a 100%);
 }
-/* blurred building silhouettes on both sides */
+/* faint concentric gold rings */
 .bg-buildings{
   background:
-    linear-gradient(90deg, rgba(20,32,46,.85) 0%, rgba(20,32,46,.2) 16%, transparent 30%),
-    linear-gradient(270deg, rgba(24,36,52,.9) 0%, rgba(24,36,52,.25) 18%, transparent 34%),
-    linear-gradient(0deg, rgba(12,22,34,.95) 0%, rgba(12,22,34,.4) 22%, transparent 42%);
-  filter:blur(2px);
+    radial-gradient(circle at 50% 44%, transparent 0 26vmin, rgba(232,198,106,.10) calc(26vmin + 1px), transparent calc(26vmin + 2px)),
+    radial-gradient(circle at 50% 44%, transparent 0 40vmin, rgba(232,198,106,.07) calc(40vmin + 1px), transparent calc(40vmin + 2px));
 }
-/* soft amber streetlight bokeh */
+/* soft gold bokeh dust */
 .bg-bokeh{
   background:
-    radial-gradient(circle at 78% 34%, rgba(242,201,138,.55) 0 3px, transparent 22px),
-    radial-gradient(circle at 70% 52%, rgba(242,201,138,.40) 0 5px, transparent 34px),
-    radial-gradient(circle at 60% 60%, rgba(242,201,138,.30) 0 4px, transparent 30px),
-    radial-gradient(circle at 46% 66%, rgba(255,225,170,.30) 0 3px, transparent 26px),
-    radial-gradient(circle at 86% 58%, rgba(242,201,138,.35) 0 6px, transparent 40px),
-    radial-gradient(circle at 33% 70%, rgba(255,220,160,.22) 0 3px, transparent 22px);
-  filter:blur(1px);
+    radial-gradient(circle at 22% 30%, rgba(240,214,140,.40) 0 3px, transparent 20px),
+    radial-gradient(circle at 78% 34%, rgba(240,214,140,.34) 0 4px, transparent 26px),
+    radial-gradient(circle at 66% 66%, rgba(255,230,170,.28) 0 3px, transparent 22px),
+    radial-gradient(circle at 34% 70%, rgba(240,214,140,.24) 0 3px, transparent 20px),
+    radial-gradient(circle at 86% 60%, rgba(255,230,170,.26) 0 4px, transparent 28px);
+  filter:blur(.6px);
   animation:bokeh-breathe 8s ease-in-out infinite;
 }
-@keyframes bokeh-breathe{ 0%,100%{ opacity:.85; } 50%{ opacity:1; } }
-#rain-canvas{ width:100%; height:100%; opacity:.5; }
+@keyframes bokeh-breathe{ 0%,100%{ opacity:.8; } 50%{ opacity:1; } }
+#rain-canvas{ width:100%; height:100%; opacity:.45; }
 .bg-fog{
-  background:radial-gradient(ellipse 80% 60% at 50% 45%, transparent 40%, rgba(150,170,190,.28) 100%);
-  backdrop-filter:none;
+  background:radial-gradient(ellipse 80% 60% at 50% 45%, transparent 45%, rgba(10,16,44,.35) 100%);
 }
 /* user photo layer (assets/background.jpg or a Gallery choice) */
 #bg-photo{
@@ -115,13 +115,13 @@ input{ font-family:inherit; }
 .loader-logo-wrap{ position:relative; width:clamp(170px, 20vmin, 420px); aspect-ratio:1; display:grid; place-items:center; }
 .loader-logo{
   width:70%; border-radius:50%;
-  filter:drop-shadow(0 0 4vmin rgba(134,197,224,.6));
+  filter:drop-shadow(0 0 4vmin rgba(232,198,106,.6));
   animation:logo-reveal 2.2s var(--ease-out) both;
 }
 @keyframes logo-reveal{
   0%{ opacity:0; transform:scale(.4); filter:blur(20px); }
-  60%{ opacity:1; filter:blur(0) drop-shadow(0 0 6vmin rgba(134,197,224,.85)); }
-  100%{ opacity:1; transform:scale(1); filter:blur(0) drop-shadow(0 0 4vmin rgba(134,197,224,.6)); }
+  60%{ opacity:1; filter:blur(0) drop-shadow(0 0 6vmin rgba(232,198,106,.9)); }
+  100%{ opacity:1; transform:scale(1); filter:blur(0) drop-shadow(0 0 4vmin rgba(232,198,106,.6)); }
 }
 .loader-ring{ position:absolute; inset:0; border-radius:50%; border:1px solid transparent; }
 .ring-a{ border-top-color:var(--accent); border-right-color:rgba(134,197,224,.25); animation:spin 3s linear infinite; }
@@ -177,6 +177,9 @@ input{ font-family:inherit; }
 #orbit-stage.expanded .link-node, #orbit-stage.expanded .link-node-ring{ opacity:1; }
 
 .hub{ position:absolute; left:50%; top:50%; translate:-50% -50%; width:var(--hub-size); aspect-ratio:1; display:grid; place-items:center; z-index:2; }
+#orbit-icons, #orbit-links{ transition:transform .55s var(--ease-out); }   /* parallax easing */
+/* slow-rotating gold halo behind the logo */
+.hub::before{ content:""; position:absolute; width:132%; aspect-ratio:1; border-radius:50%; background:conic-gradient(from 0deg, transparent 0%, color-mix(in srgb, var(--accent) 40%, transparent) 12%, transparent 30%, transparent 55%, color-mix(in srgb, var(--accent) 32%, transparent) 68%, transparent 88%); -webkit-mask:radial-gradient(closest-side, transparent 60%, #000 63%, #000 70%, transparent 73%); mask:radial-gradient(closest-side, transparent 60%, #000 63%, #000 70%, transparent 73%); animation:spin 20s linear infinite; opacity:.55; pointer-events:none; }
 .hub-core{
   position:relative; width:74%; aspect-ratio:1; border-radius:50%; display:grid; place-items:center;
   background:radial-gradient(circle, rgba(210,228,244,.16) 0%, rgba(120,150,178,.10) 100%);
@@ -224,26 +227,27 @@ input{ font-family:inherit; }
 @keyframes press-charge{ from{ transform:scale(1.15); opacity:.2; } to{ transform:scale(1); opacity:.9; } }
 
 .icon-tile{
-  width:calc(var(--icon-size)*.78); aspect-ratio:1; border-radius:26%;
-  display:grid; place-items:center; position:relative;
+  width:calc(var(--icon-size)*.80); aspect-ratio:1; border-radius:28%;
+  display:grid; place-items:center; position:relative; overflow:hidden;
   background:var(--tile);
   border:1.5px solid var(--tile-line);
   backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur));
-  box-shadow:0 12px 34px rgba(0,0,0,.5), 0 0 2.4vmin color-mix(in srgb, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255,255,255,.28);
-  transition:box-shadow .3s ease, border-color .3s ease, transform .3s var(--ease-spring);
-  animation:glow-pulse 3.6s ease-in-out infinite; animation-delay:var(--pulse-delay,0s);
+  box-shadow:0 16px 44px rgba(0,0,0,.55), 0 0 2.6vmin color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 2.2vmin color-mix(in srgb, var(--accent) 12%, transparent);
+  transition:box-shadow .35s ease, border-color .3s ease, transform .35s var(--ease-spring);
+  animation:glow-pulse 4s ease-in-out infinite; animation-delay:var(--pulse-delay,0s);
 }
 @keyframes glow-pulse{
-  0%,100%{ box-shadow:0 12px 34px rgba(0,0,0,.5), 0 0 2vmin color-mix(in srgb, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255,255,255,.28); }
-  50%{ box-shadow:0 12px 34px rgba(0,0,0,.5), 0 0 4vmin color-mix(in srgb, var(--accent) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.28); }
+  0%,100%{ box-shadow:0 16px 44px rgba(0,0,0,.55), 0 0 2vmin color-mix(in srgb, var(--accent) 26%, transparent), inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 2.2vmin color-mix(in srgb, var(--accent) 12%, transparent); }
+  50%{ box-shadow:0 16px 44px rgba(0,0,0,.55), 0 0 4.2vmin color-mix(in srgb, var(--accent) 50%, transparent), inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 3vmin color-mix(in srgb, var(--accent) 20%, transparent); }
 }
-.icon-tile svg{ width:52%; height:52%; stroke:#eaf7ff; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 85%, transparent)); }
-.icon-tile.solid svg{ fill:color-mix(in srgb, var(--accent) 30%, transparent); }
-/* corner accents (brighter) */
-.icon-tile::before,.icon-tile::after{ content:""; position:absolute; width:16%; height:16%; border-color:var(--accent); border-style:solid; opacity:.9; }
-.icon-tile::before{ top:9%; left:9%; border-width:2px 0 0 2px; border-radius:6px 0 0 0; }
-.icon-tile::after{ bottom:9%; right:9%; border-width:0 2px 2px 0; border-radius:0 0 6px 0; }
-.icon-label{ font-size:clamp(13px,1.55vmin,32px); font-weight:700; letter-spacing:.14em; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.85), 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); white-space:nowrap; }
+/* inner emblem plate + gold ring for a premium layered look */
+.icon-tile::before{ content:""; position:absolute; inset:14%; border-radius:24%; border:1px solid color-mix(in srgb, var(--accent) 45%, transparent); box-shadow:inset 0 0 2vmin color-mix(in srgb, var(--accent) 18%, transparent); opacity:.8; }
+/* shimmer sweep */
+.tile-shine{ position:absolute; inset:0; background:linear-gradient(115deg, transparent 32%, rgba(255,240,205,.30) 48%, rgba(255,240,205,.05) 56%, transparent 68%); transform:translateX(-130%); pointer-events:none; animation:tile-shine 7s ease-in-out infinite; animation-delay:var(--shine-delay,0s); }
+@keyframes tile-shine{ 0%,72%{ transform:translateX(-130%);} 84%{ transform:translateX(130%);} 100%{ transform:translateX(130%);} }
+.icon-tile svg{ position:relative; width:50%; height:50%; stroke:#fff6e2; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 90%, transparent)); }
+.icon-tile.solid svg{ fill:color-mix(in srgb, var(--accent) 34%, transparent); }
+.icon-label{ font-size:clamp(13px,1.6vmin,34px); font-weight:700; letter-spacing:.16em; color:#fff8ea; text-shadow:0 2px 10px rgba(0,0,0,.9), 0 0 20px color-mix(in srgb, var(--accent) 55%, transparent); white-space:nowrap; }
 .icon-float{ display:flex; flex-direction:column; align-items:center; gap:1.1vmin; animation:float 6s ease-in-out infinite; animation-delay:var(--float-delay,0s); }
 @keyframes float{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-1vmin);} }
 @media (hover:hover){
@@ -257,18 +261,22 @@ input{ font-family:inherit; }
 #hud-clock{ color:var(--accent); font-variant-numeric:tabular-nums; text-shadow:0 1px 3px rgba(0,0,0,.8); }
 
 /* — bottom-center DOCK — */
-.dock-wrap{ position:absolute; left:50%; bottom:clamp(46px,7vmin,120px); translate:-50% 0; display:flex; flex-direction:column; align-items:center; gap:1.2vmin; z-index:12; }
-.hud-hint{ font-size:clamp(11px,1.2vmin,25px); font-weight:600; letter-spacing:.22em; color:var(--accent-2); text-shadow:0 1px 4px rgba(0,0,0,.85); animation:hint-blink 3s ease-in-out infinite; }
+.dock-wrap{ position:absolute; left:50%; bottom:clamp(40px,5.5vmin,110px); translate:-50% 0; display:flex; flex-direction:column; align-items:center; gap:1.6vmin; z-index:12; }
+.hud-hint{ font-size:clamp(11px,1.25vmin,26px); font-weight:600; letter-spacing:.24em; color:var(--accent-2); text-shadow:0 1px 4px rgba(0,0,0,.9); animation:hint-blink 3s ease-in-out infinite; }
 @keyframes hint-blink{ 0%,100%{ opacity:.7;} 50%{ opacity:1;} }
-#dock{ display:flex; align-items:flex-end; gap:clamp(6px,1vmin,20px); padding:clamp(8px,1.1vmin,22px) clamp(12px,1.6vmin,34px); background:var(--panel); border:1px solid var(--panel-line); border-radius:999px; backdrop-filter:blur(calc(var(--glass-blur)+6px)); -webkit-backdrop-filter:blur(calc(var(--glass-blur)+6px)); box-shadow:0 16px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.18); }
-.dock-btn{ display:flex; flex-direction:column; align-items:center; gap:.5vmin; padding:clamp(8px,1vmin,20px) clamp(8px,1.1vmin,22px); min-width:clamp(56px,6vmin,120px); min-height:56px; background:none; border:none; border-radius:calc(var(--radius)*.55); color:var(--text); transition:transform .2s var(--ease-spring), background .2s; }
-.dock-btn .db-icon{ width:clamp(34px,3.6vmin,72px); aspect-ratio:1; display:grid; place-items:center; border-radius:28%; background:var(--tile); border:1px solid var(--tile-line); box-shadow:0 4px 14px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.22); transition:box-shadow .25s, border-color .25s, transform .2s var(--ease-spring); }
-.dock-btn .db-icon svg{ width:56%; height:56%; stroke:#eaf7ff; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 75%, transparent)); }
-.dock-btn .db-label{ font-size:clamp(10px,1.05vmin,22px); font-weight:600; letter-spacing:.08em; color:var(--text-dim); text-shadow:0 1px 3px rgba(0,0,0,.7); white-space:nowrap; }
-.dock-btn:hover .db-icon{ border-color:var(--accent); box-shadow:0 6px 18px rgba(0,0,0,.5), 0 0 2.4vmin color-mix(in srgb, var(--accent) 55%, transparent); transform:translateY(-.6vmin); }
-.dock-btn:hover .db-label{ color:var(--text); }
+#dock{ display:flex; align-items:flex-end; gap:clamp(8px,1.3vmin,28px); padding:clamp(12px,1.5vmin,32px) clamp(18px,2.2vmin,50px); background:var(--panel); border:1px solid var(--panel-line); border-radius:calc(var(--radius)*1.4); backdrop-filter:blur(calc(var(--glass-blur)+8px)); -webkit-backdrop-filter:blur(calc(var(--glass-blur)+8px)); box-shadow:0 20px 60px rgba(0,0,0,.55), 0 0 4vmin color-mix(in srgb, var(--accent) 14%, transparent), inset 0 1px 0 rgba(255,255,255,.2); }
+/* gold hairline along the top edge of the dock */
+#dock{ position:relative; }
+#dock::before{ content:""; position:absolute; top:0; left:12%; right:12%; height:1px; background:linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow:0 0 12px var(--accent); opacity:.65; }
+.dock-btn{ display:flex; flex-direction:column; align-items:center; gap:.9vmin; padding:clamp(6px,.8vmin,16px) clamp(8px,1vmin,20px); min-width:clamp(74px,7.6vmin,150px); background:none; border:none; border-radius:calc(var(--radius)*.6); color:var(--text); transition:transform .22s var(--ease-spring); }
+.dock-btn .db-icon{ position:relative; width:clamp(52px,5.6vmin,116px); aspect-ratio:1; display:grid; place-items:center; border-radius:30%; overflow:hidden; background:var(--tile); border:1.5px solid var(--tile-line); box-shadow:0 8px 22px rgba(0,0,0,.5), 0 0 1.8vmin color-mix(in srgb, var(--accent) 22%, transparent), inset 0 1px 0 rgba(255,255,255,.28); transition:box-shadow .25s, border-color .25s, transform .22s var(--ease-spring); }
+.dock-btn .db-icon::before{ content:""; position:absolute; inset:16%; border-radius:26%; border:1px solid color-mix(in srgb, var(--accent) 40%, transparent); opacity:.7; }
+.dock-btn .db-icon svg{ position:relative; width:52%; height:52%; stroke:#fff6e2; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 9px color-mix(in srgb, var(--accent) 85%, transparent)); }
+.dock-btn .db-label{ font-size:clamp(11px,1.2vmin,26px); font-weight:600; letter-spacing:.12em; color:var(--text-dim); text-shadow:0 1px 3px rgba(0,0,0,.8); white-space:nowrap; }
+.dock-btn:hover .db-icon{ border-color:var(--accent); box-shadow:0 10px 26px rgba(0,0,0,.55), 0 0 3vmin color-mix(in srgb, var(--accent) 60%, transparent); transform:translateY(-.9vmin) scale(1.04); }
+.dock-btn:hover .db-label{ color:var(--accent-2); }
 .dock-btn:active{ transform:scale(.9); }
-.dock-btn.muted .db-icon{ opacity:.55; }
+.dock-btn.muted .db-icon{ opacity:.5; }
 
 /* ══════════════════════════ SECTION / BRANCHES PANEL ═════════════════ */
 #panel, #branches-panel{ position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; }
@@ -448,22 +456,28 @@ input{ font-family:inherit; }
 .sr-item .sr-sub{ font-size:clamp(10px,1.15vmin,24px); color:var(--text-dim); letter-spacing:.15em; margin-top:.3vmin; }
 .sr-empty{ padding:2vmin; text-align:center; color:var(--text-dim); font-size:clamp(13px,1.5vmin,30px); }
 
-/* ══════════════════════════ CYBER TRANSITION FX ══════════════════════ */
+/* ═══════════════════ ELEGANT GOLDEN OPEN TRANSITION ══════════════════ */
+/* Played when an icon is opened: a soft gold bloom from center + two
+   expanding gold rings + a gentle light sweep. Refined, not flashy. */
 #cyber-fx{ position:fixed; inset:0; z-index:26; pointer-events:none; opacity:0; }
 #cyber-fx.run{ opacity:1; }
 #cyber-fx > *{ position:absolute; inset:0; opacity:0; }
-.fx-flash{ background:radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 45%, transparent) 0%, transparent 55%); }
-#cyber-fx.run .fx-flash{ animation:fx-flash .5s var(--ease-out) forwards; }
-@keyframes fx-flash{ 0%{opacity:0;} 25%{opacity:.9;} 100%{opacity:0;} }
-.fx-scan{ background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--accent) 80%, transparent) 50%, transparent); height:22%; inset:auto 0 auto 0; box-shadow:0 0 4vmin color-mix(in srgb, var(--accent) 70%, transparent); }
-#cyber-fx.run .fx-scan{ animation:fx-scan .55s var(--ease-out) forwards; }
-@keyframes fx-scan{ 0%{opacity:.9; transform:translateY(-30vh);} 100%{opacity:0; transform:translateY(115vh);} }
-.fx-ring{ border-radius:50%; border:2px solid var(--accent); width:20vmin; height:20vmin; left:50%; top:50%; inset:auto; translate:-50% -50%; box-shadow:0 0 5vmin color-mix(in srgb, var(--accent) 60%, transparent), inset 0 0 4vmin color-mix(in srgb, var(--accent) 40%, transparent); }
-#cyber-fx.run .fx-ring{ animation:fx-ring .6s var(--ease-out) forwards; }
-@keyframes fx-ring{ 0%{opacity:.9; transform:translate(-50%,-50%) scale(.2);} 100%{opacity:0; transform:translate(-50%,-50%) scale(6);} }
-.fx-grid{ background-image:linear-gradient(color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1px); background-size:6vmin 6vmin; mask-image:radial-gradient(circle at 50% 50%, black 0%, transparent 60%); -webkit-mask-image:radial-gradient(circle at 50% 50%, black 0%, transparent 60%); }
-#cyber-fx.run .fx-grid{ animation:fx-grid .5s steps(3) forwards; }
-@keyframes fx-grid{ 0%{opacity:0;} 30%{opacity:.6;} 100%{opacity:0;} }
+/* warm gold bloom */
+.fx-flash{ background:radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent-2) 55%, transparent) 0%, color-mix(in srgb, var(--accent) 22%, transparent) 24%, transparent 52%); }
+#cyber-fx.run .fx-flash{ animation:fx-bloom .7s var(--ease-out) forwards; }
+@keyframes fx-bloom{ 0%{opacity:0; transform:scale(.6);} 30%{opacity:.6;} 100%{opacity:0; transform:scale(1.2);} }
+/* soft light sweep across screen */
+.fx-scan{ background:linear-gradient(115deg, transparent 40%, color-mix(in srgb, var(--accent-2) 30%, transparent) 50%, transparent 60%); }
+#cyber-fx.run .fx-scan{ animation:fx-sweep .8s var(--ease-out) forwards; }
+@keyframes fx-sweep{ 0%{opacity:0; transform:translateX(-40%);} 30%{opacity:.7;} 100%{opacity:0; transform:translateX(40%);} }
+/* primary expanding gold ring */
+.fx-ring, .fx-grid{ border-radius:50%; border:2px solid var(--accent); width:18vmin; height:18vmin; left:50%; top:50%; inset:auto; translate:-50% -50%; box-shadow:0 0 5vmin color-mix(in srgb, var(--accent) 55%, transparent), inset 0 0 3vmin color-mix(in srgb, var(--accent) 30%, transparent); background:none; mask-image:none; -webkit-mask-image:none; }
+#cyber-fx.run .fx-ring{ animation:fx-ring .75s var(--ease-out) forwards; }
+@keyframes fx-ring{ 0%{opacity:.95; transform:translate(-50%,-50%) scale(.15);} 100%{opacity:0; transform:translate(-50%,-50%) scale(5.5);} }
+/* second, thinner, delayed ring */
+.fx-grid{ border-width:1px; border-color:color-mix(in srgb, var(--accent-2) 70%, transparent); }
+#cyber-fx.run .fx-grid{ animation:fx-ring2 .85s var(--ease-out) .12s forwards; }
+@keyframes fx-ring2{ 0%{opacity:.8; transform:translate(-50%,-50%) scale(.15);} 100%{opacity:0; transform:translate(-50%,-50%) scale(7);} }
 
 /* ══════════════════════════ ZOOM BADGE / TOAST ═══════════════════════ */
 #zoom-badge{ position:fixed; top:clamp(18px,2.4vmin,50px); left:50%; translate:-50% 0; z-index:45; padding:clamp(8px,1vmin,20px) clamp(14px,1.8vmin,36px); border-radius:999px; background:var(--glass); border:1px solid var(--glass-line); color:var(--accent-2); font-size:clamp(11px,1.3vmin,28px); letter-spacing:.3em; text-indent:.15em; font-variant-numeric:tabular-nums; backdrop-filter:blur(var(--glass-blur)); box-shadow:0 0 2.5vmin color-mix(in srgb, var(--accent) 30%, transparent); opacity:0; pointer-events:none; transition:opacity .3s ease; }
