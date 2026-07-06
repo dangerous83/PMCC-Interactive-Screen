@@ -480,6 +480,25 @@ input{ font-family:inherit; }
 .sr-item .sr-sub{ font-size:clamp(10px,1.15vmin,24px); color:var(--text-dim); letter-spacing:.15em; margin-top:.3vmin; }
 .sr-empty{ padding:2vmin; text-align:center; color:var(--text-dim); font-size:clamp(13px,1.5vmin,30px); }
 
+/* ═══════════════ BROTHER THOMAS FLOATING WIDGET (right) ══════════════ */
+#bt-widget{ position:fixed; right:clamp(16px,2vmin,44px); top:50%; translate:0 -50%; z-index:13;
+  width:clamp(74px,7.2vmin,150px); aspect-ratio:1; border:none; background:none; cursor:pointer;
+  display:grid; place-items:center; animation:btw-float 5s ease-in-out infinite; }
+#bt-widget .btw-core{ position:relative; z-index:2; width:70%; aspect-ratio:1; border-radius:50%; display:grid; place-items:center;
+  background:radial-gradient(circle at 38% 32%, var(--accent-2), var(--accent) 58%, #b8912f);
+  box-shadow:0 8px 26px rgba(0,0,0,.5), 0 0 3vmin color-mix(in srgb,var(--accent) 60%,transparent), inset 0 2px 4px rgba(255,255,255,.4);
+  transition:transform .25s var(--ease-spring); }
+#bt-widget .btw-core svg{ width:58%; height:58%; stroke:#0a1430; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; animation:btw-spin 12s linear infinite; }
+#bt-widget .btw-ring{ position:absolute; inset:0; border-radius:50%; border:2px solid color-mix(in srgb,var(--accent) 70%,transparent); opacity:0; animation:btw-pulse 2.6s ease-out infinite; }
+#bt-widget .btw-ring2{ animation-delay:1.3s; }
+@keyframes btw-pulse{ 0%{ transform:scale(.7); opacity:.7; } 100%{ transform:scale(1.5); opacity:0; } }
+@keyframes btw-float{ 0%,100%{ translate:0 -50%; } 50%{ translate:0 calc(-50% - 1vmin); } }
+@keyframes btw-spin{ to{ transform:rotate(360deg); } }
+#bt-widget .btw-label{ position:absolute; bottom:-2.6em; left:50%; translate:-50% 0; z-index:2; font-size:clamp(9px,1vmin,20px); font-weight:700; letter-spacing:.12em; line-height:1.15; color:var(--accent-2); text-align:center; text-shadow:0 1px 4px rgba(0,0,0,.9); white-space:nowrap; }
+#bt-widget:hover .btw-core{ transform:scale(1.08); }
+#bt-widget:active .btw-core{ transform:scale(.92); }
+@media (prefers-reduced-motion:reduce){ #bt-widget, #bt-widget *{ animation:none !important; } }
+
 /* ═══════════════════ ELEGANT GOLDEN OPEN TRANSITION ══════════════════ */
 /* Played when an icon is opened: a soft gold bloom from center + two
    expanding gold rings + a gentle light sweep. Refined, not flashy. */
@@ -628,7 +647,7 @@ input{ font-family:inherit; }
 /* — ProfileAccordion — */
 .pm-accordion{ overflow-y:auto; padding:clamp(14px,2vmin,44px) clamp(18px,2.6vmin,60px) clamp(20px,3vmin,60px); display:flex; flex-direction:column; gap:1.1vmin; }
 .pm-accordion::-webkit-scrollbar{ width:6px; } .pm-accordion::-webkit-scrollbar-thumb{ background:color-mix(in srgb, var(--accent) 40%, transparent); border-radius:3px; }
-.acc-item{ border:1px solid var(--glass-line); border-radius:calc(var(--radius)*.6); overflow:hidden; background:var(--glass); transition:border-color .25s; }
+.acc-item{ flex:0 0 auto; border:1px solid var(--glass-line); border-radius:calc(var(--radius)*.6); overflow:hidden; background:var(--glass); transition:border-color .25s; }
 .acc-item.open{ border-color:color-mix(in srgb, var(--accent) 55%, transparent); }
 .acc-head{ display:flex; align-items:center; gap:1.4vmin; width:100%; padding:clamp(13px,1.7vmin,34px) clamp(16px,2vmin,40px); min-height:58px; background:none; border:none; color:var(--text); font-size:clamp(14px,1.55vmin,32px); font-weight:600; letter-spacing:.04em; text-align:left; transition:background .2s; }
 .acc-head:hover{ background:var(--glass-2); }
@@ -637,10 +656,9 @@ input{ font-family:inherit; }
 .acc-title{ flex:1; }
 .acc-chev{ color:var(--accent); transition:transform .3s var(--ease-spring); } .acc-chev svg{ width:clamp(18px,2vmin,40px); height:clamp(18px,2vmin,40px); }
 .acc-item.open .acc-chev{ transform:rotate(180deg); }
-.acc-body{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .35s var(--ease-out); }
-.acc-item.open .acc-body{ grid-template-rows:1fr; }
-.acc-inner{ overflow:hidden; }
-.acc-item.open .acc-inner{ padding:0 clamp(16px,2vmin,40px) clamp(14px,1.8vmin,36px) calc(clamp(32px,3.2vmin,64px) + clamp(16px,2vmin,40px) + 1.4vmin); }
+.acc-body{ overflow:hidden; max-height:0; transition:max-height .4s var(--ease-out); }
+.acc-item.open .acc-body{ max-height:80vh; }
+.acc-inner{ padding:0 clamp(16px,2vmin,40px) clamp(14px,1.8vmin,36px) calc(clamp(32px,3.2vmin,64px) + clamp(16px,2vmin,40px) + 1.4vmin); }
 .acc-inner p, .acc-inner li{ font-size:clamp(13px,1.55vmin,32px); line-height:1.7; color:var(--text); }
 .pm-quote{ font-style:italic; border-left:2px solid var(--accent); padding-left:1.4vmin; color:#fff8ea; }
 .pm-list{ list-style:none; display:flex; flex-direction:column; gap:.8vmin; }
