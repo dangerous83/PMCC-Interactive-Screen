@@ -64,6 +64,40 @@ Everything editable lives at the top of **`app.js`**:
 
 No photos are used for people right now — each entry shows a soft-glow icon glyph, so the app looks complete without any images to source.
 
+## Directory (Bishops · Pastors · Elders · Testimonies)
+
+The **DIRECTORY** dock icon opens a clean, guided flow designed for touch:
+
+**Directory icon → Category dropdown → Name list → Profile modal → Accordion**
+
+1. Tap **DIRECTORY** — a dropdown shows the four categories with live counts.
+2. Pick one (e.g. Bishops) — a clean, tappable **list of names** opens.
+3. Tap a name — a professional **profile modal** opens with the person's name,
+   title, and location, plus a single-open **accordion**: *About · Ministry Role ·
+   Church Assignment · Messages & Teachings · Gallery · Contact / Office Info*.
+   Testimonies open a simple testimony card instead.
+4. Close with the **✕**, **Esc**, or tapping outside; the dropdown also closes on
+   an outside tap. **“Categories”** returns to the dropdown.
+
+### Editing directory content
+
+All data lives in `app.js → CONTENT`:
+
+- **People** (`CONTENT.sections` → `bishops` / `pastors` / `elders`): each entry
+  can have `name`, `position`, `location`, `description` (→ *About*),
+  `ministryRole`, `assignment`, `messages: [ … ]` (→ *Messages & Teachings*),
+  `gallery: [ imageURLs ]`, and `contact: { Email, Office, Branch }`. Any field
+  you omit falls back to a sensible default, so partial entries still look complete.
+- **Testimonies** (`CONTENT.testimonies`): `{ name, role, date, text }`.
+- **Photos**: add `image: "assets/your-photo.jpg"` to any person. Photos appear in
+  the name list avatars, the profile header, **and** the main dashboard panels,
+  and quietly fall back to an icon if the file is missing. Two are already wired:
+  drop **`assets/bishop-aldrin-palanca.jpg`** and
+  **`assets/presbyter-elleza-palanca.jpg`** and they show up automatically.
+
+The existing orbital dashboard (Apostle, Bishops, Presbyters, …) is unchanged —
+the Directory is an additional, more structured way to browse the same people.
+
 ## Connecting Brother Thomas to a local AI (OpenJarvis)
 
 Brother Thomas can talk to **[OpenJarvis](https://github.com/open-jarvis/OpenJarvis)** —
