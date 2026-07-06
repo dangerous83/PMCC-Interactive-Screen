@@ -70,9 +70,15 @@ The orbital dashboard is arranged as an organized hierarchy: **Apostle** at
 top-center, **Bishops ↔ Presbyters** as the upper pair, **Pastors ↔ Elders** as
 the lower pair, and **Branches ↔ History** at the bottom.
 
+- **Tap the center logo** → the section icons reveal **one by one**, then the
+  glowing node lines connect them.
 - **Tap a leadership icon** (Apostle / Bishops / Presbyters / Pastors / Elders)
   → an animated **name dropdown** opens beside it listing everyone in that group;
-  tap a name → the **profile modal** (photo + accordion) opens.
+  tap a name → the **profile modal** opens with a **large portrait on the left and
+  all details shown at once** on the right (each section can still be collapsed).
+- **Brother Thomas** floats as a looping widget on the right edge (and is in the
+  dock). Tapping it opens the assistant with **voice active** — he **speaks his
+  replies** in a natural British voice. Toggle voice with the header button.
 - **Tap Branches** → an **interactive 3D globe**: it auto-rotates, you can drag to
   spin it, and each congregation country is a glowing point. **Tap a point** (or
   use the search box) to select it — its details appear in the panel on the left.

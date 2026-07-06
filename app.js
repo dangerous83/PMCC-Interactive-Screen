@@ -433,7 +433,8 @@ function buildOrbit() {
     const btn = document.createElement("button");
     btn.className = "orbit-icon"; btn.dataset.section = sec.id;
     btn.style.setProperty("--pulse-delay", `${(i * .45).toFixed(2)}s`);
-    btn.style.transitionDelay = `${i * 60}ms`;
+    // one-by-one reveal: each icon pops in sequence (apostle → … → history)
+    btn.style.transitionDelay = `${i * 135}ms`;
     btn.innerHTML = `
       <span class="press-ring"></span>
       <span class="icon-float" style="--float-delay:${(i*.7).toFixed(2)}s">
@@ -484,8 +485,10 @@ function layoutOrbit() {
     g._end = { x2, y2 };
     for (const cls of ["link-base","link-flow"]) { const L = g.querySelector("."+cls); L.setAttribute("x1",x1); L.setAttribute("y1",y1); L.setAttribute("x2",x2); L.setAttribute("y2",y2); }
     const base = g.querySelector(".link-base"); const seg = Math.hypot(x2-x1, y2-y1);
-    base.style.strokeDasharray = seg; base.style.strokeDashoffset = stage.classList.contains("expanded") ? 0 : seg; base.style.transitionDelay = `${i*60}ms`;
-    for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx",x2); cc.setAttribute("cy",y2); cc.style.transitionDelay = `${200+i*60}ms`; }
+    // connectors draw AFTER all icons have popped in, in the same order
+    base.style.strokeDasharray = seg; base.style.strokeDashoffset = stage.classList.contains("expanded") ? 0 : seg; base.style.transitionDelay = `${1000 + i*80}ms`;
+    g.querySelector(".link-flow").style.transitionDelay = `${1100 + i*80}ms`;
+    for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx",x2); cc.setAttribute("cy",y2); cc.style.transitionDelay = `${1200 + i*80}ms`; }
     btn._linkGroup = g; btn._center = { cx, cy };
   });
 }
@@ -854,7 +857,11 @@ function openFeature(id) {
   Sound.play("open");
   const el = $("#" + id); el.classList.remove("hidden");
   requestAnimationFrame(() => el.classList.add("open"));
-  if (id === "jarvis" && !$("#jarvis-log").childElementCount) jarvisGreet();
+  if (id === "jarvis") {
+    Voice.enabled = true; store.set("voiceOn", true); updateVoiceButton();  // opening = voice active
+    if (Voice.supported) { try { speechSynthesis.resume(); } catch {} Voice.pick(); }
+    if (!$("#jarvis-log").childElementCount) jarvisGreet(); else Voice.speak("Peace be with you. How may I help?");
+  }
   if (id === "browser") { /* lazy-load on open */ browserGo($("#browser-url").value); }
 }
 function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; if (el.id === "globe") Globe.stop(); if (el.id === "jarvis") Voice.stop(); }
@@ -973,21 +980,23 @@ function personSections(p, catId) {
     { title: "Contact / Office Info", icon: DIR_ICONS.contact, html: `<dl class="pm-contact">${Object.entries(contact).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` },
   ];
 }
+// All sections are shown EXPANDED by default so every detail is visible next
+// to the photo (no hidden dropdowns). Each header can still be tapped to
+// collapse/expand that one section independently.
 function buildAccordion(sections) {
   const acc = $("#profile-accordion"); acc.innerHTML = "";
-  sections.forEach((s, i) => {
+  sections.forEach((s) => {
     const item = document.createElement("div");
-    item.className = "acc-item" + (i === 0 ? " open" : "");
+    item.className = "acc-item open";
     item.innerHTML =
-      `<button class="acc-head" aria-expanded="${i === 0}"><span class="acc-ico">${svg(s.icon)}</span>` +
+      `<button class="acc-head" aria-expanded="true"><span class="acc-ico">${svg(s.icon)}</span>` +
       `<span class="acc-title">${s.title}</span>` +
       `<span class="acc-chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>` +
       `<div class="acc-body"><div class="acc-inner">${s.html}</div></div>`;
     const head = item.querySelector(".acc-head");
-    head.addEventListener("click", () => {
-      const isOpen = item.classList.contains("open");
-      acc.querySelectorAll(".acc-item.open").forEach(o => { o.classList.remove("open"); o.querySelector(".acc-head").setAttribute("aria-expanded", "false"); });
-      if (!isOpen) { item.classList.add("open"); head.setAttribute("aria-expanded", "true"); }
+    head.addEventListener("click", () => {                 // independent toggle
+      const open = item.classList.toggle("open");
+      head.setAttribute("aria-expanded", open ? "true" : "false");
       Sound.play("tap");
     });
     acc.appendChild(item);
@@ -1124,19 +1133,27 @@ const Voice = {
   pick() {
     if (!this.supported) return;
     const vs = speechSynthesis.getVoices();
-    // prefer a natural male English voice, then any English, then default
+    if (!vs.length) return;
+    const gb = vs.filter(v => /en[-_]?GB/i.test(v.lang));
+    // prefer a natural BRITISH male voice, then any British, then any English
     this.voice =
-      vs.find(v => /^en/i.test(v.lang) && /(david|guy|george|james|daniel|male|ryan)/i.test(v.name)) ||
+      gb.find(v => /(daniel|arthur|oliver|george|ryan|thomas|brian|male)/i.test(v.name)) ||
+      gb.find(v => /google|natural|premium|online/i.test(v.name)) ||
+      gb[0] ||
+      vs.find(v => /^en/i.test(v.lang) && /(daniel|guy|george|male)/i.test(v.name)) ||
       vs.find(v => /^en/i.test(v.lang)) || vs[0] || null;
   },
   speak(text) {
     if (!this.enabled || !this.supported || Sound.muted) return;
     speechSynthesis.cancel();                       // don't overlap replies
-    const clean = String(text).replace(/[“”"]/g, "").replace(/[⚠︎🌍]/g, "");
+    const clean = String(text).replace(/[“”"]/g, "").replace(/[⚠︎🌍]/g, "").trim();
+    if (!clean) return;
     const u = new SpeechSynthesisUtterance(clean);
     if (!this.voice) this.pick();
-    if (this.voice) u.voice = this.voice;
-    u.rate = 1; u.pitch = 0.95;
+    if (this.voice) { u.voice = this.voice; u.lang = this.voice.lang; }
+    else u.lang = "en-GB";
+    // warmer, natural cadence (not robotic)
+    u.rate = 0.94; u.pitch = 1.02;
     u.volume = Math.max(0, Math.min(1, settings.volume / 100));
     speechSynthesis.speak(u);
   },
@@ -1398,8 +1415,9 @@ $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => clo
 $$("[data-search-close]").forEach(el => el.addEventListener("click", closeSearch));
 $("#btn-save-settings").addEventListener("click", saveSettings);
 $("#btn-reset-settings").addEventListener("click", resetSettings);
-// Brother Thomas voice toggle
+// Brother Thomas voice toggle + floating widget
 $("#jarvis-voice").addEventListener("click", () => { Sound.play("tap"); Voice.toggle(); });
+$("#bt-widget").addEventListener("click", () => { Sound.ensure(); Sound.play("open"); openFeature("jarvis"); });
 updateVoiceButton();
 // Directory flow wiring
 $("#dir-back").addEventListener("click", dirBack);
