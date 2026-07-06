@@ -186,22 +186,22 @@ const CONTENT = {
 /* ═══════════════════ 4. GALLERY SCENES (backgrounds) ══════════════════ */
 /* Built-in CSS scenes need no image files. "photo" points at your own file. */
 const SCENES = [
-  { id: "rainy",  label: "Rainy Dusk",   type: "scene", show: true  },  // default CSS scene
-  { id: "photo",  label: "My Photo",     type: "photo", src: "assets/background.jpg" },
-  { id: "aurora", label: "Aurora",       type: "css",   css: "linear-gradient(180deg,#0a1b2e,#123a4d 45%,#1f6b6b 80%,#0a1b2e)" },
-  { id: "deep",   label: "Deep Space",   type: "css",   css: "radial-gradient(circle at 50% 30%,#1a2b4a,#070b16 70%)" },
-  { id: "sunset", label: "Warm Sunset",  type: "css",   css: "linear-gradient(180deg,#2a2140,#5a3a5e 45%,#c77a5a 80%,#2a2140)" },
-  { id: "slate",  label: "Soft Slate",   type: "css",   css: "linear-gradient(160deg,#1b2836,#33475c)" },
+  { id: "photo",   label: "Signature",     type: "photo", src: "assets/background.jpg" }, // ships by default
+  { id: "royal",   label: "Royal Night",   type: "scene" },                                // CSS navy-gold fallback
+  { id: "golden",  label: "Golden Aura",   type: "css", css: "radial-gradient(circle at 50% 42%, #3a3212 0%, #14265e 42%, #05091a 82%)" },
+  { id: "deep",    label: "Deep Navy",     type: "css", css: "radial-gradient(circle at 50% 40%, #17285f, #060b20 72%)" },
+  { id: "emerald", label: "Emerald Court", type: "css", css: "radial-gradient(circle at 50% 42%, #123f34, #06231d 55%, #04101a 85%)" },
+  { id: "crimson", label: "Crimson Royal", type: "css", css: "radial-gradient(circle at 50% 40%, #4a1622, #1a0a1e 60%, #05091a 90%)" },
 ];
 
 /* ═══════════════════ 5. COLOR THEMES (accent) ═════════════════════════ */
 const THEMES = [
-  { id: "blue",  color: "#7fd0f0" },   // default soft blue (matches --accent)
-  { id: "teal",  color: "#7fe0d0" },
-  { id: "amber", color: "#f2c98a" },
-  { id: "violet",color: "#b9a4f0" },
-  { id: "rose",  color: "#f0a4b8" },
-  { id: "mint",  color: "#a4e0b0" },
+  { id: "gold",      color: "#e8c66a" },   // default — matches the logo/brand
+  { id: "champagne", color: "#f0d9a6" },
+  { id: "royal",     color: "#8fb2ff" },
+  { id: "emerald",   color: "#8fe0b8" },
+  { id: "rose",      color: "#f0a4b0" },
+  { id: "amber",     color: "#f2b661" },
 ];
 
 /* ═══════════════════ 6. SOUND SETTINGS ════════════════════════════════ */
@@ -279,8 +279,8 @@ const Sound = {
       tap:  [{ f:880, t:"sine", d:.09, g:.10 }, { f:1320, t:"sine", d:.07, g:.05, at:.02 }],
       open: [{ f:440, t:"sine", d:.30, g:.10, slide:880 }, { f:1760, t:"triangle", d:.18, g:.04, at:.10 }],
       back: [{ f:660, t:"sine", d:.22, g:.09, slide:330 }],
-      // cyber "scan" sweep played on the open transition
-      scan: [{ f:320, t:"sawtooth", d:.38, g:.05, slide:1400 }, { f:1600, t:"sine", d:.22, g:.05, at:.06, slide:2600 }, { f:180, t:"sine", d:.4, g:.04, at:.02, slide:90 }],
+      // elegant bell-like "chime" played on the open transition
+      chime: [{ f:784, t:"sine", d:.7, g:.07 }, { f:1175, t:"sine", d:.7, g:.05, at:.07 }, { f:1568, t:"sine", d:.8, g:.035, at:.15 }, { f:2350, t:"sine", d:.6, g:.02, at:.22 }],
       boot: [{ f:220, t:"sine", d:.9, g:.07, slide:660 }, { f:1108, t:"triangle", d:.4, g:.03, at:.35 }, { f:1662, t:"sine", d:.5, g:.03, at:.55 }],
     };
     (R[kind] || R.tap).forEach(r => {
@@ -308,16 +308,19 @@ const Rain = (() => {
   let W, H, drops = [];
   function resize() { W = c.width = innerWidth; H = c.height = innerHeight; seed(); }
   function seed() {
-    const n = Math.round((W * H) / 9000);
-    drops = Array.from({ length: n }, () => ({ x: Math.random()*W, y: Math.random()*H, l: 8 + Math.random()*18, v: 6 + Math.random()*10, a: .1 + Math.random()*.35 }));
+    // gentle floating gold dust (regal), not rain
+    const n = Math.round((W * H) / 14000);
+    drops = Array.from({ length: n }, () => ({ x: Math.random()*W, y: Math.random()*H, r: .6 + Math.random()*2, v: .3 + Math.random()*.9, drift: (Math.random()-.5)*.4, a: .12 + Math.random()*.5, tw: .5 + Math.random()*2 }));
   }
+  let t = 0;
   function frame() {
-    x.clearRect(0, 0, W, H); x.lineCap = "round";
+    t += .016; x.clearRect(0, 0, W, H);
     for (const d of drops) {
-      x.strokeStyle = `rgba(200,220,240,${d.a})`; x.lineWidth = 1.1;
-      x.beginPath(); x.moveTo(d.x, d.y); x.lineTo(d.x - 1.5, d.y + d.l); x.stroke();
-      d.y += d.v; d.x -= .6;
-      if (d.y > H) { d.y = -d.l; d.x = Math.random()*W; }
+      const a = d.a * (.6 + .4 * Math.sin(t * d.tw));
+      x.beginPath(); x.arc(d.x, d.y, d.r, 0, Math.PI*2);
+      x.fillStyle = `rgba(240,214,140,${a.toFixed(3)})`; x.fill();
+      d.y += d.v; d.x += d.drift;
+      if (d.y > H + 4) { d.y = -4; d.x = Math.random()*W; }
     }
     requestAnimationFrame(frame);
   }
@@ -373,7 +376,10 @@ function buildOrbit() {
     btn.innerHTML = `
       <span class="press-ring"></span>
       <span class="icon-float" style="--float-delay:${(i*.7).toFixed(2)}s">
-        <span class="icon-tile ${settings.iconStyle === 'solid' ? 'solid' : ''}">${svg(ICONS[sec.icon] || ICONS.history)}</span>
+        <span class="icon-tile ${settings.iconStyle === 'solid' ? 'solid' : ''}" style="--shine-delay:${(i*0.9).toFixed(2)}s">
+          <span class="tile-shine"></span>
+          ${svg(ICONS[sec.icon] || ICONS.history)}
+        </span>
         <span class="icon-label">${sec.label}</span>
       </span>`;
     attachIconGestures(btn, sec);
@@ -442,7 +448,24 @@ function setOrbit(expand) {
   Sound.play(expand ? "open" : "back");
   $("#hud-hint").textContent = expand ? "DRAG AN ICON · HOLD OR TAP TO OPEN" : "TAP THE LOGO TO BEGIN";
   stage.querySelectorAll("#orbit-links .link-base").forEach(b => { b.style.strokeDashoffset = expand ? 0 : parseFloat(b.style.strokeDasharray || 0); });
+  if (!expand) { $("#orbit-icons").style.transform = ""; $("#orbit-links").style.transform = ""; }  // clear parallax
 }
+
+/* ── Premium pointer parallax: the constellation gently follows the cursor ── */
+let parRAF = 0, parX = 0, parY = 0;
+function onParallaxMove(e) {
+  if (!orbitExpanded || activeOverlay || document.querySelector(".orbit-icon.dragging")) return;
+  parX = e.clientX / innerWidth - 0.5;
+  parY = e.clientY / innerHeight - 0.5;
+  if (!parRAF) parRAF = requestAnimationFrame(applyParallax);
+}
+function applyParallax() {
+  parRAF = 0;
+  const ix = (parX * 30).toFixed(1), iy = (parY * 30).toFixed(1);
+  $("#orbit-icons").style.transform = `translate(${ix}px, ${iy}px)`;
+  $("#orbit-links").style.transform = `translate(${(parX*21).toFixed(1)}px, ${(parY*21).toFixed(1)}px)`;
+}
+addEventListener("pointermove", onParallaxMove);
 
 /* ──────────── Draggable icons + long-press to open ──────────────────── */
 /* Short tap OR press-and-hold (long-press) opens the section. Dragging past
@@ -619,8 +642,8 @@ function runCyberFX() {
   const fx = $("#cyber-fx");
   fx.classList.remove("run"); void fx.offsetWidth;   // restart the animation
   fx.classList.add("run");
-  Sound.play("scan");
-  setTimeout(() => fx.classList.remove("run"), 650);
+  Sound.play("chime");
+  setTimeout(() => fx.classList.remove("run"), 900);
 }
 
 /* ─────────────────────── Feature overlays (generic) ─────────────────── */
@@ -646,9 +669,9 @@ function buildGallery() {
     else if (s.type === "photo") {
       // don't reference the file in CSS (avoids a 404 when it's absent);
       // applyScene() loads it via JS and falls back gracefully if missing.
-      bg = "linear-gradient(160deg,#33475c,#1b2836)";
-      hint = `<span class="gt-hint">＋</span>`;
-    } else bg = "linear-gradient(180deg,#9fb4c8,#4f6980 62%,#2b3d51)";
+      bg = "radial-gradient(circle at 50% 42%, rgba(240,208,120,.25), #14265e 45%, #060c22 82%)";
+      hint = `<span class="gt-hint">★</span>`;
+    } else bg = "radial-gradient(circle at 50% 40%, #1a2e6e, #0a1436 70%)";
     tile.style.background = bg;
     tile.innerHTML = `${hint}<span class="gt-label">${s.label}</span>`;
     tile.addEventListener("click", () => { Sound.play("tap"); applyScene(s.id); toast(s.label + " background applied"); });

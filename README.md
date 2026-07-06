@@ -28,18 +28,22 @@ or open the file normally and press **F11** for fullscreen.
 
 - **Tap the center logo** to reveal the node network of section icons; tap again to collapse.
 - **Drag an icon** to move it anywhere (positions are remembered).
-- **Tap or press-and-hold** an icon to open its section — opening plays a cyber-style scan/flash transition with sound.
+- **Tap or press-and-hold** an icon to open its section — opening plays an elegant golden bloom transition with a soft chime.
+- The constellation gently **parallaxes** with your cursor/touch for a premium, alive feel.
 - **Pinch** the dashboard to stretch the whole network; pinch inside a panel to enlarge the text. Double-tap empty space to reset. (Mouse: wheel = dashboard zoom, Ctrl+wheel = panel zoom.)
 - **Bottom dock** (icons, centered) holds: Home · Gallery · Settings · Brother Thomas · Browser · Search · Sound (mute).
 - **Search** (dock, or Ctrl/⌘-K) pops up centered and blurs everything to focus the search bar.
 - Every panel has an **X** (top-right) and a **BACK** button. **Esc** also steps back out.
 
-## Background
+## Brand & background
 
-The app ships with a rainy-dusk cityscape at `assets/background.jpg` (used by
+The interface uses a **royal navy + gold** palette drawn from the PMCC 4th
+Watch logo (navy · gold · red · white). The app ships with a matching
+navy-and-gold "Signature" background at `assets/background.jpg` (used by
 default). **To use your own photo, just overwrite that file** (any 16:9 image),
-or drop a file and pick it from **Gallery ▸ My Photo**. Gallery also offers
-built-in CSS scenes that need no image file.
+or pick a different look from **Gallery** (Royal Night, Golden Aura, Deep Navy,
+Emerald Court, Crimson Royal — all need no image file). Change the gold accent
+to another color in **Settings ▸ Accent Color**.
 
 ## The dock features
 
