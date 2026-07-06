@@ -64,6 +64,21 @@ Everything editable lives at the top of **`app.js`**:
 
 No photos are used for people right now — each entry shows a soft-glow icon glyph, so the app looks complete without any images to source.
 
+## Dashboard layout & interactions
+
+The orbital dashboard is arranged as an organized hierarchy: **Apostle** at
+top-center, **Bishops ↔ Presbyters** as the upper pair, **Pastors ↔ Elders** as
+the lower pair, and **Branches ↔ History** at the bottom.
+
+- **Tap a leadership icon** (Apostle / Bishops / Presbyters / Pastors / Elders)
+  → an animated **name dropdown** opens beside it listing everyone in that group;
+  tap a name → the **profile modal** (photo + accordion) opens.
+- **Tap Branches** → an **interactive 3D globe**: it auto-rotates, you can drag to
+  spin it, and each congregation country is a glowing point. **Tap a point** (or
+  use the search box) to select it — its details appear in the panel on the left.
+  Add real per-branch details and coordinates in `app.js → Globe → COORDS`.
+- **Tap History** → the ministry timeline panel.
+
 ## Directory (Bishops · Presbyters · Pastors · Elders · Testimonies)
 
 The **DIRECTORY** dock icon opens a clean, guided flow designed for touch:

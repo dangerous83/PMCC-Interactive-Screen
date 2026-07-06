@@ -279,6 +279,9 @@
        Items injected by app.js → buildDirDropdown(). -->
   <div id="dir-dropdown" class="dir-dropdown hidden" role="menu" aria-label="Directory categories"></div>
 
+  <!-- Per-icon name dropdown: clicking a leadership orbit icon lists its names -->
+  <div id="icon-menu" class="icon-menu hidden" role="menu" aria-label="Names"></div>
+
   <!-- ══════════════ DIRECTORY: name-list overlay ══════════════════════ -->
   <section id="directory" class="feature-overlay hidden" aria-modal="true" role="dialog">
     <div class="feature-backdrop" data-feature-close></div>
@@ -311,6 +314,24 @@
         </div>
       </header>
       <div id="profile-accordion" class="pm-accordion"><!-- sections injected --></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ BRANCHES: interactive rotating globe ══════════════ -->
+  <section id="globe" class="feature-overlay hidden" aria-modal="true" role="dialog">
+    <div class="feature-backdrop" data-feature-close></div>
+    <div class="feature-shell full">
+      <header class="feature-head">
+        <div><h2>BRANCHES</h2><p>Global congregations · tap a glowing point or search</p></div>
+        <form id="globe-search-form" class="globe-search">
+          <input id="globe-search" type="text" autocomplete="off" spellcheck="false" placeholder="Search a country…">
+        </form>
+        <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </header>
+      <div class="globe-body">
+        <aside id="globe-info" class="globe-info"></aside>
+        <div class="globe-stage"><canvas id="globe-canvas"></canvas></div>
+      </div>
     </div>
   </section>
 
