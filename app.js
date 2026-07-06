@@ -407,6 +407,16 @@ function navSections() {
 }
 const NAV = navSections();
 
+/* Fixed, organized arrangement (deg: 0=right, 90=bottom, -90=top, 180=left):
+   Apostle top-center; Bishops↔Presbyters upper pair; Pastors↔Elders lower
+   pair; Branches↔History bottom pair. */
+const ORBIT_ANGLES = {
+  apostle:   -90,
+  bishops:  -142, presbyters: -38,
+  pastors:   142, elders:      38,
+  branches:  108, history:     72,
+};
+
 function buildOrbit() {
   const nav = $("#orbit-icons"), links = $("#orbit-links");
   nav.innerHTML = ""; links.innerHTML = "";
@@ -446,13 +456,18 @@ function layoutOrbit() {
   const bottomReserve = Math.min(h * 0.28, iconSize * 1.5 + 140);
   const cx = w/2;
   const cy = Math.max(hubSize*0.55 + 20, (h - bottomReserve) / 2);
-  const rx = Math.min(w/2 - iconSize*0.75, w*0.36);
-  const ry = Math.min(h/2 - iconSize*0.85, cy - iconSize*0.6);
+  const rx = Math.min(w/2 - iconSize*0.8, w*0.40);
+  // size vertical radius so the top (Apostle) and deepest bottom icons
+  // (Branches/History, sin≈0.95) both stay clear of edges and the dock
+  const ryTop = cy - iconSize*0.5 - 10;
+  const ryBot = (h - Math.max(230, iconSize*1.3 + 96) - iconSize*0.5 - cy) / 0.96;
+  const ry = Math.max(120, Math.min(ryTop, ryBot));
   // move the center hub to match the icon/link center
   const hub = $(".hub"); if (hub) hub.style.top = `${cy}px`;
   $("#orbit-links").setAttribute("viewBox", `0 0 ${w} ${h}`);
   icons.forEach((btn, i) => {
-    const ang = -Math.PI/2 + (i * 2*Math.PI)/n;
+    const aDeg = ORBIT_ANGLES[btn.dataset.section];
+    const ang = ((aDeg != null ? aDeg : -90 + i * 360 / n)) * Math.PI / 180;
     const dx = Math.cos(ang)*rx, dy = Math.sin(ang)*ry;
     btn.style.left = `${cx}px`; btn.style.top = `${cy}px`;
     btn.style.setProperty("--tx", `${dx}px`); btn.style.setProperty("--ty", `${dy}px`);
@@ -549,9 +564,153 @@ function attachIconGestures(btn, sec) {
 }
 
 function openFor(sec, btn) {
-  if (sec.isBranches) return openBranches(btn);
-  return openSection(sec, btn);
+  if (sec.isBranches) return openGlobe(btn);          // interactive globe
+  if (sec.id === "history") return openSection(sec, btn);  // timeline panel
+  return openIconMenu(sec, btn);                      // name dropdown → profile
 }
+
+/* ── Per-icon name dropdown (click a leadership icon → its names) ──────── */
+function openIconMenu(sec, btn) {
+  const menu = $("#icon-menu");
+  const items = (CONTENT.sections.find(s => s.id === sec.id)?.items || []).filter(i => i.confidence !== "placeholder");
+  menu.innerHTML =
+    `<div class="im-head"><span class="im-ico">${svg(ICONS[sec.icon] || ICONS.apostle)}</span><span class="im-title">${sec.label}</span><span class="im-count">${items.length}</span></div>` +
+    `<div class="im-list">` + (items.length ? items.map((it, i) =>
+      `<button class="im-row" data-i="${i}">${avatarHTML(it, sec.id)}<span class="im-txt"><span class="im-name">${esc(it.name)}</span><span class="im-sub">${esc(it.position || "")}</span></span><span class="im-chev"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`
+    ).join("") : `<p class="dir-empty">No entries yet — add them in app.js → CONTENT.</p>`) + `</div>`;
+  menu.querySelectorAll(".im-row").forEach(r => r.addEventListener("click", () => { const i = +r.dataset.i; closeIconMenu(); setTimeout(() => dirOpenProfile(sec.id, i), 120); }));
+  menu.classList.remove("hidden");
+  positionIconMenu(menu, btn);
+  Sound.play("open");
+  requestAnimationFrame(() => menu.classList.add("open"));
+}
+function positionIconMenu(menu, btn) {
+  const m = 16, r = btn.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let left = Math.max(m, Math.min(r.left + r.width / 2 - mw / 2, innerWidth - mw - m));
+  let top, origin;
+  if (r.bottom + 12 + mh <= innerHeight - m) { top = r.bottom + 12; origin = "top"; }
+  else if (r.top - 12 - mh >= m) { top = r.top - 12 - mh; origin = "bottom"; }
+  else { top = Math.max(m, Math.min(r.top, innerHeight - mh - m)); origin = "center"; }
+  menu.style.left = left + "px"; menu.style.top = top + "px";
+  menu.style.transformOrigin = `${Math.round(r.left + r.width / 2 - left)}px ${origin === "bottom" ? "100%" : origin === "center" ? "50%" : "0"}`;
+}
+function closeIconMenu() { const m = $("#icon-menu"); if (m.classList.contains("hidden")) return; m.classList.remove("open"); setTimeout(() => m.classList.add("hidden"), 200); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   INTERACTIVE GLOBE (Branches)
+   Rotating orthographic globe with glowing branch points. Tap a point (or
+   search) → its info shows on the left. Drag to spin; auto-rotates idle.
+   Add real branch details in COORDS below.
+   ══════════════════════════════════════════════════════════════════════ */
+const Globe = (() => {
+  // approximate [lat, lng] per country in CONTENT.branches
+  const COORDS = {
+    "Dubai":[25.2,55.3],"Abu Dhabi":[24.45,54.37],"Turkey":[39,35],"Jordan":[31,36],
+    "Lebanon":[33.9,35.5],"Israel":[31.5,34.8],"Syria":[35,38],"Qatar":[25.3,51.2],
+    "Saudi Arabia":[24,45],"Kuwait":[29.3,47.9],"Yemen":[15.5,48],"Iran":[32,53],
+    "China":[35,105],"Japan":[36,138],"Mongolia":[46,105],"North Korea":[40,127],
+    "South Korea":[36.5,128],"Taiwan":[23.7,121],"Afghanistan":[33,66],"Bangladesh":[23.7,90],
+    "Bhutan":[27.5,90.4],"India":[22,79],"Maldives":[3.2,73],"Nepal":[28,84],
+    "Pakistan":[30,70],"Sri Lanka":[7.9,80.8],"USA":[39,-98],"Canada":[56,-106],
+    "Australia":[-25,133],"Netherlands":[52.3,5.6],"Philippines":[12.9,121.8],
+  };
+  let canvas, ctx, raf = 0, W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1;
+  let yaw = 0, pitch = 0.28, auto = true, dragging = false, lastX = 0, lastY = 0, moved = 0, t = 0;
+  let points = [], screen = [], selected = -1, targetYaw = null, targetPitch = null, resumeTimer = 0, inited = false;
+
+  function buildPoints() {
+    points = [];
+    (CONTENT.branches || []).forEach(r => r.countries.forEach(c => {
+      const k = COORDS[c]; if (k) points.push({ name: c, region: r.region, lat: k[0], lng: k[1] });
+    }));
+  }
+  function project(latDeg, lngDeg) {
+    const f = latDeg * Math.PI / 180, l = lngDeg * Math.PI / 180 + yaw;
+    const x0 = Math.cos(f) * Math.sin(l), y0 = Math.sin(f), z0 = Math.cos(f) * Math.cos(l);
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    return { x: cx + x0 * R, y: cy - (y0 * cp - z0 * sp) * R, z: y0 * sp + z0 * cp };
+  }
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = rect.width; H = rect.height;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    R = Math.min(W, H) * 0.4; cx = W / 2; cy = H / 2;
+  }
+  function meridian(lng) { ctx.beginPath(); let on = false; for (let la = -90; la <= 90; la += 4) { const s = project(la, lng); if (s.z > 0) { on ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); on = true; } else on = false; } ctx.stroke(); }
+  function parallel(lat) { ctx.beginPath(); let on = false; for (let ln = -180; ln <= 180; ln += 4) { const s = project(lat, ln); if (s.z > 0) { on ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); on = true; } else on = false; } ctx.stroke(); }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    let g = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 1.3);
+    g.addColorStop(0, "rgba(232,198,106,0)"); g.addColorStop(0.72, "rgba(232,198,106,0.06)"); g.addColorStop(1, "rgba(232,198,106,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.3, 0, 7); ctx.fill();
+    const sg = ctx.createRadialGradient(cx - R * 0.32, cy - R * 0.32, R * 0.1, cx, cy, R);
+    sg.addColorStop(0, "#213a80"); sg.addColorStop(0.6, "#0e1c48"); sg.addColorStop(1, "#070f2a");
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fillStyle = sg; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(232,198,106,0.5)"; ctx.stroke();
+    ctx.lineWidth = 1; ctx.strokeStyle = "rgba(232,198,106,0.13)";
+    for (let ln = -180; ln < 180; ln += 30) meridian(ln);
+    for (let la = -60; la <= 60; la += 30) parallel(la);
+    screen = [];
+    const sc = R / 300;
+    points.forEach((p, i) => {
+      const s = project(p.lat, p.lng); if (s.z <= 0.02) return;
+      screen.push({ i, x: s.x, y: s.y });
+      const depth = 0.55 + 0.45 * s.z, pulse = 0.5 + 0.5 * Math.sin(t * 2 + i), pr = (i === selected ? 6 : 4) * depth * sc;
+      ctx.beginPath(); ctx.arc(s.x, s.y, pr * 3.2, 0, 7); ctx.fillStyle = `rgba(255,220,140,${(0.09 + 0.10 * pulse) * depth})`; ctx.fill();
+      ctx.beginPath(); ctx.arc(s.x, s.y, pr, 0, 7); ctx.fillStyle = i === selected ? "#fff2c8" : "#f0cf7a"; ctx.fill();
+      if (i === selected) {
+        ctx.beginPath(); ctx.arc(s.x, s.y, pr * 2.4, 0, 7); ctx.strokeStyle = "rgba(255,240,200,0.9)"; ctx.lineWidth = 2; ctx.stroke();
+        ctx.font = `600 ${Math.round(13 * sc)}px "Segoe UI",Arial`; ctx.fillStyle = "#fff8ea"; ctx.textAlign = "center";
+        ctx.fillText(p.name, s.x, s.y - pr * 2.4 - 8);
+      }
+    });
+  }
+  function frame() {
+    t += 0.016;
+    if (targetYaw != null) { yaw += (targetYaw - yaw) * 0.09; if (Math.abs(targetYaw - yaw) < 0.002) { yaw = targetYaw; targetYaw = null; } }
+    else if (auto && !dragging) yaw += 0.0022;
+    if (targetPitch != null) { pitch += (targetPitch - pitch) * 0.09; if (Math.abs(targetPitch - pitch) < 0.002) { pitch = targetPitch; targetPitch = null; } }
+    draw(); raf = requestAnimationFrame(frame);
+  }
+  function hit(mx, my) { let b = -1, bd = 1e9; screen.forEach(s => { const d = Math.hypot(s.x - mx, s.y - my); if (d < bd) { bd = d; b = s.i; } }); return bd <= 24 ? b : -1; }
+  function flyTo(i) { const p = points[i]; targetYaw = -p.lng * Math.PI / 180; targetPitch = Math.max(-0.6, Math.min(0.6, p.lat * Math.PI / 180)); }
+  function pause() { auto = false; clearTimeout(resumeTimer); resumeTimer = setTimeout(() => auto = true, 5000); }
+  function select(i) { selected = i; renderInfo(); if (i >= 0) Sound.play("tap"); }
+  function renderInfo() {
+    const box = $("#globe-info");
+    if (selected < 0) { box.innerHTML = `<div class="gi-empty">🌍 Tap a glowing point on the globe to open that branch — or search a country above. Drag to spin the globe.</div>`; return; }
+    const p = points[selected];
+    box.innerHTML =
+      `<div class="gi-region">${esc(p.region)}</div><div class="gi-name">${esc(p.name)}</div><div class="gi-divider"></div>` +
+      `<dl class="gi-field"><dt>Congregation</dt><dd>PMCC (4th Watch) ${esc(p.name)}</dd></dl>` +
+      `<dl class="gi-field"><dt>Region</dt><dd>${esc(p.region)}</dd></dl>` +
+      `<dl class="gi-field"><dt>Services</dt><dd>—</dd></dl>` +
+      `<dl class="gi-field"><dt>Contact</dt><dd>—</dd></dl>` +
+      `<p class="gi-note">Editable placeholder — add this branch's address, service times and contact in <code>app.js</code>.</p>`;
+  }
+  function doSearch(q) {
+    q = (q || "").trim().toLowerCase(); if (!q) return;
+    const i = points.findIndex(p => p.name.toLowerCase().includes(q) || p.region.toLowerCase().includes(q));
+    if (i >= 0) { select(i); flyTo(i); pause(); } else toast(`No branch matches “${q}”`);
+  }
+  function init() {
+    if (inited) return; inited = true;
+    canvas = $("#globe-canvas"); ctx = canvas.getContext("2d"); buildPoints();
+    canvas.addEventListener("pointerdown", e => { dragging = true; auto = false; moved = 0; lastX = e.clientX; lastY = e.clientY; try { canvas.setPointerCapture(e.pointerId); } catch {} });
+    canvas.addEventListener("pointermove", e => { if (!dragging) return; const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy); yaw += dx * 0.006; pitch = Math.max(-0.7, Math.min(0.7, pitch + dy * 0.006)); targetYaw = targetPitch = null; });
+    canvas.addEventListener("pointerup", e => { dragging = false; try { canvas.releasePointerCapture(e.pointerId); } catch {} const r = canvas.getBoundingClientRect(); if (moved < 7) { const i = hit(e.clientX - r.left, e.clientY - r.top); if (i >= 0) { select(i); flyTo(i); } } pause(); });
+    $("#globe-search-form").addEventListener("submit", e => { e.preventDefault(); doSearch($("#globe-search").value); });
+    addEventListener("resize", () => { if (!$("#globe").classList.contains("hidden")) resize(); });
+  }
+  function start() { init(); selected = -1; renderInfo(); resize(); if (!raf) frame(); }
+  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+  return { start, stop };
+})();
+function openGlobe() { Sound.play("open"); const el = $("#globe"); el.classList.remove("hidden"); requestAnimationFrame(() => el.classList.add("open")); Globe.start(); }
 
 /* ─────────────────────────── Section panel ──────────────────────────── */
 let activeSection = null, activeIcon = null, activeOverlay = null;
@@ -693,7 +852,7 @@ function openFeature(id) {
   if (id === "jarvis" && !$("#jarvis-log").childElementCount) jarvisGreet();
   if (id === "browser") { /* lazy-load on open */ browserGo($("#browser-url").value); }
 }
-function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; }
+function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; if (el.id === "globe") Globe.stop(); }
 function closeAllFeatures() { $$(".feature-overlay").forEach(el => { if (!el.classList.contains("hidden")) closeFeature(el); }); }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1194,12 +1353,20 @@ addEventListener("pointerdown", (e) => {
   if (e.target.closest("#dir-dropdown") || e.target.closest('.dock-btn[data-id="directory"]')) return;
   closeDirDropdown();
 }, true);
+// close the per-icon name dropdown on outside tap (but not when tapping an icon)
+addEventListener("pointerdown", (e) => {
+  const m = $("#icon-menu");
+  if (m.classList.contains("hidden")) return;
+  if (e.target.closest("#icon-menu") || e.target.closest(".orbit-icon")) return;
+  closeIconMenu();
+}, true);
 $("#btn-update").addEventListener("click", () => { $("#update-status").textContent = "Checking…"; Sound.play("tap"); setTimeout(() => { $("#update-status").textContent = "You’re up to date · v2.0"; toast("No updates available — you're current"); }, 1200); });
 
 addEventListener("pointerdown", () => Sound.ensure(), { once: true });
 addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (!$("#profile-modal").classList.contains("hidden")) return closeProfile();
+    if (!$("#icon-menu").classList.contains("hidden")) return closeIconMenu();
     if (!$("#dir-dropdown").classList.contains("hidden")) return closeDirDropdown();
     if (!$("#search").classList.contains("hidden")) return closeSearch();
     const openFeat = $$(".feature-overlay").find(el => !el.classList.contains("hidden"));
