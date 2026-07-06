@@ -415,12 +415,15 @@ const NAV = navSections();
 /* Fixed, organized arrangement (deg: 0=right, 90=bottom, -90=top, 180=left):
    Apostle top-center; Bishops↔Presbyters upper pair; Pastors↔Elders lower
    pair; Branches↔History bottom pair. */
+// Evenly spaced ring (≈51.4° apart), still symmetric top-to-bottom.
 const ORBIT_ANGLES = {
-  apostle:   -90,
-  bishops:  -142, presbyters: -38,
-  pastors:   142, elders:      38,
-  branches:  108, history:     72,
+  apostle:    -90,
+  bishops:  -141.4, presbyters: -38.6,
+  pastors:   167.2, elders:      12.8,
+  branches:  115.8, history:     64.2,
 };
+// Reveal sweeps clockwise from the top, one spoke (icon + its line) at a time.
+const REVEAL_ORDER = { apostle:0, presbyters:1, elders:2, history:3, branches:4, pastors:5, bishops:6 };
 
 function buildOrbit() {
   const nav = $("#orbit-icons"), links = $("#orbit-links");
@@ -433,8 +436,9 @@ function buildOrbit() {
     const btn = document.createElement("button");
     btn.className = "orbit-icon"; btn.dataset.section = sec.id;
     btn.style.setProperty("--pulse-delay", `${(i * .45).toFixed(2)}s`);
-    // one-by-one reveal: each icon pops in sequence (apostle → … → history)
-    btn.style.transitionDelay = `${i * 135}ms`;
+    // spoke-by-spoke reveal: each icon pops in in REVEAL_ORDER (sweeping the ring)
+    const ro = REVEAL_ORDER[sec.id] ?? i;
+    btn.style.transitionDelay = `${ro * 240}ms`;
     btn.innerHTML = `
       <span class="press-ring"></span>
       <span class="icon-float" style="--float-delay:${(i*.7).toFixed(2)}s">
@@ -485,10 +489,11 @@ function layoutOrbit() {
     g._end = { x2, y2 };
     for (const cls of ["link-base","link-flow"]) { const L = g.querySelector("."+cls); L.setAttribute("x1",x1); L.setAttribute("y1",y1); L.setAttribute("x2",x2); L.setAttribute("y2",y2); }
     const base = g.querySelector(".link-base"); const seg = Math.hypot(x2-x1, y2-y1);
-    // connectors draw AFTER all icons have popped in, in the same order
-    base.style.strokeDasharray = seg; base.style.strokeDashoffset = stage.classList.contains("expanded") ? 0 : seg; base.style.transitionDelay = `${1000 + i*80}ms`;
-    g.querySelector(".link-flow").style.transitionDelay = `${1100 + i*80}ms`;
-    for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx",x2); cc.setAttribute("cy",y2); cc.style.transitionDelay = `${1200 + i*80}ms`; }
+    // each spoke's connector draws right after ITS icon pops in — one at a time
+    const ro = REVEAL_ORDER[btn.dataset.section] ?? i;
+    base.style.strokeDasharray = seg; base.style.strokeDashoffset = stage.classList.contains("expanded") ? 0 : seg; base.style.transitionDelay = `${ro*240 + 120}ms`;
+    g.querySelector(".link-flow").style.transitionDelay = `${ro*240 + 220}ms`;
+    for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx",x2); cc.setAttribute("cy",y2); cc.style.transitionDelay = `${ro*240 + 200}ms`; }
     btn._linkGroup = g; btn._center = { cx, cy };
   });
 }
@@ -980,26 +985,18 @@ function personSections(p, catId) {
     { title: "Contact / Office Info", icon: DIR_ICONS.contact, html: `<dl class="pm-contact">${Object.entries(contact).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` },
   ];
 }
-// All sections are shown EXPANDED by default so every detail is visible next
-// to the photo (no hidden dropdowns). Each header can still be tapped to
-// collapse/expand that one section independently.
+// Every detail is laid out flat next to the big portrait — NO dropdowns, NO
+// collapsing. Each block is a titled card and all of them are visible at once.
 function buildAccordion(sections) {
   const acc = $("#profile-accordion"); acc.innerHTML = "";
-  sections.forEach((s) => {
-    const item = document.createElement("div");
-    item.className = "acc-item open";
-    item.innerHTML =
-      `<button class="acc-head" aria-expanded="true"><span class="acc-ico">${svg(s.icon)}</span>` +
-      `<span class="acc-title">${s.title}</span>` +
-      `<span class="acc-chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>` +
-      `<div class="acc-body"><div class="acc-inner">${s.html}</div></div>`;
-    const head = item.querySelector(".acc-head");
-    head.addEventListener("click", () => {                 // independent toggle
-      const open = item.classList.toggle("open");
-      head.setAttribute("aria-expanded", open ? "true" : "false");
-      Sound.play("tap");
-    });
-    acc.appendChild(item);
+  sections.forEach((s, i) => {
+    const sec = document.createElement("section");
+    sec.className = "pf-sec";
+    sec.style.animationDelay = `${i * 70}ms`;
+    sec.innerHTML =
+      `<h3 class="pf-label"><span class="pf-ico">${svg(s.icon)}</span>${s.title}</h3>` +
+      `<div class="pf-content">${s.html}</div>`;
+    acc.appendChild(sec);
   });
 }
 function dirOpenProfile(catId, index) {
