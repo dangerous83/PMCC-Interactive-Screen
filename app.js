@@ -465,7 +465,9 @@ function layoutOrbit() {
   const bottomReserve = Math.min(h * 0.28, iconSize * 1.5 + 140);
   const cx = w/2;
   const cy = Math.max(hubSize*0.55 + 20, (h - bottomReserve) / 2);
-  const rx = Math.min(w/2 - iconSize*0.8, w*0.40);
+  // pull the ring in from the edges (leave room for labels + the assistant orb)
+  const rightReserve = iconSize * 1.3 + 40;
+  const rx = Math.min(w/2 - iconSize*0.7 - rightReserve, w*0.37);
   // size vertical radius so the top (Apostle) and deepest bottom icons
   // (Branches/History, sin≈0.95) both stay clear of edges and the dock
   const ryTop = cy - iconSize*0.5 - 10;
@@ -629,40 +631,13 @@ const Globe = (() => {
     "Pakistan":[30,70],"Sri Lanka":[7.9,80.8],"USA":[39,-98],"Canada":[56,-106],
     "Australia":[-25,133],"Netherlands":[52.3,5.6],"Philippines":[12.9,121.8],
   };
-  // Simplified continent outlines ([lat,lng] polygons) for a recognizable Earth.
-  const LAND = [
-    // North America
-    [[72,-125],[70,-142],[65,-166],[60,-164],[58,-152],[59,-138],[54,-130],[49,-124],
-     [40,-124],[33,-118],[28,-114],[23,-110],[20,-105],[18,-96],[16,-95],[18,-90],
-     [21,-87],[25,-80],[30,-84],[28,-82],[31,-81],[36,-76],[41,-74],[45,-66],[48,-59],
-     [52,-56],[56,-62],[60,-66],[63,-78],[67,-84],[70,-100],[72,-125]],
-    // Greenland
-    [[83,-32],[80,-18],[70,-22],[61,-42],[66,-53],[76,-58],[82,-46],[83,-32]],
-    // South America
-    [[12,-71],[10,-61],[6,-50],[0,-49],[-5,-35],[-13,-38],[-23,-41],[-34,-54],[-42,-63],
-     [-52,-69],[-55,-71],[-49,-75],[-38,-73],[-28,-71],[-18,-70],[-8,-79],[-2,-81],[5,-77],[9,-77],[12,-71]],
-    // Africa
-    [[37,10],[34,22],[31,32],[24,36],[12,44],[10,51],[2,42],[-5,40],[-16,40],[-26,33],
-     [-34,26],[-34,18],[-28,16],[-18,12],[-6,9],[4,9],[5,-4],[10,-16],[15,-17],[21,-17],
-     [28,-13],[33,-9],[37,-5],[37,10]],
-    // Europe
-    [[60,4],[64,24],[58,28],[54,20],[46,30],[41,28],[38,23],[40,15],[43,7],[47,-1],
-     [50,-5],[58,-6],[60,4]],
-    // Asia
-    [[66,32],[70,62],[73,92],[72,142],[66,172],[61,160],[63,135],[54,142],[52,158],
-     [45,135],[40,128],[34,122],[24,119],[22,108],[10,105],[8,98],[16,95],[22,90],
-     [19,85],[15,80],[8,78],[9,74],[16,72],[24,66],[26,58],[31,50],[38,48],[42,52],
-     [46,48],[47,40],[50,36],[58,32],[66,32]],
-    // Indonesia / SE-Asia islands
-    [[-2,100],[2,104],[0,111],[-4,116],[-8,115],[-8,105],[-5,101],[-2,100]],
-    [[-5,120],[1,121],[-2,133],[-8,140],[-9,129],[-5,120]],
-    // Australia
-    [[-12,131],[-11,142],[-18,146],[-25,153],[-34,151],[-38,145],[-35,138],[-32,132],
-     [-34,123],[-31,115],[-22,114],[-16,123],[-12,131]],
-    // Japan
-    [[45,142],[40,140],[35,136],[33,131],[36,138],[41,141],[45,142]],
-    // British Isles
-    [[58,-5],[54,-2],[51,1],[50,-5],[55,-8],[58,-5]],
+  // Real coastline outlines from Natural Earth (assets/world-land.js, simplified
+  // to ~8.5k points). Falls back to a tiny built-in set if the file is missing.
+  const LAND = (typeof window !== "undefined" && window.WORLD_LAND) ? window.WORLD_LAND : [
+    [[72,-125],[60,-164],[49,-124],[18,-96],[25,-80],[45,-66],[60,-66],[70,-100],[72,-125]],
+    [[37,10],[10,51],[-34,26],[-18,12],[4,9],[10,-16],[28,-13],[37,10]],
+    [[66,32],[73,92],[66,172],[45,135],[24,119],[8,98],[24,66],[47,40],[66,32]],
+    [[-12,131],[-25,153],[-38,145],[-31,115],[-16,123],[-12,131]],
   ];
   // per-region accent colours for markers, arcs and the legend
   const REGION_META = {
@@ -674,10 +649,11 @@ const Globe = (() => {
     "Home Country":       "#ffe08a",
   };
   const regionColor = (r) => REGION_META[r] || "#f0cf7a";
-  let canvas, ctx, raf = 0, W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1;
+  let canvas, ctx, raf = 0, W = 0, H = 0, R = 0, baseR = 0, cx = 0, cy = 0, dpr = 1;
   let yaw = 0, pitch = 0.28, auto = true, dragging = false, lastX = 0, lastY = 0, moved = 0, t = 0;
   let points = [], screen = [], selected = -1, targetYaw = null, targetPitch = null, resumeTimer = 0, inited = false;
-  let stars = [], hqIndex = -1;
+  let stars = [], hqIndex = -1, zoomG = 1;
+  const setZoom = (z) => { zoomG = Math.max(1, Math.min(5, z)); R = baseR * zoomG; };
 
   function buildPoints() {
     points = [];
@@ -703,20 +679,28 @@ const Globe = (() => {
     canvas.width = W * dpr; canvas.height = H * dpr;
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    R = Math.min(W, H) * 0.4; cx = W / 2; cy = H / 2;
+    baseR = Math.min(W, H) * 0.4; R = baseR * zoomG; cx = W / 2; cy = H / 2;
     seedStars();
   }
   function meridian(lng) { ctx.beginPath(); let on = false; for (let la = -90; la <= 90; la += 4) { const s = project(la, lng); if (s.z > 0) { on ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); on = true; } else on = false; } ctx.stroke(); }
   function parallel(lat) { ctx.beginPath(); let on = false; for (let ln = -180; ln <= 180; ln += 4) { const s = project(lat, ln); if (s.z > 0) { on ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); on = true; } else on = false; } ctx.stroke(); }
-  // trace a land polygon; back-facing vertices are pinned to the horizon rim so
-  // continents correctly slide off the edge as the globe turns
+  // trace a land polygon. Back-facing vertices are pinned to the horizon rim,
+  // and a run of hidden vertices FOLLOWS THE RIM ARC (instead of cutting a chord
+  // across the disc) so continents crossing the limb never draw stray wedges.
   function landPath(poly) {
     ctx.beginPath();
+    let started = false, prevClamped = false, prevAng = 0;
     for (let k = 0; k < poly.length; k++) {
       const s = project(poly[k][0], poly[k][1]);
-      let x = s.x, y = s.y;
-      if (s.z < 0) { const a = Math.atan2(y - cy, x - cx); x = cx + Math.cos(a) * R; y = cy + Math.sin(a) * R; }
-      k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      let x = s.x, y = s.y, clamped = false, ang = Math.atan2(y - cy, x - cx);
+      if (s.z < 0) { x = cx + Math.cos(ang) * R; y = cy + Math.sin(ang) * R; clamped = true; }
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else if (clamped && prevClamped) {                 // both hidden → hug the rim
+        let da = ang - prevAng; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+        const steps = Math.max(1, Math.round(Math.abs(da) / 0.14));
+        for (let j = 1; j <= steps; j++) { const a = prevAng + da * j / steps; ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); }
+      } else ctx.lineTo(x, y);
+      prevClamped = clamped; prevAng = ang;
     }
     ctx.closePath();
   }
@@ -860,13 +844,38 @@ const Globe = (() => {
   function init() {
     if (inited) return; inited = true;
     canvas = $("#globe-canvas"); ctx = canvas.getContext("2d"); buildPoints();
-    canvas.addEventListener("pointerdown", e => { dragging = true; auto = false; moved = 0; lastX = e.clientX; lastY = e.clientY; try { canvas.setPointerCapture(e.pointerId); } catch {} });
-    canvas.addEventListener("pointermove", e => { if (!dragging) return; const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy); yaw += dx * 0.006; pitch = Math.max(-0.7, Math.min(0.7, pitch + dy * 0.006)); targetYaw = targetPitch = null; });
-    canvas.addEventListener("pointerup", e => { dragging = false; try { canvas.releasePointerCapture(e.pointerId); } catch {} const r = canvas.getBoundingClientRect(); if (moved < 7) { const i = hit(e.clientX - r.left, e.clientY - r.top); if (i >= 0) { select(i); flyTo(i); } } pause(); });
+    const gp = new Map(); let pd0 = 0, pz0 = 1, lastTap = 0;
+    canvas.addEventListener("pointerdown", e => {
+      gp.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      try { canvas.setPointerCapture(e.pointerId); } catch {}
+      if (gp.size === 2) { const [a, b] = [...gp.values()]; pd0 = Math.hypot(a.x - b.x, a.y - b.y); pz0 = zoomG; dragging = false; }
+      else { dragging = true; auto = false; moved = 0; lastX = e.clientX; lastY = e.clientY;
+        const now = performance.now(); if (now - lastTap < 320) { setZoom(1); Sound.play("tap"); } lastTap = now; }
+    });
+    canvas.addEventListener("pointermove", e => {
+      if (gp.has(e.pointerId)) gp.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (gp.size >= 2 && pd0 > 0) { const [a, b] = [...gp.values()]; setZoom(pz0 * (Math.hypot(a.x - b.x, a.y - b.y) / pd0)); moved += 20; return; }
+      if (!dragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY;
+      moved += Math.abs(dx) + Math.abs(dy);
+      yaw += dx * 0.006 / zoomG; pitch = Math.max(-1.2, Math.min(1.2, pitch + dy * 0.006 / zoomG)); targetYaw = targetPitch = null;
+    });
+    const glift = e => {
+      gp.delete(e.pointerId); try { canvas.releasePointerCapture(e.pointerId); } catch {}
+      if (gp.size < 2) pd0 = 0;
+      if (gp.size === 0) { const wasDragging = dragging; dragging = false;
+        const r = canvas.getBoundingClientRect();
+        if (wasDragging && moved < 7) { const i = hit(e.clientX - r.left, e.clientY - r.top); if (i >= 0) { select(i); flyTo(i); } }
+        pause();
+      }
+    };
+    canvas.addEventListener("pointerup", glift);
+    canvas.addEventListener("pointercancel", glift);
+    canvas.addEventListener("wheel", e => { e.preventDefault(); setZoom(zoomG * (e.deltaY < 0 ? 1.12 : 0.89)); auto = false; pause(); }, { passive: false });
     $("#globe-search-form").addEventListener("submit", e => { e.preventDefault(); doSearch($("#globe-search").value); });
     addEventListener("resize", () => { if (!$("#globe").classList.contains("hidden")) resize(); });
   }
-  function start() { init(); selected = -1; renderInfo(); resize(); if (!raf) frame(); }
+  function start() { init(); selected = -1; zoomG = 1; auto = true; renderInfo(); resize(); if (!raf) frame(); }
   function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
   return { start, stop };
 })();
