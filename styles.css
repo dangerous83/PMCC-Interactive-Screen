@@ -288,9 +288,9 @@ input{ font-family:inherit; }
 @keyframes press-charge{ from{ transform:scale(1.15); opacity:.2; } to{ transform:scale(1); opacity:.9; } }
 
 .icon-tile{
-  width:calc(var(--icon-size)*.80); aspect-ratio:1; border-radius:28%;
+  width:calc(var(--icon-size)*.80); aspect-ratio:1; border-radius:30%;
   display:grid; place-items:center; position:relative; overflow:hidden;
-  background:var(--tile);
+  background:linear-gradient(158deg, color-mix(in srgb, var(--accent) 12%, var(--tile)) 0%, var(--tile) 52%, color-mix(in srgb, #000 12%, var(--tile)) 100%);
   border:1.5px solid var(--tile-line);
   backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur));
   box-shadow:0 16px 44px rgba(0,0,0,.55), 0 0 2.6vmin color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 2.2vmin color-mix(in srgb, var(--accent) 12%, transparent);
@@ -550,8 +550,8 @@ input{ font-family:inherit; }
 .sr-empty{ padding:2vmin; text-align:center; color:var(--text-dim); font-size:clamp(13px,1.5vmin,30px); }
 
 /* ═══════════════ BROTHER THOMAS FLOATING WIDGET (right) ══════════════ */
-#bt-widget{ position:fixed; right:clamp(16px,2vmin,44px); top:50%; translate:0 -50%; z-index:13;
-  width:clamp(74px,7.2vmin,150px); aspect-ratio:1; border:none; background:none; cursor:pointer;
+#bt-widget{ position:fixed; right:clamp(18px,2.2vmin,52px); top:58%; translate:0 -50%; z-index:13;
+  width:clamp(72px,6.8vmin,140px); aspect-ratio:1; border:none; background:none; cursor:pointer;
   display:grid; place-items:center; animation:btw-float 5s ease-in-out infinite; }
 #bt-widget .btw-core{ position:relative; z-index:2; width:70%; aspect-ratio:1; border-radius:50%; display:grid; place-items:center;
   background:radial-gradient(circle at 38% 32%, var(--accent-2), var(--accent) 58%, #b8912f);
@@ -563,7 +563,7 @@ input{ font-family:inherit; }
 @keyframes btw-pulse{ 0%{ transform:scale(.7); opacity:.7; } 100%{ transform:scale(1.5); opacity:0; } }
 @keyframes btw-float{ 0%,100%{ translate:0 -50%; } 50%{ translate:0 calc(-50% - 1vmin); } }
 @keyframes btw-spin{ to{ transform:rotate(360deg); } }
-#bt-widget .btw-label{ position:absolute; bottom:-2.6em; left:50%; translate:-50% 0; z-index:2; font-size:clamp(9px,1vmin,20px); font-weight:700; letter-spacing:.12em; line-height:1.15; color:var(--accent-2); text-align:center; text-shadow:0 1px 4px rgba(0,0,0,.9); white-space:nowrap; }
+#bt-widget .btw-label{ position:absolute; bottom:-3.4em; left:50%; translate:-50% 0; z-index:2; width:9em; font-size:clamp(9px,1vmin,20px); font-weight:700; letter-spacing:.12em; line-height:1.2; color:var(--accent-2); text-align:center; text-shadow:0 1px 4px rgba(0,0,0,.9); white-space:normal; }
 #bt-widget:hover .btw-core{ transform:scale(1.08); }
 #bt-widget:active .btw-core{ transform:scale(.92); }
 @media (prefers-reduced-motion:reduce){ #bt-widget, #bt-widget *{ animation:none !important; } }

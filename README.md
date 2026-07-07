@@ -87,14 +87,16 @@ around the logo and joined to it by glowing connector lines.
 - **Brother Thomas** floats as a looping widget on the right edge (and is in the
   dock). Tapping it opens the assistant with **voice active** — he **speaks his
   replies** in a natural British voice. Toggle voice with the header button.
-- **Tap Branches** → an **interactive 3D Earth**: a blue-ocean globe with green
-  continents, atmosphere glow, day/night shading and a starfield. Markers are
-  **colour-coded by region**, and glowing **arcs connect the Manila HQ** to every
-  branch with travelling light pulses. The left panel shows a **region legend**
-  (counts + countries) — tap a region to fly there, or tap a glowing point for a
-  branch card (region badge, district, coordinates, services, contact). It
-  auto-rotates; drag to spin, pinch/scroll to zoom. Add real per-branch details
-  and coordinates in `app.js → Globe → COORDS`.
+- **Tap Branches** → an **interactive 3D Earth** with **real coastlines**
+  (Natural Earth data, ~8.5k points in `assets/world-land.js`): a blue-ocean
+  globe with detailed green continents, atmosphere glow, day/night shading and a
+  starfield. **Pinch or scroll to zoom in** and see real coastline detail; drag
+  to spin; double-tap to reset. Markers are **colour-coded by region**, and
+  glowing **arcs connect the Manila HQ** to every branch with travelling light
+  pulses. The left panel shows a **region legend** (counts + countries) — tap a
+  region to fly there, or tap a glowing point for a branch card (region badge,
+  district, coordinates, services, contact). Add real per-branch details and
+  coordinates in `app.js → Globe → COORDS`.
 - **Tap History** → the ministry timeline panel.
 
 ## Directory (Bishops · Presbyters · Pastors · Elders · Testimonies)
@@ -177,6 +179,14 @@ then **Test connection**. The assistant header shows a status dot:
 gold = configured, green = last reply succeeded, red = unreachable (offline
 fallback in use). The assistant is grounded with the church's own facts so it
 answers in character as Brother Thomas.
+
+## Data & attribution
+
+The Branches globe uses **Natural Earth** land coastlines (public domain),
+downloaded from the `ne_50m_land` dataset and simplified to a compact
+`assets/world-land.js` (~8.5k points). Natural Earth requires no attribution,
+but credit is gladly given. To regenerate at a different detail level, re-run the
+simplification (Douglas-Peucker) against the source GeoJSON.
 
 ## Content sourcing
 
