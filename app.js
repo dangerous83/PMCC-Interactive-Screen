@@ -1352,8 +1352,8 @@ const JarvisWave = {
     this.target = on ? 0.72 : 0.06;
     const s = document.getElementById("jarvis-wave-state");
     if (s) { s.textContent = on ? "SPEAKING" : "STANDBY"; s.classList.toggle("live", on); }
-    const wrap = this.canvas && this.canvas.closest(".jarvis-wave-wrap");
-    if (wrap) wrap.classList.toggle("speaking", on);
+    const stage = document.querySelector(".jarvis-stage");
+    if (stage) stage.classList.toggle("speaking", on);
   },
   kick() { this.energy = Math.min(1, this.energy + 0.6); },   // a word was spoken
   draw() {
@@ -1409,19 +1409,24 @@ const Voice = {
     const vs = speechSynthesis.getVoices();
     if (!vs.length) return;
     const en = vs.filter(v => /^en/i.test(v.lang));
-    // Known-natural MALE voice names across platforms (Windows / macOS / Chrome).
-    const MALE = /(daniel|arthur|oliver|george|ryan|thomas|brian|james|guy|david|mark|male|liam|william|aaron|fred|alex)\b/i;
-    const NATURAL = /(natural|neural|premium|enhanced|online|google)/i;
+    // Deep, natural MALE voices across platforms — best-sounding first.
+    const STRONG = /(guy|davis|tony|christopher|eric|roger|steffan|brian|ryan|daniel|george|arthur|william|david|liam|thomas)\b/i;
+    const MALE = new RegExp(STRONG.source + "|\\b(male|oliver|mark|james|aaron|fred|alex|jon|paul|richard)\\b", "i");
+    const NATURAL = /(natural|neural|premium|enhanced|online|siri)/i;
+    const ROBOTIC = /(zira|hazel|susan|linda|female|microsoft (david|mark) desktop|espeak|compact)/i;
     const score = (v) => {
       let s = 0;
-      if (MALE.test(v.name)) s += 100;                 // must sound male
-      if (NATURAL.test(v.name)) s += 40;               // prefer natural engines
-      if (/en[-_]?GB/i.test(v.lang)) s += 12;          // a gentle, natural accent
-      else if (/en[-_]?(US|AU|IE|CA)/i.test(v.lang)) s += 8;
-      if (v.localService) s += 3;                      // works fully offline
+      const n = v.name;
+      if (MALE.test(n)) s += 120;                      // must sound male
+      if (STRONG.test(n)) s += 30;                     // a strong, deeper timbre
+      if (NATURAL.test(n)) s += 90;                    // human-sounding, not robotic
+      if (/google/i.test(n)) s += 45;                  // Google voices are very natural
+      if (/en[-_]?GB/i.test(v.lang)) s += 14;          // warm, natural accent
+      else if (/en[-_]?(US|AU|IE|CA)/i.test(v.lang)) s += 10;
+      if (ROBOTIC.test(n)) s -= 80;                    // avoid the flat, dated engines
       return s;
     };
-    // Rank English voices; strongly favour a natural male voice, fall back sanely.
+    // Rank English voices; strongly favour a natural, strong male voice.
     this.voice =
       en.slice().sort((a, b) => score(b) - score(a))[0] ||
       vs.find(v => /^en/i.test(v.lang)) || vs[0] || null;
@@ -1435,8 +1440,8 @@ const Voice = {
     if (!this.voice) this.pick();
     if (this.voice) { u.voice = this.voice; u.lang = this.voice.lang; }
     else u.lang = "en-GB";
-    // warmer, natural cadence (not robotic)
-    u.rate = 0.96; u.pitch = 0.98;
+    // fuller, stronger male cadence — a touch lower and unhurried (not robotic)
+    u.rate = 0.95; u.pitch = 0.88;
     u.volume = Math.max(0, Math.min(1, settings.volume / 100));
     // drive the hi-tech waveform so it moves while he speaks
     u.onstart = () => JarvisWave.setSpeaking(true);
@@ -1518,6 +1523,36 @@ function jarvisSay(cls, text) {
   const div = document.createElement("div"); div.className = "j-msg " + cls; div.textContent = text;
   log.appendChild(div); log.scrollTop = log.scrollHeight;
   if (cls === "bot") Voice.speak(text);            // Brother Thomas speaks
+}
+/* Rich profile card (photo + information) shown when someone asks about a
+   specific person, e.g. "who is Bishop Aldrin Palanca?". He also speaks a
+   short, natural summary. */
+function jarvisPersonCard(p, sec) {
+  const log = $("#jarvis-log");
+  const catId = sec && sec.id;
+  const idx = catId ? dirItems(catId).indexOf(p) : -1;
+  const glyph = svg(ICONS[catId] || ICONS.apostle);
+  const about = p.about || p.description || "";
+  const facts = p.extra ? Object.entries(p.extra).map(([k, v]) => `${k}: ${v}`) : [];
+  const factsHTML = facts.slice(0, 4).map(f => `<span class="jc-fact">${esc(f)}</span>`).join("");
+  const card = document.createElement("div");
+  card.className = "j-card";
+  card.innerHTML =
+    `<div class="jc-photo">${glyph}${p.image ? `<img src="${withV(p.image)}" alt="${esc(p.name)}" onerror="this.remove()">` : ""}</div>` +
+    `<div class="jc-info">` +
+      `<div class="jc-name">${esc(p.name)}</div>` +
+      (p.position ? `<div class="jc-pos">${esc(p.position)}</div>` : "") +
+      (p.location ? `<div class="jc-loc">📍 ${esc(p.location)}</div>` : "") +
+      (about ? `<div class="jc-desc">${esc(about)}</div>` : "") +
+      (factsHTML ? `<div class="jc-facts">${factsHTML}</div>` : "") +
+      (idx >= 0 ? `<button class="jc-more" type="button">View full profile</button>` : "") +
+    `</div>`;
+  log.appendChild(card); log.scrollTop = log.scrollHeight;
+  if (idx >= 0) card.querySelector(".jc-more").addEventListener("click", () => { Sound.play("tap"); dirOpenProfile(catId, idx); });
+  // a short, natural spoken summary — no self-reference
+  const firstSentence = (about.split(/(?<=\.)\s/)[0] || "").trim();
+  const spoken = `${p.name}${p.position ? ", " + p.position : ""}.${p.location ? " Based in " + p.location + "." : ""} ${firstSentence}`.replace(/\s+/g, " ").trim();
+  Voice.speak(spoken);
 }
 function jarvisGreet() {
   updateJarvisMode();
@@ -1615,8 +1650,8 @@ function jarvisReply(q) {
   }
 
   // 2) Greetings / identity / thanks
-  if (/\b(hello|hi|hey|peace|salam|good (morning|evening|afternoon))\b/.test(t)) return "Peace be with you! I am Brother Thomas. How may I help you today — our leadership, branches, history, beliefs, or using this screen?";
-  if (/\b(who are you|your name|what are you|brother thomas|jarvis)\b/.test(t)) return `I am ${ASSISTANT_NAME}, the ministry assistant for the ${c.name}. Ask me about our Apostle, Bishops, Presbyters, Pastors, Elders, our branches around the world, our history, or our beliefs.`;
+  if (/\b(hello|hi|hey|peace|salam|good (morning|evening|afternoon))\b/.test(t)) return "Peace be with you. How may I help you today?";
+  if (/\b(who are you|your name|what are you|brother thomas|jarvis)\b/.test(t)) return "I'm here to help you. You can ask me about our Apostle, Bishops, Presbyters, Pastors, Elders, our branches around the world, our history, or our beliefs.";
   if (/\bthank/.test(t)) return "You are most welcome. God bless you and keep you.";
 
   // 3) Leadership groups
@@ -1649,7 +1684,7 @@ function jarvisReply(q) {
   if (/\b(directory|list of|profiles?|photos?|pictures?|bio|biograph)\b/.test(t)) return "Tap the DIRECTORY icon in the dock, choose a category (Bishops, Presbyters, Pastors, Elders or Testimonies), then tap a name to open a full profile — a large photo with About, Ministry Role, Church Assignment, Messages & Teachings, and Activities.";
   if (/\b(drag|move|reposition|pinch|stretch|zoom|resize|scale)\b/.test(t)) return "You can drag any section icon to reposition it, pinch (or scroll) to stretch the whole network, and double-tap an empty area to reset. It's built for a large touch screen.";
   if (/\b(full ?screen|kiosk|display|tab|toolbar)\b/.test(t)) return "The app runs full-screen — it goes full-screen on your first tap so there's no browser toolbar. Press F11 to toggle it manually.";
-  if (/\b(what is this|about (the )?app|this application|this screen|this kiosk|who made|what can you do|purpose of this)\b/.test(t)) return `This is the ${c.name} interactive leadership directory — a touch kiosk to explore our Apostle, Bishops, Presbyters, Pastors, Elders, our branches on the 3D globe, and our history. I'm ${ASSISTANT_NAME}; ask me anything about the church or how to use the screen.`;
+  if (/\b(what is this|about (the )?app|this application|this screen|this kiosk|who made|what can you do|purpose of this)\b/.test(t)) return `This is the ${c.name} interactive leadership directory — a touch kiosk to explore our Apostle, Bishops, Presbyters, Pastors, Elders, our branches on the 3D globe, and our history. Ask me anything about the church or how to use the screen.`;
   if (/\b(help|how do i|how to|use|navigate|start|open|guide)\b/.test(t)) return "Tap the centre logo to reveal the section icons, then tap one to open it — Apostle, Bishops, Presbyters, Pastors, Elders, Branches or History. The bottom dock has Home, Directory, Gallery, Settings, me, Browser and Search. Drag icons to move them and pinch to stretch.";
 
   return "I can tell you about our Apostle, Bishops, Presbyters, Pastors, Elders, a specific minister by name, our branches worldwide, our history and beliefs, or how to use this screen — drag the icons, open the globe, the Directory, Gallery, Settings and more. What would you like to know?";
@@ -1660,6 +1695,15 @@ async function submitJarvis(q) {
   q = (q || "").trim();
   if (!q || jarvisBusy) return;
   jarvisSay("me", q); $("#jarvis-text").value = ""; Sound.play("tap");
+
+  // A specific person → show a rich profile card (photo + information) rather
+  // than a plain text answer. Works in both offline and AI modes.
+  const pt = " " + q.toLowerCase().replace(/[".“”]/g, "") + " ";
+  const person = jarvisFindPerson(pt);
+  if (person && !/\b(all|list|who are the|how many)\b/.test(pt)) {
+    setTimeout(() => { jarvisPersonCard(person.p, person.sec); Sound.play("open"); }, 380);
+    return;
+  }
 
   // Offline path: instant answer grounded in the church content.
   if (!settings.jarvisEnabled || !settings.jarvisEndpoint) {

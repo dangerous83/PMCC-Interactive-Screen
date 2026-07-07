@@ -519,35 +519,88 @@ input{ font-family:inherit; }
 .j-typing span:nth-child(2){ animation-delay:.18s; } .j-typing span:nth-child(3){ animation-delay:.36s; }
 @keyframes j-typing{ 0%,60%,100%{ opacity:.3; transform:translateY(0);} 30%{ opacity:1; transform:translateY(-4px);} }
 
-/* — Brother Thomas: hi-tech voice waveform — */
+/* — Brother Thomas: two-column layout (animation left · chat right) — */
+.jarvis-shell{ width:min(92vw, 160vh) !important; }
+.jarvis-body{ flex:1; min-height:0; display:flex; }
+/* LEFT · living voice presence */
+.jarvis-stage{
+  position:relative; flex:0 0 38%; min-width:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:2vmin; overflow:hidden;
+  border-right:1px solid rgba(255,255,255,.12);
+  background:radial-gradient(ellipse 80% 60% at 50% 45%, color-mix(in srgb,var(--accent) 12%, transparent), transparent 70%),
+             linear-gradient(160deg, rgba(20,34,78,.32), rgba(6,12,30,.42));
+}
+.jarvis-stage::before{                              /* faint tech grid backdrop */
+  content:""; position:absolute; inset:0; opacity:.14; pointer-events:none;
+  background-image:linear-gradient(color-mix(in srgb,var(--accent) 40%,transparent) 1px, transparent 1px),
+                   linear-gradient(90deg, color-mix(in srgb,var(--accent) 40%,transparent) 1px, transparent 1px);
+  background-size:2.4vmin 2.4vmin;
+  -webkit-mask:radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
+          mask:radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
+}
+/* pulsing concentric "core" — his presence */
+.jarvis-core{ position:relative; width:min(26vmin,30vh); aspect-ratio:1; display:grid; place-items:center; }
+.jc-ring{ position:absolute; inset:0; border-radius:50%; border:1px solid color-mix(in srgb,var(--accent) 55%, transparent); box-shadow:0 0 3vmin color-mix(in srgb,var(--accent) 30%, transparent), inset 0 0 2vmin color-mix(in srgb,var(--accent) 18%, transparent); }
+.jc-ring-1{ animation:jc-spin 18s linear infinite; border-top-color:transparent; border-bottom-color:transparent; }
+.jc-ring-2{ inset:14%; border-style:dashed; border-color:color-mix(in srgb,var(--accent-2) 45%, transparent); animation:jc-spin 26s linear infinite reverse; }
+.jc-ring-3{ inset:28%; border-color:color-mix(in srgb,var(--accent) 40%, transparent); animation:jc-spin 12s linear infinite; }
+.jc-glow{ position:absolute; inset:34%; border-radius:50%; background:radial-gradient(circle at 42% 38%, var(--accent-2), var(--accent) 55%, #2b5f78); box-shadow:0 0 4vmin color-mix(in srgb,var(--accent) 55%, transparent); animation:jc-breathe 3.4s ease-in-out infinite; }
+@keyframes jc-spin{ to{ transform:rotate(360deg); } }
+@keyframes jc-breathe{ 0%,100%{ transform:scale(.9); opacity:.85; } 50%{ transform:scale(1.06); opacity:1; } }
+.jarvis-stage.speaking .jc-glow{ animation-duration:1.1s; box-shadow:0 0 6vmin color-mix(in srgb,var(--accent) 75%, transparent); }
+.jarvis-stage.speaking .jc-ring{ border-color:color-mix(in srgb,var(--accent-2) 70%, transparent); box-shadow:0 0 4vmin color-mix(in srgb,var(--accent) 55%, transparent); }
+/* the waveform bar sits across the lower stage */
 .jarvis-wave-wrap{
-  position:relative; height:clamp(70px,11vmin,150px); margin:0 clamp(20px,3vmin,60px);
+  position:relative; width:88%; height:clamp(60px,9vmin,130px);
   border-radius:calc(var(--radius)*.7);
   background:linear-gradient(160deg, rgba(20,34,78,.42), rgba(6,12,30,.55));
   border:1px solid var(--glass-line);
   box-shadow:inset 0 0 3vmin color-mix(in srgb, var(--accent) 12%, transparent), 0 0 2vmin color-mix(in srgb, var(--accent) 10%, transparent);
   overflow:hidden; transition:box-shadow .3s;
 }
-.jarvis-wave-wrap::before{                          /* faint tech grid behind the wave */
-  content:""; position:absolute; inset:0; opacity:.22; pointer-events:none;
-  background-image:linear-gradient(color-mix(in srgb,var(--accent) 40%,transparent) 1px, transparent 1px),
-                   linear-gradient(90deg, color-mix(in srgb,var(--accent) 40%,transparent) 1px, transparent 1px);
-  background-size:2.2vmin 2.2vmin;
-  -webkit-mask:linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
-          mask:linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
-}
-.jarvis-wave-wrap.speaking{ box-shadow:inset 0 0 3vmin color-mix(in srgb, var(--accent) 26%, transparent), 0 0 3.5vmin color-mix(in srgb, var(--accent) 32%, transparent); }
+.jarvis-stage.speaking .jarvis-wave-wrap{ box-shadow:inset 0 0 3vmin color-mix(in srgb, var(--accent) 26%, transparent), 0 0 3.5vmin color-mix(in srgb, var(--accent) 32%, transparent); }
 #jarvis-wave{ position:relative; z-index:1; width:100%; height:100%; display:block; }
 .jw-state{
-  position:absolute; top:.7vmin; right:1.1vmin; z-index:2;
-  font-size:clamp(9px,1.05vmin,20px); font-weight:700; letter-spacing:.24em;
+  font-size:clamp(9px,1.05vmin,20px); font-weight:700; letter-spacing:.28em;
   color:var(--text-dim); text-shadow:0 1px 4px rgba(0,0,0,.8);
 }
 .jw-state::before{ content:"● "; color:var(--text-dim); }
 .jw-state.live{ color:var(--accent-2); }
 .jw-state.live::before{ color:#63d38f; animation:jw-blink 1s steps(1) infinite; }
 @keyframes jw-blink{ 50%{ opacity:.25; } }
-@media (prefers-reduced-motion:reduce){ .jw-state.live::before{ animation:none; } }
+/* RIGHT · chat column */
+.jarvis-chat{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.jarvis-chat .jarvis-log{ flex:1; }
+/* person card rendered inside the chat when you ask "who is …" */
+.j-card{ align-self:flex-start; max-width:92%; width:min(46ch,92%); display:flex; gap:1.4vmin;
+  padding:clamp(12px,1.6vmin,30px); border-radius:16px; border-bottom-left-radius:6px;
+  background:var(--glass); border:1px solid var(--glass-line);
+  box-shadow:0 0 2.6vmin color-mix(in srgb,var(--accent) 14%, transparent); animation:fade-up .4s var(--ease-out) both; }
+.j-card .jc-photo{ position:relative; flex:0 0 clamp(64px,9vmin,150px); aspect-ratio:3/4; border-radius:12px; overflow:hidden;
+  background:linear-gradient(158deg, rgba(32,52,110,.78), rgba(9,16,42,.86)); border:1px solid var(--tile-line);
+  display:grid; place-items:center; }
+.j-card .jc-photo svg{ width:46%; height:46%; stroke:color-mix(in srgb,var(--accent-2) 70%, transparent); fill:none; stroke-width:1.4; }
+.j-card .jc-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
+.j-card .jc-info{ flex:1; min-width:0; }
+.j-card .jc-name{ font-size:clamp(15px,1.9vmin,36px); font-weight:700; color:var(--accent-2); letter-spacing:.02em; }
+.j-card .jc-pos{ font-size:clamp(11px,1.35vmin,26px); letter-spacing:.14em; color:var(--accent); margin-top:.4vmin; text-transform:uppercase; }
+.j-card .jc-loc{ font-size:clamp(11px,1.3vmin,24px); color:var(--text-dim); margin-top:.3vmin; }
+.j-card .jc-desc{ font-size:clamp(12px,1.45vmin,28px); line-height:1.55; color:var(--text); margin-top:1vmin; }
+.j-card .jc-facts{ display:flex; flex-wrap:wrap; gap:.7vmin; margin-top:1.1vmin; }
+.j-card .jc-fact{ font-size:clamp(10px,1.15vmin,22px); padding:.35em .8em; border-radius:999px;
+  background:var(--glass-2); border:1px solid var(--glass-line); color:var(--accent-2); }
+.j-card .jc-more{ margin-top:1.1vmin; padding:.5em 1.1em; font-size:clamp(11px,1.25vmin,24px); font-weight:600;
+  letter-spacing:.06em; color:#08131f; background:color-mix(in srgb,var(--accent) 30%, var(--glass)); border:1px solid var(--accent);
+  border-radius:999px; cursor:pointer; transition:box-shadow .2s; }
+.j-card .jc-more:hover{ box-shadow:0 0 2vmin color-mix(in srgb,var(--accent) 50%, transparent); }
+/* stack on smaller / portrait screens */
+@media (max-width:900px){
+  .jarvis-body{ flex-direction:column; }
+  .jarvis-stage{ flex:0 0 auto; height:34%; border-right:none; border-bottom:1px solid rgba(255,255,255,.12); flex-direction:row; }
+  .jarvis-core{ width:min(20vmin,22vh); }
+  .jarvis-wave-wrap{ width:52%; }
+}
+@media (prefers-reduced-motion:reduce){ .jw-state.live::before, .jc-ring, .jc-glow{ animation:none; } }
 
 /* — browser — */
 .browser-bar{ display:flex; align-items:center; gap:1.2vmin; padding:clamp(12px,1.6vmin,34px) clamp(16px,2vmin,44px); border-bottom:1px solid rgba(255,255,255,.14); }

@@ -240,7 +240,7 @@
   <!-- ═══════════════════ JARVIS / BROTHER THOMAS OVERLAY ══════════════ -->
   <section id="jarvis" class="feature-overlay hidden" aria-modal="true" role="dialog">
     <div class="feature-backdrop" data-feature-close></div>
-    <div class="feature-shell tall">
+    <div class="feature-shell tall jarvis-shell">
       <header class="feature-head">
         <div class="jarvis-orb" aria-hidden="true"><span></span></div>
         <div><h2 id="jarvis-name">BROTHER THOMAS</h2><p id="jarvis-mode"><span id="jarvis-dot" class="j-dot"></span>Ready</p></div>
@@ -251,21 +251,37 @@
         </button>
         <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       </header>
-      <!-- High-tech voice waveform — animates whenever Brother Thomas speaks -->
-      <div class="jarvis-wave-wrap" aria-hidden="true">
-        <canvas id="jarvis-wave"></canvas>
-        <span class="jw-state" id="jarvis-wave-state">STANDBY</span>
+
+      <!-- Two-column layout: LEFT = his living voice animation, RIGHT = the chat box -->
+      <div class="jarvis-body">
+        <!-- LEFT · animated presence + hi-tech voice waveform (moves when he speaks) -->
+        <div class="jarvis-stage" aria-hidden="true">
+          <div class="jarvis-core">
+            <span class="jc-ring jc-ring-1"></span>
+            <span class="jc-ring jc-ring-2"></span>
+            <span class="jc-ring jc-ring-3"></span>
+            <span class="jc-glow"></span>
+          </div>
+          <div class="jarvis-wave-wrap">
+            <canvas id="jarvis-wave"></canvas>
+          </div>
+          <span class="jw-state" id="jarvis-wave-state">STANDBY</span>
+        </div>
+
+        <!-- RIGHT · the conversation + input -->
+        <div class="jarvis-chat">
+          <div id="jarvis-log" class="jarvis-log"></div>
+          <form id="jarvis-form" class="jarvis-input">
+            <input id="jarvis-text" type="text" autocomplete="off" placeholder="Ask Brother Thomas…">
+            <button id="jarvis-mic" type="button" class="pill mic" title="Speak — or say “Brother Thomas”" aria-label="Microphone">
+              <svg viewBox="0 0 24 24"><path d="M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v3.5M9 20.5h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+            <button type="submit" class="pill primary" aria-label="Send">
+              <svg viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="currentColor"/></svg>
+            </button>
+          </form>
+        </div>
       </div>
-      <div id="jarvis-log" class="jarvis-log"></div>
-      <form id="jarvis-form" class="jarvis-input">
-        <input id="jarvis-text" type="text" autocomplete="off" placeholder="Ask Brother Thomas…">
-        <button id="jarvis-mic" type="button" class="pill mic" title="Speak — or say “Brother Thomas”" aria-label="Microphone">
-          <svg viewBox="0 0 24 24"><path d="M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v3.5M9 20.5h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </button>
-        <button type="submit" class="pill primary" aria-label="Send">
-          <svg viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="currentColor"/></svg>
-        </button>
-      </form>
     </div>
   </section>
 
