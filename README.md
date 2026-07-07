@@ -36,10 +36,11 @@ or open the file normally and press **F11** for fullscreen.
 ## Brand & background
 
 The interface uses a **royal navy + gold** palette drawn from the PMCC 4th
-Watch logo (navy · gold · red · white). The background stays **alive** with a
-slow drifting navy/gold aurora glow and a soft animated tech grid layered over
-it. The app ships with a matching navy-and-gold "Signature" background at
-`assets/background.jpg` (used by default). **To use your own photo, just overwrite that file** (any 16:9 image),
+Watch logo (navy · gold · red · white). The background is a **living hi-tech
+scene**: a twinkling starfield, a slow-rotating light-ray fan behind the logo, a
+drifting navy/gold aurora, a soft tech grid, a receding perspective "floor"
+grid, and a gentle scan sweep — all pure CSS/canvas. The app also ships with a
+matching navy-and-gold "Signature" background at `assets/background.jpg`. **To use your own photo, just overwrite that file** (any 16:9 image),
 or pick a different look from **Gallery** (Royal Night, Golden Aura, Deep Navy,
 Emerald Court, Crimson Royal — all need no image file). Change the gold accent
 to another color in **Settings ▸ Accent Color**.
@@ -74,6 +75,9 @@ around the logo and joined to it by glowing connector lines.
 - **Tap the center logo** → the section icons glide out one node at a time and
   each glowing connector line draws to its icon in turn, sweeping around the
   ring. Tap the logo again to collapse the network.
+- **Drag** any icon to reposition it (its connector line follows and the spot is
+  remembered); **pinch or scroll** to stretch the whole network; **double-tap**
+  empty space to reset the zoom.
 - **Tap a leadership icon** (Apostle / Bishops / Presbyters / Pastors / Elders)
   → an animated **name dropdown** opens beside it listing everyone in that group;
   tap a name → the **profile modal** opens with a **large portrait on the left**.
@@ -84,10 +88,13 @@ around the logo and joined to it by glowing connector lines.
   dock). Tapping it opens the assistant with **voice active** — he **speaks his
   replies** in a natural British voice. Toggle voice with the header button.
 - **Tap Branches** → an **interactive 3D Earth**: a blue-ocean globe with green
-  continents, an atmosphere glow and day/night shading. It auto-rotates, you can
-  drag to spin it, and each congregation country is a glowing point. **Tap a
-  point** (or use the search box) to select it — its details appear on the left.
-  Add real per-branch details and coordinates in `app.js → Globe → COORDS`.
+  continents, atmosphere glow, day/night shading and a starfield. Markers are
+  **colour-coded by region**, and glowing **arcs connect the Manila HQ** to every
+  branch with travelling light pulses. The left panel shows a **region legend**
+  (counts + countries) — tap a region to fly there, or tap a glowing point for a
+  branch card (region badge, district, coordinates, services, contact). It
+  auto-rotates; drag to spin, pinch/scroll to zoom. Add real per-branch details
+  and coordinates in `app.js → Globe → COORDS`.
 - **Tap History** → the ministry timeline panel.
 
 ## Directory (Bishops · Presbyters · Pastors · Elders · Testimonies)
