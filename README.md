@@ -36,9 +36,10 @@ or open the file normally and press **F11** for fullscreen.
 ## Brand & background
 
 The interface uses a **royal navy + gold** palette drawn from the PMCC 4th
-Watch logo (navy · gold · red · white). The app ships with a matching
-navy-and-gold "Signature" background at `assets/background.jpg` (used by
-default). **To use your own photo, just overwrite that file** (any 16:9 image),
+Watch logo (navy · gold · red · white). The background stays **alive** with a
+slow drifting navy/gold aurora glow and a soft animated tech grid layered over
+it. The app ships with a matching navy-and-gold "Signature" background at
+`assets/background.jpg` (used by default). **To use your own photo, just overwrite that file** (any 16:9 image),
 or pick a different look from **Gallery** (Royal Night, Golden Aura, Deep Navy,
 Emerald Court, Crimson Royal — all need no image file). Change the gold accent
 to another color in **Settings ▸ Accent Color**.
@@ -48,7 +49,8 @@ to another color in **Settings ▸ Accent Color**.
 - **Home** — return to the dashboard.
 - **Gallery** — switch the background. The shipped photo is `assets/background.jpg` ("My Photo"); built-in scenes (Rainy Dusk, Aurora, Deep Space, Warm Sunset, Soft Slate) need no files.
 - **Settings** — username & password, volume, accent color, interface icon style (outline/filled), and a “check for updates” action. Saved to the browser (`localStorage`).
-- **Brother Thomas** — the ministry assistant. Works **offline** out of the box (built-in answers about leadership, branches, history, doctrine, and how to use the screen), and can optionally be connected to a **local OpenJarvis AI** for real conversational answers (see below). He also **speaks his replies aloud** using the kiosk's built-in text-to-speech voices — toggle with the **VOICE ON/OFF** button in his header (voice also respects the SOUND mute). Rename him in `app.js → ASSISTANT_NAME`; edit the offline answers in `app.js → jarvisReply`.
+- **Brother Thomas** — the ministry assistant. Works **offline** out of the box with a broad built-in knowledge base (answers about the Apostle, Bishops, Presbyters, Pastors, Elders, **a specific minister by name**, branches worldwide, history, beliefs, and how to use the screen), and can optionally be connected to a **local OpenJarvis AI** for open-ended conversation (see below). He **speaks his replies aloud** in a natural British voice — toggle with **VOICE ON/OFF** (respects the SOUND mute).
+  - **Talk to him / wake word.** Tap the **microphone** next to the message box and just speak your question — he listens and answers aloud. Once the mic is on he also listens for his name: say **“Brother Thomas”** (or “Jarvis”) from anywhere and he appears; say “Brother Thomas, who is the apostle?” and he opens and answers. Voice input needs **Chrome or Edge** and microphone permission (it degrades to text on other browsers). Rename him in `app.js → ASSISTANT_NAME`; edit answers in `app.js → jarvisReply`; change the wake word in `app.js → Listen.WAKE`.
 - **Internet Browser** — an in-app browser with an address bar (opens the church site by default). Sites that block embedding, or an offline kiosk, fall back to an “open in a new tab” button.
 
 ## How to edit the content
@@ -65,13 +67,13 @@ No photos are used for people right now — each entry shows a soft-glow icon gl
 
 ## Dashboard layout & interactions
 
-Tapping the logo reveals a clean, organized **grid** of section tiles beneath it:
-a top row of **Apostle · Bishops · Presbyters · Pastors** and a centered lower
-row of **Elders · Branches · History** — no connector lines, no clutter.
+The dashboard is an organized **node network**: **Apostle** at top-centre, with
+**Bishops · Presbyters · Pastors · Elders · Branches · History** spaced evenly
+around the logo and joined to it by glowing connector lines.
 
-- **Tap the center logo** → the logo lifts to the top and the section tiles fade
-  in one after another in reading order (left→right, top→bottom), settling into
-  the grid. Tap the logo again to collapse it back to the centre.
+- **Tap the center logo** → the section icons glide out one node at a time and
+  each glowing connector line draws to its icon in turn, sweeping around the
+  ring. Tap the logo again to collapse the network.
 - **Tap a leadership icon** (Apostle / Bishops / Presbyters / Pastors / Elders)
   → an animated **name dropdown** opens beside it listing everyone in that group;
   tap a name → the **profile modal** opens with a **large portrait on the left**.
@@ -81,9 +83,10 @@ row of **Elders · Branches · History** — no connector lines, no clutter.
 - **Brother Thomas** floats as a looping widget on the right edge (and is in the
   dock). Tapping it opens the assistant with **voice active** — he **speaks his
   replies** in a natural British voice. Toggle voice with the header button.
-- **Tap Branches** → an **interactive 3D globe**: it auto-rotates, you can drag to
-  spin it, and each congregation country is a glowing point. **Tap a point** (or
-  use the search box) to select it — its details appear in the panel on the left.
+- **Tap Branches** → an **interactive 3D Earth**: a blue-ocean globe with green
+  continents, an atmosphere glow and day/night shading. It auto-rotates, you can
+  drag to spin it, and each congregation country is a glowing point. **Tap a
+  point** (or use the search box) to select it — its details appear on the left.
   Add real per-branch details and coordinates in `app.js → Globe → COORDS`.
 - **Tap History** → the ministry timeline panel.
 
