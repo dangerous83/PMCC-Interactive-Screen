@@ -243,7 +243,7 @@
     <div class="feature-shell tall">
       <header class="feature-head">
         <div class="jarvis-orb" aria-hidden="true"><span></span></div>
-        <div><h2 id="jarvis-name">BROTHER THOMAS</h2><p id="jarvis-mode"><span id="jarvis-dot" class="j-dot"></span>Offline assistant</p></div>
+        <div><h2 id="jarvis-name">BROTHER THOMAS</h2><p id="jarvis-mode"><span id="jarvis-dot" class="j-dot"></span>Ready</p></div>
         <!-- voice toggle: Brother Thomas speaks his replies aloud when on -->
         <button id="jarvis-voice" class="pill jv-toggle" type="button" title="Voice on/off" aria-label="Toggle voice">
           <svg viewBox="0 0 24 24"><path d="M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v3.5M9 20.5h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -251,6 +251,11 @@
         </button>
         <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       </header>
+      <!-- High-tech voice waveform — animates whenever Brother Thomas speaks -->
+      <div class="jarvis-wave-wrap" aria-hidden="true">
+        <canvas id="jarvis-wave"></canvas>
+        <span class="jw-state" id="jarvis-wave-state">STANDBY</span>
+      </div>
       <div id="jarvis-log" class="jarvis-log"></div>
       <form id="jarvis-form" class="jarvis-input">
         <input id="jarvis-text" type="text" autocomplete="off" placeholder="Ask Brother Thomas…">
@@ -372,6 +377,42 @@
     <div class="fx-scan"></div>
     <div class="fx-ring"></div>
     <div class="fx-grid"></div>
+  </div>
+
+  <!-- ════════════ PMCC LOGO · ADVANCED-AI / CYBERSECURITY REVEAL ═══════════
+       Full-screen, high-impact reveal played when the center PMCC logo is
+       pressed. Scanning hex grid, sweeping rings, a boot log of "systems
+       online", a glitch flash — then the network reveals. Driven by
+       app.js → CyberReveal.run(). -->
+  <div id="cyber-reveal" aria-hidden="true">
+    <canvas id="cr-canvas"></canvas>
+    <div class="cr-scanline"></div>
+    <div class="cr-vignette"></div>
+    <div class="cr-center">
+      <div class="cr-rings">
+        <span class="cr-ring cr-ring-1"></span>
+        <span class="cr-ring cr-ring-2"></span>
+        <span class="cr-ring cr-ring-3"></span>
+        <span class="cr-reticle"></span>
+      </div>
+      <img class="cr-logo" src="assets/logo.png" alt="" draggable="false">
+      <div class="cr-title">P M C C &nbsp; 4 T H &nbsp; W A T C H</div>
+      <div class="cr-sub">SECURE&nbsp;·&nbsp;INTELLIGENT&nbsp;·&nbsp;INTERACTIVE</div>
+      <ul class="cr-boot" id="cr-boot"></ul>
+    </div>
+    <div class="cr-flash"></div>
+  </div>
+
+  <!-- ════════════════════ ON-SCREEN DIGITAL KEYBOARD ═════════════════════
+       Touch keyboard for the kiosk — appears when a text field is focused
+       (Brother Thomas, search, browser address, settings, globe search).
+       Built + driven by app.js → Keyboard. -->
+  <div id="osk" class="osk hidden" role="group" aria-label="On-screen keyboard">
+    <div class="osk-bar">
+      <span class="osk-title">DIGITAL KEYBOARD</span>
+      <button class="osk-hide" id="osk-hide" type="button" aria-label="Hide keyboard">HIDE ▾</button>
+    </div>
+    <div class="osk-keys" id="osk-keys"><!-- keys injected by app.js --></div>
   </div>
 
   <!-- Floating BROTHER THOMAS assistant widget (right side, always looping) -->

@@ -333,6 +333,18 @@ const Sound = {
       // elegant bell-like "chime" played on the open transition
       chime: [{ f:784, t:"sine", d:.7, g:.07 }, { f:1175, t:"sine", d:.7, g:.05, at:.07 }, { f:1568, t:"sine", d:.8, g:.035, at:.15 }, { f:2350, t:"sine", d:.6, g:.02, at:.22 }],
       boot: [{ f:220, t:"sine", d:.9, g:.07, slide:660 }, { f:1108, t:"triangle", d:.4, g:.03, at:.35 }, { f:1662, t:"sine", d:.5, g:.03, at:.55 }],
+      // soft mechanical click for the on-screen keyboard
+      key:  [{ f:1400, t:"square", d:.04, g:.028 }, { f:2600, t:"sine", d:.03, g:.014, at:.005 }],
+      // deep, powerful rising sweep for the PMCC logo cyber reveal
+      power:[{ f:70,  t:"sawtooth", d:1.5, g:.10, slide:320 },
+             { f:180, t:"triangle", d:1.4, g:.06, slide:720, at:.05 },
+             { f:90,  t:"sine",     d:1.6, g:.09, slide:440, at:.02 }],
+      // bright confirmation "system online" chord that lands on the reveal
+      surge:[{ f:523, t:"sine", d:.8, g:.06, at:0 }, { f:784, t:"sine", d:.8, g:.05, at:.06 },
+             { f:1046,t:"sine", d:.9, g:.045, at:.12 }, { f:1568,t:"triangle", d:.7, g:.03, at:.20 },
+             { f:2093,t:"sine", d:.6, g:.02, at:.30 }],
+      // short data-blip used while boot lines type out
+      blip: [{ f:1760, t:"square", d:.05, g:.02 }, { f:2637, t:"sine", d:.04, g:.012, at:.01 }],
     };
     (R[kind] || R.tap).forEach(r => {
       const t0 = ctx.currentTime + (r.at || 0);
@@ -1019,6 +1031,7 @@ function openFeature(id) {
   const el = $("#" + id); el.classList.remove("hidden");
   requestAnimationFrame(() => el.classList.add("open"));
   if (id === "jarvis") {
+    JarvisWave.start();                                                     // hi-tech voice waveform
     Voice.enabled = true; store.set("voiceOn", true); updateVoiceButton();  // opening = voice active
     if (Voice.supported) { try { speechSynthesis.resume(); } catch {} Voice.pick(); }
     if (Listen.supported && !Listen.wantOn) Listen.start();   // activate voice input on open
@@ -1026,7 +1039,7 @@ function openFeature(id) {
   }
   if (id === "browser") { /* lazy-load on open */ browserGo($("#browser-url").value); }
 }
-function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; if (el.id === "globe") Globe.stop(); if (el.id === "jarvis") Voice.stop(); }
+function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; if (el.id === "globe") Globe.stop(); if (el.id === "jarvis") { Voice.stop(); JarvisWave.stop(); } }
 function closeAllFeatures() { $$(".feature-overlay").forEach(el => { if (!el.classList.contains("hidden")) closeFeature(el); }); }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1297,6 +1310,96 @@ function resetSettings() {
    Uses the browser's built-in speechSynthesis (offline — the voices come
    from the kiosk's operating system; Windows/macOS/Chrome all include
    English voices). Toggle with the VOICE button in his header.           */
+/* ── Hi-tech voice waveform ────────────────────────────────────────────
+   A glowing, layered sine-wave visualiser drawn on #jarvis-wave. It idles
+   as a calm line and springs to life — the wave "moves" — whenever Brother
+   Thomas is speaking. Speech has no amplitude data we can read, so we drive
+   the motion from his speaking state plus his word boundaries.            */
+const JarvisWave = {
+  canvas: null, ctx: null, raf: null, t: 0,
+  amp: 0.05, target: 0.05, energy: 0,      // amp eases toward target; energy = per-word kick
+  running: false, speaking: false,
+  init() {
+    if (this.canvas) return;
+    this.canvas = document.getElementById("jarvis-wave");
+    if (!this.canvas) return;
+    this.ctx = this.canvas.getContext("2d");
+    this.resize();
+    addEventListener("resize", () => this.resize());
+  },
+  resize() {
+    if (!this.canvas) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = this.canvas.getBoundingClientRect();
+    this.canvas.width = Math.max(1, r.width * dpr);
+    this.canvas.height = Math.max(1, r.height * dpr);
+    if (this.ctx) this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.W = r.width; this.H = r.height;
+  },
+  start() {
+    this.init();
+    if (!this.ctx || this.running) return;
+    this.running = true;
+    const loop = () => { if (!this.running) return; this.draw(); this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop);
+  },
+  stop() {
+    this.running = false; this.speaking = false;
+    if (this.raf) cancelAnimationFrame(this.raf), this.raf = null;
+  },
+  setSpeaking(on) {
+    this.speaking = on;
+    this.target = on ? 0.72 : 0.06;
+    const s = document.getElementById("jarvis-wave-state");
+    if (s) { s.textContent = on ? "SPEAKING" : "STANDBY"; s.classList.toggle("live", on); }
+    const wrap = this.canvas && this.canvas.closest(".jarvis-wave-wrap");
+    if (wrap) wrap.classList.toggle("speaking", on);
+  },
+  kick() { this.energy = Math.min(1, this.energy + 0.6); },   // a word was spoken
+  draw() {
+    const { ctx, W, H } = this; if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+    this.t += 0.045;
+    // ease amplitude toward target; word-kicks add a decaying burst
+    this.amp += (this.target - this.amp) * 0.12;
+    this.energy *= 0.90;
+    const level = this.amp + this.energy * 0.5;
+    const mid = H / 2;
+    const accent = (getComputedStyle(document.documentElement).getPropertyValue("--accent") || "#e8c66a").trim();
+    const accent2 = (getComputedStyle(document.documentElement).getPropertyValue("--accent-2") || "#ffe6ab").trim();
+    // faint center guide line
+    ctx.globalAlpha = 0.18; ctx.strokeStyle = accent; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // three layered waves, back (dim/slow) to front (bright/fast)
+    const layers = [
+      { col: accent,  a: 0.30, freq: 1.4, sp: 0.6, w: 1.6, ph: 0 },
+      { col: accent2, a: 0.55, freq: 2.2, sp: 1.0, w: 2.2, ph: 1.6 },
+      { col: accent2, a: 0.95, freq: 3.1, sp: 1.5, w: 2.8, ph: 3.1 },
+    ];
+    for (const L of layers) {
+      ctx.beginPath();
+      for (let x = 0; x <= W; x += 3) {
+        const p = x / W;
+        // envelope tapers the wave at both ends so it reads as a "voice" bar
+        const env = Math.pow(Math.sin(Math.PI * p), 0.8);
+        const y = mid + Math.sin(p * Math.PI * 2 * L.freq + this.t * L.sp + L.ph)
+                        * (H * 0.42) * level * L.a * env
+                      + Math.sin(p * Math.PI * 2 * (L.freq * 2.3) + this.t * L.sp * 1.7)
+                        * (H * 0.10) * level * L.a * env;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = L.col;
+      ctx.lineWidth = L.w;
+      ctx.lineJoin = "round";
+      ctx.shadowColor = L.col;
+      ctx.shadowBlur = 12 * (0.5 + level);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  },
+};
+
 const Voice = {
   enabled: store.get("voiceOn", true),
   voice: null,
@@ -1305,13 +1408,22 @@ const Voice = {
     if (!this.supported) return;
     const vs = speechSynthesis.getVoices();
     if (!vs.length) return;
-    const gb = vs.filter(v => /en[-_]?GB/i.test(v.lang));
-    // prefer a natural BRITISH male voice, then any British, then any English
+    const en = vs.filter(v => /^en/i.test(v.lang));
+    // Known-natural MALE voice names across platforms (Windows / macOS / Chrome).
+    const MALE = /(daniel|arthur|oliver|george|ryan|thomas|brian|james|guy|david|mark|male|liam|william|aaron|fred|alex)\b/i;
+    const NATURAL = /(natural|neural|premium|enhanced|online|google)/i;
+    const score = (v) => {
+      let s = 0;
+      if (MALE.test(v.name)) s += 100;                 // must sound male
+      if (NATURAL.test(v.name)) s += 40;               // prefer natural engines
+      if (/en[-_]?GB/i.test(v.lang)) s += 12;          // a gentle, natural accent
+      else if (/en[-_]?(US|AU|IE|CA)/i.test(v.lang)) s += 8;
+      if (v.localService) s += 3;                      // works fully offline
+      return s;
+    };
+    // Rank English voices; strongly favour a natural male voice, fall back sanely.
     this.voice =
-      gb.find(v => /(daniel|arthur|oliver|george|ryan|thomas|brian|male)/i.test(v.name)) ||
-      gb.find(v => /google|natural|premium|online/i.test(v.name)) ||
-      gb[0] ||
-      vs.find(v => /^en/i.test(v.lang) && /(daniel|guy|george|male)/i.test(v.name)) ||
+      en.slice().sort((a, b) => score(b) - score(a))[0] ||
       vs.find(v => /^en/i.test(v.lang)) || vs[0] || null;
   },
   speak(text) {
@@ -1324,11 +1436,15 @@ const Voice = {
     if (this.voice) { u.voice = this.voice; u.lang = this.voice.lang; }
     else u.lang = "en-GB";
     // warmer, natural cadence (not robotic)
-    u.rate = 0.94; u.pitch = 1.02;
+    u.rate = 0.96; u.pitch = 0.98;
     u.volume = Math.max(0, Math.min(1, settings.volume / 100));
+    // drive the hi-tech waveform so it moves while he speaks
+    u.onstart = () => JarvisWave.setSpeaking(true);
+    u.onboundary = () => JarvisWave.kick();       // pulse the wave on each word
+    u.onend = u.onerror = () => JarvisWave.setSpeaking(false);
     speechSynthesis.speak(u);
   },
-  stop() { if (this.supported) speechSynthesis.cancel(); },
+  stop() { if (this.supported) speechSynthesis.cancel(); JarvisWave.setSpeaking(false); },
   toggle() {
     this.enabled = !this.enabled; store.set("voiceOn", this.enabled);
     if (!this.enabled) this.stop();
@@ -1405,8 +1521,9 @@ function jarvisSay(cls, text) {
 }
 function jarvisGreet() {
   updateJarvisMode();
-  const extra = settings.jarvisEnabled ? "" : " (Tip: an administrator can connect me to a local OpenJarvis AI in Settings.)";
-  jarvisSay("bot", `Peace be with you. I am ${ASSISTANT_NAME}, your ministry assistant. Ask me about our leadership, branches, history, or how to use this directory.${extra}`);
+  // Keep it simple and warm — no self-introduction, no mention of being an
+  // assistant / AI. Just a gentle greeting.
+  jarvisSay("bot", "Peace be with you. How may I help you today?");
 }
 /* Grounds a local model as Brother Thomas using the church content. */
 function jarvisSystemPrompt() {
@@ -1414,7 +1531,8 @@ function jarvisSystemPrompt() {
   const leaders = CONTENT.sections
     .filter(s => s.items && s.items.length && s.items[0].confidence !== "placeholder")
     .map(s => `${s.label} — ${s.items.map(i => i.name).join("; ")}`).join(" | ");
-  return `You are ${ASSISTANT_NAME}, the warm, respectful ministry assistant on an information kiosk for the ${c.name} (PMCC 4th Watch). ` +
+  return `You are ${ASSISTANT_NAME}, a warm, respectful, softly-spoken man who helps people at the ${c.name} (PMCC 4th Watch). ` +
+    `Speak naturally in the first person as a person. NEVER say or imply that you are an AI, a chatbot, a language model, an assistant, a program, or "Jarvis"; never mention these words or your own nature — simply help. ` +
     `Answer concisely (2-4 sentences), reverently, and helpfully. Never invent church leaders or facts not given here. ` +
     `Church facts: founded ${c.founded}; headquarters ${c.headquarters}; ${c.members}; present in ${c.countries}; motto "${c.tagline}". ` +
     `Meaning of "4th Watch": ${c.meaningOf4thWatch} Beliefs: ${c.doctrineSummary} ` +
@@ -1429,7 +1547,7 @@ function updateJarvisMode() {
   const dot = $("#jarvis-dot"), mode = $("#jarvis-mode");
   if (!dot || !mode) return;
   dot.className = "j-dot" + (on ? " ready" : "");
-  mode.childNodes[1] && (mode.childNodes[1].nodeValue = on ? "Local AI · OpenJarvis" : "Offline assistant");
+  mode.childNodes[1] && (mode.childNodes[1].nodeValue = on ? "Connected" : "Ready");
 }
 function setJarvisStatus(online) {
   const dot = $("#jarvis-dot"); if (dot) dot.className = "j-dot " + (online ? "on" : "off");
@@ -1691,8 +1809,296 @@ function finishBoot() {
   }, 500);
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   PMCC LOGO · ADVANCED-AI / CYBERSECURITY REVEAL
+   Pressing the center PMCC logo fires this: a full-screen, high-impact
+   reveal — a live scanning node-grid on canvas, sweeping rings, a boot log
+   of "systems online", a glitch flash and layered sound — then it hands off
+   to the caller (which expands the directory network).
+   ══════════════════════════════════════════════════════════════════════ */
+const CyberReveal = {
+  el: null, canvas: null, ctx: null, raf: null, running: false, nodes: [], t0: 0,
+  BOOT: [
+    "INITIALIZING SECURE CORE",
+    "NEURAL ENGINE",
+    "ENCRYPTION LAYER",
+    "BIOMETRIC GATEWAY",
+    "DIRECTORY MATRIX",
+  ],
+  OK: ["ONLINE", "ONLINE", "SECURED", "ACTIVE", "LINKED"],
+  DURATION: 2600,
+  init() {
+    this.el = document.getElementById("cyber-reveal");
+    this.canvas = document.getElementById("cr-canvas");
+    if (this.canvas) this.ctx = this.canvas.getContext("2d");
+  },
+  resize() {
+    if (!this.canvas) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.canvas.width = innerWidth * dpr; this.canvas.height = innerHeight * dpr;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.W = innerWidth; this.H = innerHeight;
+  },
+  seed() {
+    this.nodes = [];
+    const n = Math.min(90, Math.round((this.W * this.H) / 26000));
+    for (let i = 0; i < n; i++) {
+      this.nodes.push({
+        x: Math.random() * this.W, y: Math.random() * this.H,
+        vx: (Math.random() - .5) * 0.35, vy: (Math.random() - .5) * 0.35,
+      });
+    }
+  },
+  run(after) {
+    this.init();
+    if (this.running || !this.el) { if (after) after(); return; }
+    this.running = true;
+    this.resize();
+    this.seed();
+    // reset + show
+    this.el.classList.remove("done");
+    const boot = document.getElementById("cr-boot"); if (boot) boot.innerHTML = "";
+    this.el.classList.add("run");
+    // sound: deep rising power sweep, then a bright "systems online" surge
+    Sound.play("power");
+    setTimeout(() => Sound.play("surge"), 900);
+    // typed boot log with data blips
+    this.BOOT.forEach((line, i) => {
+      setTimeout(() => {
+        if (!boot) return;
+        const li = document.createElement("li");
+        li.innerHTML = `<span>&gt; ${line}</span><span class="ok">✓ ${this.OK[i]}</span>`;
+        boot.appendChild(li);
+        Sound.play("blip");
+      }, 420 + i * 260);
+    });
+    // canvas loop
+    this.t0 = performance.now();
+    const loop = (now) => {
+      if (!this.running) return;
+      this.draw((now - this.t0) / this.DURATION);
+      this.raf = requestAnimationFrame(loop);
+    };
+    this.raf = requestAnimationFrame(loop);
+    // finish → fade out → hand off
+    setTimeout(() => this.finish(after), this.DURATION);
+  },
+  draw(prog) {
+    const { ctx, W, H, nodes } = this; if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+    const accent = (getComputedStyle(document.documentElement).getPropertyValue("--accent") || "#e8c66a").trim();
+    // move + draw connecting network lines
+    for (const p of nodes) {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+    }
+    ctx.lineWidth = 1;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy);
+        if (d < 150) {
+          ctx.globalAlpha = (1 - d / 150) * 0.5;
+          ctx.strokeStyle = accent;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    for (const p of nodes) {
+      ctx.fillStyle = accent;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+    // sweeping vertical scan bar
+    const sx = ((prog * 1.2) % 1) * W;
+    const grad = ctx.createLinearGradient(sx - 120, 0, sx + 120, 0);
+    grad.addColorStop(0, "rgba(232,198,106,0)");
+    grad.addColorStop(.5, "rgba(255,230,171,.28)");
+    grad.addColorStop(1, "rgba(232,198,106,0)");
+    ctx.fillStyle = grad; ctx.fillRect(sx - 120, 0, 240, H);
+    // expanding radial scan rings
+    const cx = W / 2, cy = H / 2;
+    for (let k = 0; k < 3; k++) {
+      const rp = (prog * 1.6 - k * 0.22); if (rp < 0 || rp > 1) continue;
+      ctx.globalAlpha = (1 - rp) * 0.6;
+      ctx.strokeStyle = accent; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, rp * Math.hypot(W, H) * 0.55, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  },
+  finish(after) {
+    this.el.classList.add("done");
+    if (after) after();                     // reveal the network under the fade
+    setTimeout(() => {
+      this.running = false;
+      if (this.raf) cancelAnimationFrame(this.raf), this.raf = null;
+      this.el.classList.remove("run", "done");
+      if (this.ctx) this.ctx.clearRect(0, 0, this.W, this.H);
+    }, 550);
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   ON-SCREEN DIGITAL KEYBOARD
+   A touch keyboard for the kiosk. It appears automatically whenever a text
+   field is focused (Brother Thomas, Search, Browser address, Settings, the
+   globe search) and types into it. Tapping keys never steals focus from the
+   field (pointerdown is prevented), so the caret stays put.
+   ══════════════════════════════════════════════════════════════════════ */
+const Keyboard = {
+  el: null, keysEl: null, target: null, shift: false, caps: false, mode: "abc",
+  LAYOUTS: {
+    abc: [
+      ["1","2","3","4","5","6","7","8","9","0"],
+      ["q","w","e","r","t","y","u","i","o","p"],
+      ["a","s","d","f","g","h","j","k","l"],
+      ["shift","z","x","c","v","b","n","m","back"],
+      ["sym","@",".com","space",",",".","enter"],
+    ],
+    sym: [
+      ["1","2","3","4","5","6","7","8","9","0"],
+      ["!","@","#","$","%","&","*","(",")","'"],
+      ["-","_","=","+","/",":",";","\"","?"],
+      ["sym2","€","£","₱","~","`","|","back"],
+      ["abc","<",">","space",",",".","enter"],
+    ],
+    sym2: [
+      ["1","2","3","4","5","6","7","8","9","0"],
+      ["[","]","{","}","^","\\","¥","¢","°"],
+      ["§","¶","•","·","–","—","…","«","»"],
+      ["sym","™","®","©","×","÷","±","back"],
+      ["abc","<",">","space",",",".","enter"],
+    ],
+  },
+  eligible(node) {
+    if (!node) return false;
+    if (node.tagName === "TEXTAREA") return !node.readOnly && !node.disabled;
+    if (node.tagName !== "INPUT") return false;
+    const t = (node.type || "text").toLowerCase();
+    return ["text","search","password","email","url","tel","number"].includes(t) && !node.readOnly && !node.disabled;
+  },
+  init() {
+    this.el = document.getElementById("osk");
+    this.keysEl = document.getElementById("osk-keys");
+    if (!this.el) return;
+    document.getElementById("osk-hide").addEventListener("click", () => this.hide());
+    // Show when an eligible field gains focus; hide when focus leaves fields.
+    document.addEventListener("focusin", (e) => {
+      if (this.eligible(e.target)) { this.target = e.target; this.mode = "abc"; this.shift = false; this.show(); }
+    });
+    document.addEventListener("focusout", (e) => {
+      // If focus moves to another eligible field, focusin handles it; otherwise hide.
+      setTimeout(() => {
+        const a = document.activeElement;
+        if (!this.eligible(a) && !(a && a.closest && a.closest("#osk"))) this.hide();
+      }, 60);
+    });
+    this.render();
+  },
+  render() {
+    if (!this.keysEl) return;
+    const rows = this.LAYOUTS[this.mode];
+    this.keysEl.innerHTML = "";
+    rows.forEach(row => {
+      const r = document.createElement("div"); r.className = "osk-row";
+      row.forEach(k => r.appendChild(this.keyEl(k)));
+      this.keysEl.appendChild(r);
+    });
+  },
+  keyEl(k) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "osk-key"; b.dataset.k = k;
+    const wide = { space:"osk-space", back:"osk-wide", enter:"osk-wide osk-enter", shift:"osk-wide", sym:"osk-wide", sym2:"osk-wide", abc:"osk-wide", ".com":"osk-wide" };
+    if (wide[k]) b.className += " " + wide[k];
+    const labels = { space:"space", back:"⌫", enter:"↵", shift:(this.shift||this.caps)?"⇪":"⇧", sym:"?123", sym2:"=\\<", abc:"ABC" };
+    let label = labels[k] || k;
+    if (this.mode === "abc" && k.length === 1 && /[a-z]/.test(k) && (this.shift || this.caps)) label = k.toUpperCase();
+    b.textContent = label;
+    if (k === "shift" && (this.shift || this.caps)) b.classList.add("active");
+    // pointerdown: keep focus in the field, act immediately (feels responsive on touch)
+    b.addEventListener("pointerdown", (e) => { e.preventDefault(); this.press(k); });
+    return b;
+  },
+  press(k) {
+    Sound.play("key");
+    switch (k) {
+      case "shift": this.shift ? (this.shift = false, this.caps = true) : this.caps ? (this.caps = false) : (this.shift = true); this.render(); return;
+      case "back": this.insert("", true); return;
+      case "space": this.insert(" "); break;
+      case "enter": this.enter(); return;
+      case "sym": this.mode = "sym"; this.shift = this.caps = false; this.render(); return;
+      case "sym2": this.mode = "sym2"; this.render(); return;
+      case "abc": this.mode = "abc"; this.render(); return;
+      case ".com": this.insert(".com"); break;
+      default: {
+        let ch = k;
+        if (this.mode === "abc" && /^[a-z]$/.test(k) && (this.shift || this.caps)) ch = k.toUpperCase();
+        this.insert(ch);
+      }
+    }
+    if (this.shift && !this.caps) { this.shift = false; this.render(); }   // one-shot shift
+  },
+  insert(text, isBack) {
+    const el = this.target; if (!el) return;
+    try { el.focus({ preventScroll: true }); } catch { el.focus(); }
+    let start = el.selectionStart, end = el.selectionEnd;
+    const supportsSel = start !== null && start !== undefined;
+    if (supportsSel) {
+      if (isBack) {
+        if (start === end && start > 0) start -= 1;         // delete char before caret
+        el.value = el.value.slice(0, start) + el.value.slice(end);
+        const pos = start; el.setSelectionRange(pos, pos);
+      } else {
+        el.value = el.value.slice(0, start) + text + el.value.slice(end);
+        const pos = start + text.length; el.setSelectionRange(pos, pos);
+      }
+    } else {
+      // number/email fields may not report a caret — operate on the end
+      el.value = isBack ? el.value.slice(0, -1) : el.value + text;
+    }
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  },
+  enter() {
+    const el = this.target; if (!el) return;
+    const form = el.form || (el.closest && el.closest("form"));
+    if (form) {
+      if (typeof form.requestSubmit === "function") form.requestSubmit();
+      else form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    } else {
+      el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    }
+  },
+  show() {
+    if (!this.el) return;
+    this.render();
+    this.el.classList.remove("hidden");
+    requestAnimationFrame(() => {
+      this.el.classList.add("open");
+      document.body.classList.add("osk-open");
+      // expose real height so centred modals can lift above the keyboard
+      const h = this.el.getBoundingClientRect().height;
+      if (h) document.documentElement.style.setProperty("--osk-h", h + "px");
+    });
+  },
+  hide() {
+    if (!this.el) return;
+    this.el.classList.remove("open");
+    document.body.classList.remove("osk-open");
+    this.target = null;
+    setTimeout(() => this.el.classList.add("hidden"), 260);
+  },
+};
+
 /* ─────────────────────────── Wire-up ────────────────────────────────── */
-$(".hub-core").addEventListener("click", () => setOrbit(!orbitExpanded));
+Keyboard.init();
+// Press the PMCC logo → cybersecurity / advanced-AI reveal, then the network
+// blooms open. Collapsing (a second press) is immediate.
+$(".hub-core").addEventListener("click", () => {
+  Sound.ensure();
+  if (orbitExpanded) { setOrbit(false); return; }
+  CyberReveal.run(() => setOrbit(true));
+});
 $$("[data-close]").forEach(el => el.addEventListener("click", closeOverlay));
 $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => closeFeature(e.target.closest(".feature-overlay"))));
 $$("[data-search-close]").forEach(el => el.addEventListener("click", closeSearch));
