@@ -237,6 +237,11 @@ const SCENES = [
   { id: "deep",    label: "Deep Navy",     type: "css", css: "radial-gradient(circle at 50% 40%, #17285f, #060b20 72%)" },
   { id: "emerald", label: "Emerald Court", type: "css", css: "radial-gradient(circle at 50% 42%, #123f34, #06231d 55%, #04101a 85%)" },
   { id: "crimson", label: "Crimson Royal", type: "css", css: "radial-gradient(circle at 50% 40%, #4a1622, #1a0a1e 60%, #05091a 90%)" },
+  { id: "aurora",  label: "Aurora",        type: "css", css: "radial-gradient(circle at 30% 30%, #0b3a52 0%, #10254f 40%, #06091f 85%)" },
+  { id: "nebula",  label: "Violet Nebula", type: "css", css: "radial-gradient(circle at 60% 35%, #35204f, #171238 45%, #05071c 85%)" },
+  { id: "cyber",   label: "Cyber Grid",    type: "css", css: "radial-gradient(circle at 50% 45%, #05343f, #062036 55%, #04101a 88%)" },
+  { id: "space",   label: "Deep Space",    type: "css", css: "radial-gradient(circle at 50% 38%, #101a34, #070b1c 60%, #02040d 92%)" },
+  { id: "sunset",  label: "Sunset Ember",  type: "css", css: "radial-gradient(circle at 50% 42%, #4a2a1a, #23153a 55%, #060a1e 90%)" },
 ];
 
 /* ═══════════════════ 5. COLOR THEMES (accent) ═════════════════════════ */
@@ -247,6 +252,26 @@ const THEMES = [
   { id: "emerald",   color: "#8fe0b8" },
   { id: "rose",      color: "#f0a4b0" },
   { id: "amber",     color: "#f2b661" },
+  { id: "cyan",      color: "#6fe6f0" },
+  { id: "violet",    color: "#c3a6ff" },
+  { id: "coral",     color: "#ff9e7a" },
+  { id: "platinum",  color: "#dfe7f5" },
+];
+
+/* ═══════════ INTERFACE SCHEMES — 10 icon / design styles ══════════════
+   Each scheme recolours the whole interface (accent + tiles + icon line-art)
+   via CSS variables scoped to body[data-scheme]. Applied by applyScheme().  */
+const SCHEMES = [
+  { id: "royalgold", label: "Royal Gold", accent: "#e8c66a" },
+  { id: "cyberneon", label: "Cyber Neon", accent: "#3df0ff" },
+  { id: "emerald",   label: "Emerald",    accent: "#5fe0a0" },
+  { id: "crimson",   label: "Crimson",    accent: "#ff6b6b" },
+  { id: "sapphire",  label: "Sapphire",   accent: "#7aa8ff" },
+  { id: "amethyst",  label: "Amethyst",   accent: "#c79bff" },
+  { id: "platinum",  label: "Platinum",   accent: "#dfe7f5" },
+  { id: "sunset",    label: "Sunset",     accent: "#ff9e5e" },
+  { id: "rosegold",  label: "Rose Gold",  accent: "#f2b7c0" },
+  { id: "mono",      label: "Mono Outline", accent: "#cfe0ff" },
 ];
 
 /* ═══════════════════ 6. SOUND SETTINGS ════════════════════════════════ */
@@ -295,6 +320,8 @@ const settings = {
   volume:    store.get("volume", 70),
   accent:    store.get("accent", THEMES[0].color),
   iconStyle: store.get("iconStyle", "line"),   // "line" | "solid"
+  scheme:    store.get("scheme", "royalgold"), // interface / icon design scheme
+  voiceName: store.get("voiceName", ""),       // chosen TTS voice ("" = automatic)
   user:      store.get("user", "guest"),
   scene:     store.get("scene", "photo"),   // ship the rainy background.jpg by default
   // ── Brother Thomas / OpenJarvis (local AI) ──────────────────────────
@@ -304,6 +331,16 @@ const settings = {
 };
 function applyAccent(c) { document.documentElement.style.setProperty("--accent", c); }
 function applyIconStyle(s) { $$(".icon-tile").forEach(t => t.classList.toggle("solid", s === "solid")); }
+/* Apply an interface scheme — CSS (body[data-scheme]) restyles the tiles and
+   icon line-art. When the user explicitly picks one (setAccent=true) it also
+   adopts that scheme's signature accent colour. */
+function applyScheme(id, setAccent) {
+  const scheme = SCHEMES.find(x => x.id === id) || SCHEMES[0];
+  settings.scheme = scheme.id; store.set("scheme", scheme.id);
+  document.body.dataset.scheme = scheme.id;
+  if (setAccent && scheme.accent) { settings.accent = scheme.accent; applyAccent(scheme.accent); }
+}
+applyScheme(settings.scheme);
 applyAccent(settings.accent);
 
 /* ─────────────────────────── Audio engine ───────────────────────────── */
@@ -385,6 +422,69 @@ const Rain = (() => {
       d.y += d.v; d.x += d.drift;
       if (d.y > H + 4) { d.y = -4; d.x = Math.random()*W; }
     }
+    requestAnimationFrame(frame);
+  }
+  addEventListener("resize", resize); resize(); frame();
+  return {};
+})();
+
+/* ── Ambient motion layer: drifting glowing orbs, soft constellation links,
+   and the odd light streak — so the backdrop always feels alive. Renders on
+   top of the background photo/scene (but under the UI).                     */
+const Ambient = (() => {
+  const c = $("#ambient-canvas"); if (!c) return {};
+  const x = c.getContext("2d");
+  let W, H, orbs = [], streaks = [], t = 0;
+  const accent = () => (getComputedStyle(document.documentElement).getPropertyValue("--accent") || "#e8c66a").trim();
+  function resize() { W = c.width = innerWidth; H = c.height = innerHeight; seed(); }
+  function seed() {
+    const n = Math.max(26, Math.round((W * H) / 42000));
+    orbs = Array.from({ length: n }, () => ({
+      x: Math.random()*W, y: Math.random()*H,
+      r: 1 + Math.random()*2.6,
+      vx: (Math.random()-.5)*.18, vy: -(.12 + Math.random()*.34),
+      a: .18 + Math.random()*.5, tw: .4 + Math.random()*1.8,
+    }));
+    streaks = [];
+  }
+  function spawnStreak() {
+    const fromLeft = Math.random() < .5;
+    const y = Math.random()*H*.7;
+    streaks.push({ x: fromLeft ? -80 : W+80, y, vx: (fromLeft?1:-1)*(3.5+Math.random()*3), vy: .5+Math.random()*1.1, life: 1 });
+  }
+  function frame() {
+    t += .016; x.clearRect(0, 0, W, H);
+    const col = accent();
+    // constellation links between nearby orbs
+    x.lineWidth = 1;
+    for (let i = 0; i < orbs.length; i++) {
+      for (let j = i + 1; j < orbs.length; j++) {
+        const a = orbs[i], b = orbs[j], dx = a.x-b.x, dy = a.y-b.y, d = Math.hypot(dx, dy);
+        if (d < 130) { x.globalAlpha = (1 - d/130) * .10; x.strokeStyle = col; x.beginPath(); x.moveTo(a.x,a.y); x.lineTo(b.x,b.y); x.stroke(); }
+      }
+    }
+    // orbs
+    for (const o of orbs) {
+      const a = o.a * (.55 + .45*Math.sin(t*o.tw));
+      x.globalAlpha = Math.max(0, a);
+      x.beginPath(); x.arc(o.x, o.y, o.r, 0, Math.PI*2);
+      x.fillStyle = col; x.shadowColor = col; x.shadowBlur = 10; x.fill();
+      o.x += o.vx; o.y += o.vy;
+      if (o.y < -6) { o.y = H+6; o.x = Math.random()*W; }
+      if (o.x < -6) o.x = W+6; else if (o.x > W+6) o.x = -6;
+    }
+    x.shadowBlur = 0;
+    // occasional light streaks
+    if (Math.random() < .006 && streaks.length < 3) spawnStreak();
+    for (const s of streaks) {
+      const grad = x.createLinearGradient(s.x, s.y, s.x - s.vx*14, s.y - s.vy*14);
+      grad.addColorStop(0, col); grad.addColorStop(1, "transparent");
+      x.globalAlpha = .5 * s.life; x.strokeStyle = grad; x.lineWidth = 2;
+      x.beginPath(); x.moveTo(s.x, s.y); x.lineTo(s.x - s.vx*14, s.y - s.vy*14); x.stroke();
+      s.x += s.vx; s.y += s.vy; s.life -= .004;
+    }
+    streaks = streaks.filter(s => s.life > 0 && s.x > -120 && s.x < W+120);
+    x.globalAlpha = 1;
     requestAnimationFrame(frame);
   }
   addEventListener("resize", resize); resize(); frame();
@@ -534,7 +634,8 @@ function setOrbit(expand) {
   const stage = $("#orbit-stage");
   stage.classList.toggle("expanded", expand);
   Sound.play(expand ? "open" : "back");
-  $("#hud-hint").textContent = expand ? "DRAG TO MOVE · TAP OR HOLD AN ICON TO OPEN · PINCH TO STRETCH" : "TAP THE LOGO TO BEGIN";
+  // keep it clean: a short prompt before opening, nothing cluttering once open
+  $("#hud-hint").textContent = expand ? "" : "TAP THE LOGO TO BEGIN";
   stage.querySelectorAll("#orbit-links .link-base").forEach(b => { b.style.strokeDashoffset = expand ? 0 : parseFloat(b.style.strokeDasharray || 0); });
 }
 
@@ -977,11 +1078,11 @@ function closeOverlay() {
 const MENU = [
   { id: "home",     label: "HOME",     sub: "Return to dashboard", icon: "home" },
   { id: "directory",label: "DIRECTORY",sub: "Bishops · Pastors · Elders · Testimonies", icon: "directory" },
-  { id: "gallery",  label: "GALLERY",  sub: "Change the background", icon: "gallery" },
-  { id: "settings", label: "SETTINGS", sub: "Account · sound · colors · icons", icon: "settings" },
-  { id: "jarvis",   label: ASSISTANT_NAME.toUpperCase(), sub: "Ministry assistant", icon: "jarvis" },
+  { id: "settings", label: "SETTINGS", sub: "Theme · sound · colors · icons", icon: "settings" },
   { id: "browser",  label: "BROWSER",  sub: "Open the web", icon: "browser" },
   { id: "search",   label: "SEARCH",   sub: "Find anything", icon: "search" },
+  // Brother Thomas is reachable from his floating widget (right edge); the
+  // Theme chooser now lives inside Settings — so neither needs a dock button.
 ];
 function buildDock() {
   const dock = $("#dock"); dock.innerHTML = "";
@@ -1009,8 +1110,7 @@ function onMenu(id, anchor) {
   Sound.play("tap");
   if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); closeDirDropdown(); closeProfile(); setOrbit(false); }
   else if (id === "directory") toggleDirDropdown(anchor);
-  else if (id === "gallery")  openFeature("gallery");
-  else if (id === "settings") openFeature("settings");
+  else if (id === "settings") requestSettings();
   else if (id === "jarvis")   openFeature("jarvis");
   else if (id === "browser")  openFeature("browser");
   else if (id === "search")   openSearch();
@@ -1035,7 +1135,7 @@ function openFeature(id) {
     Voice.enabled = true; store.set("voiceOn", true); updateVoiceButton();  // opening = voice active
     if (Voice.supported) { try { speechSynthesis.resume(); } catch {} Voice.pick(); }
     if (Listen.supported && !Listen.wantOn) Listen.start();   // activate voice input on open
-    if (!$("#jarvis-log").childElementCount) jarvisGreet(); else Voice.speak("Peace be with you. How may I help?");
+    if (!$("#jarvis-log").childElementCount) jarvisGreet(); else Voice.speak("Peace be with you. Brother Thomas here — how may I help?");
   }
   if (id === "browser") { /* lazy-load on open */ browserGo($("#browser-url").value); }
 }
@@ -1232,10 +1332,76 @@ function buildGallery() {
   });
 }
 
+/* ─────────────────── Settings lock (password gate) ──────────────────── */
+const SETTINGS_PASSWORD = "palanca";     // required to open Settings
+function requestSettings() {
+  openFeature("settings-lock");
+  const inp = $("#lock-pass"), msg = $("#lock-msg");
+  if (inp) { inp.value = ""; setTimeout(() => { try { inp.focus(); } catch {} }, 320); }
+  if (msg) { msg.textContent = ""; msg.classList.remove("bad"); }
+}
+function tryUnlockSettings() {
+  const inp = $("#lock-pass"), msg = $("#lock-msg");
+  if (!inp) return;
+  if (inp.value === SETTINGS_PASSWORD) {
+    inp.value = "";
+    if (typeof Keyboard !== "undefined") Keyboard.hide();
+    closeFeature($("#settings-lock"));
+    setTimeout(() => openFeature("settings"), 260);
+  } else {
+    if (msg) { msg.textContent = "Incorrect password. Please try again."; msg.classList.add("bad"); }
+    inp.value = ""; try { inp.focus(); } catch {}
+    Sound.play("back");
+    const shell = $("#settings-lock .feature-shell");
+    if (shell) { shell.classList.remove("shake"); void shell.offsetWidth; shell.classList.add("shake"); }
+  }
+}
+
+/* Populate the voice picker with the English voices available on this device,
+   nicest-sounding first. Runs again when the browser loads its voice list. */
+function buildVoiceOptions() {
+  const sel = $("#set-voice"); if (!sel || !Voice.supported) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+  // rank by the same "natural male" heuristic the auto-picker uses
+  const ranked = vs.slice().sort((a, b) => (/(natural|neural|google|online)/i.test(b.name) ? 1 : 0) - (/(natural|neural|google|online)/i.test(a.name) ? 1 : 0));
+  sel.innerHTML = `<option value="">Automatic — best natural male</option>`;
+  ranked.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v.name; o.textContent = `${v.name} · ${v.lang}`;
+    if (v.name === settings.voiceName) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.onchange = () => {
+    settings.voiceName = sel.value; store.set("voiceName", sel.value);
+    Voice.voice = null; Voice.pick();
+    Voice.speak("Peace be with you. I am Brother Thomas.");
+  };
+}
+
 /* ─────────────────────────── Settings ───────────────────────────────── */
 function buildSettings() {
   $("#set-user").value = settings.user === "guest" ? "" : settings.user;
   $("#set-vol").value = settings.volume; $("#vol-val").textContent = settings.volume + "%";
+  // Background scenes (Theme)
+  const sg = $("#scene-grid");
+  if (sg) {
+    sg.innerHTML = "";
+    SCENES.forEach(s => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "scene-tile" + (s.id === settings.scene ? " active" : "");
+      tile.dataset.scene = s.id;
+      let bg;
+      if (s.type === "css") bg = s.css;
+      else if (s.type === "photo") bg = "radial-gradient(circle at 50% 42%, rgba(240,208,120,.28), #14265e 45%, #060c22 82%)";
+      else bg = "radial-gradient(circle at 50% 40%, #1a2e6e, #0a1436 70%)";
+      tile.style.background = bg;
+      tile.innerHTML = `<span class="st-label">${s.label}</span>`;
+      tile.addEventListener("click", () => { Sound.play("tap"); applyScene(s.id); $$("#scene-grid .scene-tile").forEach(x => x.classList.toggle("active", x.dataset.scene === s.id)); });
+      sg.appendChild(tile);
+    });
+  }
+  // Accent colour swatches
   const sw = $("#color-swatches"); sw.innerHTML = "";
   THEMES.forEach(t => {
     const b = document.createElement("button");
@@ -1244,13 +1410,26 @@ function buildSettings() {
     b.addEventListener("click", () => { Sound.play("tap"); settings.accent = t.color; applyAccent(t.color); $$("#color-swatches .swatch").forEach(s => s.classList.toggle("active", s.dataset.color === t.color)); });
     sw.appendChild(b);
   });
-  const seg = $("#iconstyle-opts"); seg.innerHTML = "";
-  [["line","Outline"],["solid","Filled"]].forEach(([v, lbl]) => {
-    const b = document.createElement("button");
-    b.className = "seg-opt" + (v === settings.iconStyle ? " active" : ""); b.textContent = lbl; b.dataset.v = v;
-    b.addEventListener("click", () => { Sound.play("tap"); settings.iconStyle = v; applyIconStyle(v); $$("#iconstyle-opts .seg-opt").forEach(o => o.classList.toggle("active", o.dataset.v === v)); });
-    seg.appendChild(b);
-  });
+  // Interface scheme (10 icon / design styles)
+  const scg = $("#scheme-opts");
+  if (scg) {
+    scg.innerHTML = "";
+    SCHEMES.forEach(sc => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "scheme-opt" + (sc.id === settings.scheme ? " active" : "");
+      b.dataset.scheme = sc.id;
+      b.innerHTML = `<span class="sc-swatch" data-scheme="${sc.id}"><i></i><i></i><i></i></span><span class="sc-name">${sc.label}</span>`;
+      b.addEventListener("click", () => {
+        Sound.play("tap");
+        applyScheme(sc.id, true);
+        $$("#scheme-opts .scheme-opt").forEach(o => o.classList.toggle("active", o.dataset.scheme === sc.id));
+        $$("#color-swatches .swatch").forEach(s => s.classList.toggle("active", s.dataset.color === settings.accent));
+      });
+      scg.appendChild(b);
+    });
+  }
+  buildVoiceOptions();
   $("#set-vol").oninput = (e) => { settings.volume = +e.target.value; $("#vol-val").textContent = settings.volume + "%"; };
   $("#set-vol").onchange = () => Sound.play("tap");
   // Assistant / OpenJarvis
@@ -1284,6 +1463,8 @@ function saveSettings() {
   const pass = $("#set-pass").value;
   store.set("volume", settings.volume); store.set("accent", settings.accent);
   store.set("iconStyle", settings.iconStyle); store.set("user", settings.user);
+  store.set("scheme", settings.scheme); store.set("scene", settings.scene);
+  store.set("voiceName", settings.voiceName);
   if (pass) store.set("passSet", true);   // note: demo only — do not store real passwords in a kiosk
   settings.jarvisEnabled = $("#set-jarvis-enabled").checked;
   settings.jarvisEndpoint = $("#set-jarvis-endpoint").value.trim();
@@ -1296,10 +1477,13 @@ function saveSettings() {
 }
 function resetSettings() {
   settings.volume = 70; settings.accent = THEMES[0].color; settings.iconStyle = "line"; settings.user = "guest";
+  settings.scheme = "royalgold"; settings.scene = "photo"; settings.voiceName = "";
   settings.jarvisEnabled = false; settings.jarvisEndpoint = "http://localhost:8000/v1/chat/completions"; settings.jarvisModel = "";
   ["volume","accent","iconStyle","user","passSet"].forEach(k => store.set(k, k === "volume" ? 70 : k === "accent" ? THEMES[0].color : k === "iconStyle" ? "line" : k === "user" ? "guest" : false));
+  store.set("scheme", "royalgold"); store.set("scene", "photo"); store.set("voiceName", "");
   store.set("jarvisEnabled", false); store.set("jarvisEndpoint", settings.jarvisEndpoint); store.set("jarvisModel", "");
-  applyAccent(settings.accent); applyIconStyle(settings.iconStyle); buildSettings();
+  Voice.voice = null;
+  applyAccent(settings.accent); applyIconStyle(settings.iconStyle); applyScheme(settings.scheme); applyScene(settings.scene); buildSettings();
   jarvisResetHistory(); updateJarvisMode();
   toast("Settings reset");
 }
@@ -1408,6 +1592,11 @@ const Voice = {
     if (!this.supported) return;
     const vs = speechSynthesis.getVoices();
     if (!vs.length) return;
+    // Honour an operator-chosen voice (Settings ▸ Sound & Voice) when set.
+    if (settings.voiceName) {
+      const chosen = vs.find(v => v.name === settings.voiceName);
+      if (chosen) { this.voice = chosen; return; }
+    }
     const en = vs.filter(v => /^en/i.test(v.lang));
     // Deep, natural MALE voices across platforms — best-sounding first.
     const STRONG = /(guy|davis|tony|christopher|eric|roger|steffan|brian|ryan|daniel|george|arthur|william|david|liam|thomas)\b/i;
@@ -1440,8 +1629,9 @@ const Voice = {
     if (!this.voice) this.pick();
     if (this.voice) { u.voice = this.voice; u.lang = this.voice.lang; }
     else u.lang = "en-GB";
-    // fuller, stronger male cadence — a touch lower and unhurried (not robotic)
-    u.rate = 0.95; u.pitch = 0.88;
+    // natural, unhurried human cadence (pitch left at natural — lowering it on
+    // synthetic voices sounds robotic; strength comes from the chosen voice)
+    u.rate = 0.97; u.pitch = 1.0;
     u.volume = Math.max(0, Math.min(1, settings.volume / 100));
     // drive the hi-tech waveform so it moves while he speaks
     u.onstart = () => JarvisWave.setSpeaking(true);
@@ -1457,7 +1647,7 @@ const Voice = {
     if (this.enabled) this.speak("Voice is on.");
   },
 };
-if (Voice.supported) speechSynthesis.onvoiceschanged = () => Voice.pick();
+if (Voice.supported) speechSynthesis.onvoiceschanged = () => { Voice.pick(); if (typeof buildVoiceOptions === "function") buildVoiceOptions(); };
 function updateVoiceButton() {
   const b = $("#jarvis-voice"); if (!b) return;
   b.classList.toggle("off", !Voice.enabled);
@@ -1556,9 +1746,8 @@ function jarvisPersonCard(p, sec) {
 }
 function jarvisGreet() {
   updateJarvisMode();
-  // Keep it simple and warm — no self-introduction, no mention of being an
-  // assistant / AI. Just a gentle greeting.
-  jarvisSay("bot", "Peace be with you. How may I help you today?");
+  // He greets by name (Brother Thomas) — but never as an AI/assistant/"Jarvis".
+  jarvisSay("bot", "Peace be with you. I am Brother Thomas. How may I help you today?");
 }
 /* Grounds a local model as Brother Thomas using the church content. */
 function jarvisSystemPrompt() {
@@ -1567,7 +1756,7 @@ function jarvisSystemPrompt() {
     .filter(s => s.items && s.items.length && s.items[0].confidence !== "placeholder")
     .map(s => `${s.label} — ${s.items.map(i => i.name).join("; ")}`).join(" | ");
   return `You are ${ASSISTANT_NAME}, a warm, respectful, softly-spoken man who helps people at the ${c.name} (PMCC 4th Watch). ` +
-    `Speak naturally in the first person as a person. NEVER say or imply that you are an AI, a chatbot, a language model, an assistant, a program, or "Jarvis"; never mention these words or your own nature — simply help. ` +
+    `Speak naturally in the first person as a person, and introduce yourself as Brother Thomas when greeting. NEVER say or imply that you are an AI, a chatbot, a language model, an assistant, a program, or "Jarvis"; never mention these words or your own nature — simply help as Brother Thomas. ` +
     `Answer concisely (2-4 sentences), reverently, and helpfully. Never invent church leaders or facts not given here. ` +
     `Church facts: founded ${c.founded}; headquarters ${c.headquarters}; ${c.members}; present in ${c.countries}; motto "${c.tagline}". ` +
     `Meaning of "4th Watch": ${c.meaningOf4thWatch} Beliefs: ${c.doctrineSummary} ` +
@@ -1650,8 +1839,8 @@ function jarvisReply(q) {
   }
 
   // 2) Greetings / identity / thanks
-  if (/\b(hello|hi|hey|peace|salam|good (morning|evening|afternoon))\b/.test(t)) return "Peace be with you. How may I help you today?";
-  if (/\b(who are you|your name|what are you|brother thomas|jarvis)\b/.test(t)) return "I'm here to help you. You can ask me about our Apostle, Bishops, Presbyters, Pastors, Elders, our branches around the world, our history, or our beliefs.";
+  if (/\b(hello|hi|hey|peace|salam|good (morning|evening|afternoon))\b/.test(t)) return "Peace be with you. I am Brother Thomas. How may I help you today?";
+  if (/\b(who are you|your name|what are you|brother thomas|jarvis)\b/.test(t)) return "I am Brother Thomas. You can ask me about our Apostle, Bishops, Presbyters, Pastors, Elders, our branches around the world, our history, or our beliefs.";
   if (/\bthank/.test(t)) return "You are most welcome. God bless you and keep you.";
 
   // 3) Leadership groups
@@ -2148,6 +2337,10 @@ $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => clo
 $$("[data-search-close]").forEach(el => el.addEventListener("click", closeSearch));
 $("#btn-save-settings").addEventListener("click", saveSettings);
 $("#btn-reset-settings").addEventListener("click", resetSettings);
+// Settings password gate
+$("#lock-form").addEventListener("submit", (e) => { e.preventDefault(); tryUnlockSettings(); });
+// Preview the currently selected Brother Thomas voice
+$("#btn-voice-test").addEventListener("click", () => { Sound.ensure(); Voice.enabled = true; Voice.voice = null; Voice.pick(); Voice.speak("Peace be with you. I am Brother Thomas, and it is my joy to serve you today."); });
 // Brother Thomas voice toggle + floating widget
 $("#jarvis-voice").addEventListener("click", () => { Sound.play("tap"); Voice.toggle(); });
 $("#jarvis-mic").addEventListener("click", () => { Sound.play("tap"); Listen.toggle(); });

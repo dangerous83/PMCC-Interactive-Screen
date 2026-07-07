@@ -45,6 +45,7 @@
     <div class="bg-tint"></div>
     <div class="bg-perspective"></div><!-- hi-tech perspective floor grid (above tint) -->
     <div class="bg-scan"></div>     <!-- subtle scan sweep -->
+    <canvas id="ambient-canvas"></canvas><!-- drifting particles + light streaks -->
   </div>
 
   <!-- ════════════════════════ LOADING SCREEN ════════════════════════ -->
@@ -194,18 +195,30 @@
           <label>Password<input id="set-pass" type="password" autocomplete="off" placeholder="••••••••"></label>
         </div>
         <div class="set-group">
-          <h3>Sound</h3>
+          <h3>Sound &amp; Voice</h3>
           <label>Volume <span id="vol-val">70%</span>
             <input id="set-vol" type="range" min="0" max="100" value="70">
           </label>
+          <label>Brother Thomas voice
+            <select id="set-voice"><option value="">Automatic — best natural male</option></select>
+          </label>
+          <div class="update-row">
+            <span class="set-hint">Pick the voice you like, then preview it.</span>
+            <button id="btn-voice-test" class="pill" type="button">Preview voice</button>
+          </div>
+        </div>
+        <div class="set-group">
+          <h3>Theme · Background</h3>
+          <div id="scene-grid" class="scene-grid"><!-- injected --></div>
         </div>
         <div class="set-group">
           <h3>Accent Color</h3>
           <div id="color-swatches" class="swatches"><!-- injected --></div>
         </div>
         <div class="set-group">
-          <h3>Interface Icons</h3>
-          <div id="iconstyle-opts" class="seg"><!-- injected --></div>
+          <h3>Interface Scheme</h3>
+          <p class="set-hint">Choose an interface &amp; icon design — 10 styles.</p>
+          <div id="scheme-opts" class="scheme-grid"><!-- injected --></div>
         </div>
         <div class="set-group">
           <h3>Assistant · Brother Thomas (OpenJarvis)</h3>
@@ -234,6 +247,25 @@
           <button id="btn-reset-settings" class="pill">Reset</button>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════ SETTINGS LOCK (password gate) ══════════════════ -->
+  <section id="settings-lock" class="feature-overlay hidden" aria-modal="true" role="dialog">
+    <div class="feature-backdrop" data-feature-close></div>
+    <div class="feature-shell lock-shell">
+      <header class="feature-head">
+        <div><h2>SETTINGS LOCKED</h2><p>Authorized access only</p></div>
+        <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </header>
+      <form id="lock-form" class="lock-body">
+        <div class="lock-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></svg>
+        </div>
+        <label>Password<input id="lock-pass" type="password" autocomplete="off" spellcheck="false" placeholder="••••••••"></label>
+        <p id="lock-msg" class="lock-msg"></p>
+        <button id="lock-go" class="pill primary" type="submit">Unlock Settings</button>
+      </form>
     </div>
   </section>
 
