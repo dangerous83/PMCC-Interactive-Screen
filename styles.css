@@ -121,7 +121,41 @@ input{ font-family:inherit; }
   animation:grid-pan 32s linear infinite;
 }
 @keyframes grid-pan{ from{ background-position:0 0, 0 0; } to{ background-position:4.2vmin 8.4vmin, 4.2vmin 8.4vmin; } }
-@media (prefers-reduced-motion:reduce){ .bg-aurora, .bg-grid{ animation:none; } }
+.bg-grid{ opacity:.32; }
+/* slow rotating god-ray fan behind the centre — cinematic, premium */
+.bg-rays{
+  background:conic-gradient(from 0deg at 50% 42%,
+    transparent 0deg, rgba(240,214,140,.09) 5deg, transparent 11deg,
+    transparent 40deg, rgba(120,160,240,.06) 46deg, transparent 52deg,
+    transparent 128deg, rgba(240,214,140,.07) 134deg, transparent 140deg,
+    transparent 210deg, rgba(120,160,240,.06) 216deg, transparent 222deg,
+    transparent 300deg, rgba(240,214,140,.08) 306deg, transparent 312deg);
+  -webkit-mask-image:radial-gradient(60% 60% at 50% 42%, #000 8%, transparent 72%);
+          mask-image:radial-gradient(60% 60% at 50% 42%, #000 8%, transparent 72%);
+  animation:rays-spin 60s linear infinite; opacity:.9; will-change:transform;
+}
+@keyframes rays-spin{ to{ transform:rotate(360deg); } }
+/* hi-tech perspective floor grid receding into the distance */
+.bg-perspective{
+  position:absolute; left:-30%; right:-30%; bottom:-8%; top:auto; height:56%;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(232,198,106,.22) 0 1px, transparent 1px 6vmin),
+    repeating-linear-gradient(0deg,  rgba(120,160,240,.22) 0 1px, transparent 1px 6vmin);
+  transform:perspective(60vmin) rotateX(74deg); transform-origin:bottom center;
+  -webkit-mask-image:linear-gradient(to top, #000 2%, transparent 80%);
+          mask-image:linear-gradient(to top, #000 2%, transparent 80%);
+  opacity:.6; will-change:background-position;
+  animation:floor-flow 5.5s linear infinite;
+}
+@keyframes floor-flow{ from{ background-position:0 0, 0 0; } to{ background-position:0 6vmin, 0 6vmin; } }
+/* faint scanning sweep for a living, monitored feel */
+.bg-scan{
+  background:linear-gradient(180deg, transparent 0%, rgba(150,190,255,.05) 48%, rgba(150,190,255,.08) 50%, transparent 52%, transparent 100%);
+  background-size:100% 220%; opacity:.7; will-change:background-position;
+  animation:scan-move 9s ease-in-out infinite;
+}
+@keyframes scan-move{ 0%{ background-position:0 -60%; } 100%{ background-position:0 160%; } }
+@media (prefers-reduced-motion:reduce){ .bg-aurora, .bg-grid, .bg-rays, .bg-perspective, .bg-scan{ animation:none; } }
 /* readability tint over everything */
 .bg-tint{
   background:
@@ -268,11 +302,15 @@ input{ font-family:inherit; }
   50%{ box-shadow:0 16px 44px rgba(0,0,0,.55), 0 0 4.2vmin color-mix(in srgb, var(--accent) 50%, transparent), inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 3vmin color-mix(in srgb, var(--accent) 20%, transparent); }
 }
 /* inner emblem plate + gold ring for a premium layered look */
-.icon-tile::before{ content:""; position:absolute; inset:14%; border-radius:24%; border:1px solid color-mix(in srgb, var(--accent) 45%, transparent); box-shadow:inset 0 0 2vmin color-mix(in srgb, var(--accent) 18%, transparent); opacity:.8; }
+.icon-tile::before{ content:""; position:absolute; inset:14%; border-radius:24%; border:1px solid color-mix(in srgb, var(--accent) 45%, transparent); box-shadow:inset 0 0 2vmin color-mix(in srgb, var(--accent) 18%, transparent); opacity:.8; z-index:1; }
+/* slow rotating light wedge inside the tile — subtle hi-tech life */
+.icon-tile::after{ content:""; position:absolute; inset:0; border-radius:inherit; background:conic-gradient(from 0deg, transparent 0deg, rgba(255,240,205,.14) 26deg, transparent 84deg, transparent 360deg); mix-blend-mode:screen; pointer-events:none; animation:tile-conic 9s linear infinite; animation-delay:var(--shine-delay,0s); }
+@keyframes tile-conic{ to{ transform:rotate(360deg); } }
 /* shimmer sweep */
 .tile-shine{ position:absolute; inset:0; background:linear-gradient(115deg, transparent 32%, rgba(255,240,205,.30) 48%, rgba(255,240,205,.05) 56%, transparent 68%); transform:translateX(-130%); pointer-events:none; animation:tile-shine 7s ease-in-out infinite; animation-delay:var(--shine-delay,0s); }
 @keyframes tile-shine{ 0%,72%{ transform:translateX(-130%);} 84%{ transform:translateX(130%);} 100%{ transform:translateX(130%);} }
-.icon-tile svg{ position:relative; width:50%; height:50%; stroke:#fff6e2; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 90%, transparent)); }
+.icon-tile svg{ position:relative; z-index:2; width:50%; height:50%; stroke:#fff6e2; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 90%, transparent)); }
+.tile-shine{ z-index:3; }
 .icon-tile.solid svg{ fill:color-mix(in srgb, var(--accent) 34%, transparent); }
 .icon-label{ font-size:clamp(13px,1.6vmin,34px); font-weight:700; letter-spacing:.16em; color:#fff8ea; text-shadow:0 2px 10px rgba(0,0,0,.9), 0 0 20px color-mix(in srgb, var(--accent) 55%, transparent); white-space:nowrap; }
 .icon-float{ display:flex; flex-direction:column; align-items:center; gap:1.1vmin; animation:float 6s ease-in-out infinite; animation-delay:var(--float-delay,0s); }
@@ -590,6 +628,25 @@ input{ font-family:inherit; }
 .gi-divider{ height:1px; background:linear-gradient(90deg,var(--accent),transparent); margin:2vmin 0; box-shadow:0 0 10px color-mix(in srgb,var(--accent) 50%,transparent); }
 .gi-field{ margin-bottom:1.4vmin; } .gi-field dt{ font-size:clamp(9px,1vmin,20px); letter-spacing:.3em; text-transform:uppercase; color:var(--text-dim); margin-bottom:.3vmin; } .gi-field dd{ font-size:clamp(13px,1.55vmin,32px); color:var(--accent-2); }
 .gi-note{ margin-top:2vmin; font-size:clamp(10px,1.1vmin,22px); color:var(--text-dim); line-height:1.5; } .gi-note code{ background:var(--glass); padding:.15em .45em; border-radius:6px; color:var(--accent-2); }
+/* — Branches overview (default) — */
+.gi-kicker{ font-size:clamp(10px,1.1vmin,22px); letter-spacing:.28em; color:var(--accent); }
+.gi-title{ font-size:clamp(18px,2.2vmin,44px); font-weight:800; color:#fff8ea; margin:.4vmin 0 0; }
+.gi-stats{ display:flex; gap:1.2vmin; margin:2vmin 0; }
+.gi-stat{ flex:1; text-align:center; padding:clamp(10px,1.4vmin,28px) 1vmin; background:var(--glass); border:1px solid var(--glass-line); border-radius:calc(var(--radius)*.5); }
+.gi-stat b{ display:block; font-size:clamp(22px,2.8vmin,58px); font-weight:800; color:var(--accent); line-height:1; }
+.gi-stat span{ font-size:clamp(9px,1vmin,20px); letter-spacing:.2em; text-transform:uppercase; color:var(--text-dim); }
+.gi-legend{ display:flex; flex-direction:column; gap:.8vmin; }
+.gi-region-row{ display:grid; grid-template-columns:auto 1fr auto; grid-template-areas:"dot name count" "dot list list"; column-gap:1vmin; row-gap:.2vmin; align-items:center; text-align:left; width:100%; padding:clamp(9px,1.2vmin,22px) clamp(11px,1.4vmin,26px); background:var(--glass); border:1px solid var(--glass-line); border-left:3px solid transparent; border-radius:calc(var(--radius)*.45); color:var(--text); transition:background .2s, border-color .2s, transform .15s var(--ease-spring); cursor:pointer; }
+.gi-region-row:hover{ background:var(--glass-2); transform:translateX(3px); }
+.gi-region-row:active{ transform:scale(.98); }
+.gi-dot{ grid-area:dot; width:1.1em; height:1.1em; border-radius:50%; box-shadow:0 0 8px currentColor; align-self:start; margin-top:.25em; }
+.gi-rr-name{ grid-area:name; font-weight:700; letter-spacing:.03em; font-size:clamp(13px,1.5vmin,30px); }
+.gi-rr-count{ grid-area:count; font-weight:800; color:var(--accent); font-size:clamp(13px,1.5vmin,30px); }
+.gi-rr-list{ grid-area:list; font-size:clamp(10px,1.15vmin,22px); color:var(--text-dim); line-height:1.4; }
+/* — selected branch card — */
+.gi-back{ display:inline-flex; align-items:center; margin-bottom:1.4vmin; padding:.5em 1em; background:var(--glass); border:1px solid var(--glass-line); border-radius:999px; color:var(--accent-2); font-size:clamp(11px,1.25vmin,26px); letter-spacing:.08em; cursor:pointer; transition:background .2s; }
+.gi-back:hover{ background:var(--glass-2); }
+.gi-badge{ display:inline-flex; align-items:center; gap:.7vmin; padding:.4em .9em; border:1px solid; border-radius:999px; font-size:clamp(11px,1.3vmin,26px); letter-spacing:.1em; text-transform:uppercase; }
 .globe-stage{ flex:1; position:relative; min-width:0; }
 #globe-canvas{ width:100%; height:100%; display:block; touch-action:none; cursor:grab; }
 #globe-canvas:active{ cursor:grabbing; }

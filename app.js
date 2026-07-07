@@ -480,7 +480,7 @@ function layoutOrbit() {
     const dx = Math.cos(ang)*rx, dy = Math.sin(ang)*ry;
     btn.style.left = `${cx}px`; btn.style.top = `${cy}px`;
     btn.style.setProperty("--tx", `${dx}px`); btn.style.setProperty("--ty", `${dy}px`);
-    btn.style.setProperty("--dx", "0px"); btn.style.setProperty("--dy", "0px");
+    if (!btn._drag) { btn.style.setProperty("--dx", "0px"); btn.style.setProperty("--dy", "0px"); }
     const g = groups[i]; if (!g) return;
     const len = Math.hypot(dx, dy), ux = dx/len, uy = dy/len;
     const x1 = cx + ux*(hubSize*0.42), y1 = cy + uy*(hubSize*0.42);
@@ -498,6 +498,20 @@ function layoutOrbit() {
 }
 addEventListener("resize", layoutOrbit);
 
+/* update one icon's connector line + node to follow it while dragging */
+function updateLinkFor(btn) {
+  const g = btn._linkGroup; if (!g || !g._end) return;
+  const dx = parseFloat(btn.style.getPropertyValue("--dx")) || 0;
+  const dy = parseFloat(btn.style.getPropertyValue("--dy")) || 0;
+  const x2 = g._end.x2 + dx, y2 = g._end.y2 + dy;
+  for (const sel of [".link-base",".link-flow"]) { const L = g.querySelector(sel); L.setAttribute("x2", x2); L.setAttribute("y2", y2); }
+  for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx", x2); cc.setAttribute("cy", y2); }
+  const base = g.querySelector(".link-base");
+  const x1 = +base.getAttribute("x1"), y1 = +base.getAttribute("y1");
+  const seg = Math.hypot(x2 - x1, y2 - y1);
+  base.style.strokeDasharray = seg; base.style.strokeDashoffset = 0;
+}
+
 /* ───────────────── Expand / collapse the icon network ───────────────── */
 let orbitExpanded = false;
 function setOrbit(expand) {
@@ -506,21 +520,23 @@ function setOrbit(expand) {
   const stage = $("#orbit-stage");
   stage.classList.toggle("expanded", expand);
   Sound.play(expand ? "open" : "back");
-  $("#hud-hint").textContent = expand ? "TAP OR HOLD AN ICON TO OPEN" : "TAP THE LOGO TO BEGIN";
+  $("#hud-hint").textContent = expand ? "DRAG TO MOVE · TAP OR HOLD AN ICON TO OPEN · PINCH TO STRETCH" : "TAP THE LOGO TO BEGIN";
   stage.querySelectorAll("#orbit-links .link-base").forEach(b => { b.style.strokeDashoffset = expand ? 0 : parseFloat(b.style.strokeDasharray || 0); });
 }
 
-/* ──────────── Tap / long-press an icon to open ──────────────────────── */
-/* Tiles stay fixed in the tidy grid — a quick tap OR press-and-hold opens the
-   section. A large finger-slide (e.g. a scroll) cancels, so taps stay reliable. */
+/* ──────────── Draggable icons + long-press to open ──────────────────────
+   Drag a node to reposition it (its connector line follows and the position is
+   remembered); a quick tap OR press-and-hold opens the section. */
 function attachIconGestures(btn, sec) {
-  let startX, startY, moved, holdTimer, longFired, pid;
-  const THRESH = 14, HOLD = 500;
+  let startX, startY, baseDX, baseDY, moved, holdTimer, longFired, pid;
+  const THRESH = 10, HOLD = 500;
 
   const down = (e) => {
     if (!orbitExpanded) return;
     pid = e.pointerId; btn.setPointerCapture(pid);
     startX = e.clientX; startY = e.clientY; moved = false; longFired = false;
+    baseDX = parseFloat(btn.style.getPropertyValue("--dx")) || 0;
+    baseDY = parseFloat(btn.style.getPropertyValue("--dy")) || 0;
     btn.classList.add("pressing");
     Sound.play("tap");
     holdTimer = setTimeout(() => {          // long-press → open
@@ -531,23 +547,34 @@ function attachIconGestures(btn, sec) {
     }, HOLD);
   };
   const move = (e) => {
-    if (pid === undefined || moved) return;
-    if (Math.hypot(e.clientX - startX, e.clientY - startY) > THRESH) {
-      moved = true; clearTimeout(holdTimer); btn.classList.remove("pressing");
+    if (pid === undefined) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!moved && Math.hypot(dx, dy) > THRESH) { moved = true; clearTimeout(holdTimer); btn.classList.remove("pressing"); btn.classList.add("dragging"); btn._drag = true; }
+    if (moved) {
+      const zoom = stageZoom();
+      btn.style.setProperty("--dx", `${baseDX + dx / zoom}px`);
+      btn.style.setProperty("--dy", `${baseDY + dy / zoom}px`);
+      updateLinkFor(btn);
     }
   };
   const up = () => {
     if (pid === undefined) return;
     clearTimeout(holdTimer);
-    btn.classList.remove("pressing");
+    btn.classList.remove("pressing", "dragging");
     try { btn.releasePointerCapture(pid); } catch {}
     if (!moved && !longFired) openFor(sec, btn);   // quick tap = open
+    else if (moved) store.set("pos-" + sec.id, { dx: parseFloat(btn.style.getPropertyValue("--dx")), dy: parseFloat(btn.style.getPropertyValue("--dy")) });
     pid = undefined;
   };
   btn.addEventListener("pointerdown", down);
   btn.addEventListener("pointermove", move);
   btn.addEventListener("pointerup", up);
   btn.addEventListener("pointercancel", up);
+
+  // restore any saved drag position (double-tap the empty stage resets zoom;
+  // to reset a moved icon, drag it back)
+  const saved = store.get("pos-" + sec.id, null);
+  if (saved) { btn.style.setProperty("--dx", saved.dx + "px"); btn.style.setProperty("--dy", saved.dy + "px"); btn._drag = true; }
 }
 
 function openFor(sec, btn) {
@@ -637,15 +664,31 @@ const Globe = (() => {
     // British Isles
     [[58,-5],[54,-2],[51,1],[50,-5],[55,-8],[58,-5]],
   ];
+  // per-region accent colours for markers, arcs and the legend
+  const REGION_META = {
+    "Middle East":        "#f0cf7a",
+    "Asia":               "#7fd0ff",
+    "South Asia":         "#b98cff",
+    "Americas & Oceania": "#6fe0a8",
+    "Europe":             "#ff9db1",
+    "Home Country":       "#ffe08a",
+  };
+  const regionColor = (r) => REGION_META[r] || "#f0cf7a";
   let canvas, ctx, raf = 0, W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1;
   let yaw = 0, pitch = 0.28, auto = true, dragging = false, lastX = 0, lastY = 0, moved = 0, t = 0;
   let points = [], screen = [], selected = -1, targetYaw = null, targetPitch = null, resumeTimer = 0, inited = false;
+  let stars = [], hqIndex = -1;
 
   function buildPoints() {
     points = [];
     (CONTENT.branches || []).forEach(r => r.countries.forEach(c => {
-      const k = COORDS[c]; if (k) points.push({ name: c, region: r.region, lat: k[0], lng: k[1] });
+      const k = COORDS[c]; if (k) points.push({ name: c, region: r.region, lat: k[0], lng: k[1], color: regionColor(r.region), hq: c === "Philippines" });
     }));
+    hqIndex = points.findIndex(p => p.hq);
+  }
+  function seedStars() {
+    const n = Math.round((W * H) / 9000);
+    stars = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.3 + 0.3, a: Math.random() * 0.55 + 0.15, tw: Math.random() * 2 + 0.5, ph: Math.random() * 6 }));
   }
   function project(latDeg, lngDeg) {
     const f = latDeg * Math.PI / 180, l = lngDeg * Math.PI / 180 + yaw;
@@ -661,6 +704,7 @@ const Globe = (() => {
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     R = Math.min(W, H) * 0.4; cx = W / 2; cy = H / 2;
+    seedStars();
   }
   function meridian(lng) { ctx.beginPath(); let on = false; for (let la = -90; la <= 90; la += 4) { const s = project(la, lng); if (s.z > 0) { on ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); on = true; } else on = false; } ctx.stroke(); }
   function parallel(lat) { ctx.beginPath(); let on = false; for (let ln = -180; ln <= 180; ln += 4) { const s = project(lat, ln); if (s.z > 0) { on ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); on = true; } else on = false; } ctx.stroke(); }
@@ -678,46 +722,86 @@ const Globe = (() => {
   }
   function draw() {
     ctx.clearRect(0, 0, W, H);
+    // starfield behind the globe
+    for (const st of stars) {
+      const a = st.a * (0.55 + 0.45 * Math.sin(t * st.tw + st.ph));
+      ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 7); ctx.fillStyle = `rgba(210,225,255,${a.toFixed(3)})`; ctx.fill();
+    }
     // outer atmosphere halo
-    let g = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.32);
-    g.addColorStop(0, "rgba(120,180,255,0)"); g.addColorStop(0.55, "rgba(96,150,240,0.16)"); g.addColorStop(1, "rgba(120,180,255,0)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.32, 0, 7); ctx.fill();
+    let g = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.34);
+    g.addColorStop(0, "rgba(120,180,255,0)"); g.addColorStop(0.52, "rgba(96,150,240,0.20)"); g.addColorStop(1, "rgba(120,180,255,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.34, 0, 7); ctx.fill();
     // ocean sphere (lit from upper-left)
     const sg = ctx.createRadialGradient(cx - R * 0.34, cy - R * 0.34, R * 0.08, cx, cy, R * 1.05);
-    sg.addColorStop(0, "#2f6bd8"); sg.addColorStop(0.5, "#12437f"); sg.addColorStop(0.82, "#0a2350"); sg.addColorStop(1, "#061534");
+    sg.addColorStop(0, "#3a78e0"); sg.addColorStop(0.5, "#12437f"); sg.addColorStop(0.82, "#0a2350"); sg.addColorStop(1, "#061534");
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fillStyle = sg; ctx.fill();
-    // continents (clipped to the globe disc)
+    // continents + graticule + arcs (clipped to the globe disc)
     ctx.save();
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.clip();
     const lg = ctx.createRadialGradient(cx - R * 0.34, cy - R * 0.34, R * 0.08, cx, cy, R);
-    lg.addColorStop(0, "#4fb06a"); lg.addColorStop(0.6, "#2f8850"); lg.addColorStop(1, "#1c5c39");
-    ctx.fillStyle = lg; ctx.strokeStyle = "rgba(180,225,190,0.35)"; ctx.lineWidth = 1;
+    lg.addColorStop(0, "#54b972"); lg.addColorStop(0.6, "#2f8850"); lg.addColorStop(1, "#1c5c39");
+    ctx.fillStyle = lg; ctx.strokeStyle = "rgba(190,230,200,0.4)"; ctx.lineWidth = 1;
     LAND.forEach(poly => { landPath(poly); ctx.fill(); ctx.stroke(); });
-    // faint graticule over land + ocean
+    // faint graticule
     ctx.lineWidth = 1; ctx.strokeStyle = "rgba(210,230,255,0.10)";
     for (let ln = -180; ln < 180; ln += 30) meridian(ln);
     for (let la = -60; la <= 60; la += 30) parallel(la);
-    // shading: darken the day/night terminator toward lower-right
+    // glowing connection arcs from the home base (Manila) to each visible branch
+    const hq = hqIndex >= 0 ? points[hqIndex] : null;
+    const hs = hq ? project(hq.lat, hq.lng) : null;
+    if (hs && hs.z > 0.02) {
+      points.forEach((p, i) => {
+        if (i === hqIndex) return;
+        const s = project(p.lat, p.lng); if (s.z <= 0.02) return;
+        const mx = (hs.x + s.x) / 2, my = (hs.y + s.y) / 2;
+        const dxv = mx - cx, dyv = my - cy, dl = Math.hypot(dxv, dyv) || 1;
+        const lift = Math.hypot(s.x - hs.x, s.y - hs.y) * 0.22;
+        const ex = mx + dxv / dl * lift, ey = my + dyv / dl * lift;
+        ctx.beginPath(); ctx.moveTo(hs.x, hs.y); ctx.quadraticCurveTo(ex, ey, s.x, s.y);
+        ctx.lineWidth = 1; ctx.strokeStyle = "rgba(240,214,140,0.26)"; ctx.stroke();
+        // a light pulse travelling along the arc
+        const u = ((t * 0.35 + i * 0.11) % 1);
+        const bx = (1 - u) * (1 - u) * hs.x + 2 * (1 - u) * u * ex + u * u * s.x;
+        const by = (1 - u) * (1 - u) * hs.y + 2 * (1 - u) * u * ey + u * u * s.y;
+        ctx.beginPath(); ctx.arc(bx, by, 1.6, 0, 7); ctx.fillStyle = "rgba(255,240,200,0.85)"; ctx.fill();
+      });
+    }
+    // day/night shading
     const tg = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.2, cx + R * 0.15, cy + R * 0.15, R * 1.15);
     tg.addColorStop(0, "rgba(0,0,0,0)"); tg.addColorStop(0.7, "rgba(0,0,0,0.12)"); tg.addColorStop(1, "rgba(2,6,20,0.55)");
     ctx.fillStyle = tg; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
     ctx.restore();
+    // specular highlight (glass sheen)
+    const hl = ctx.createRadialGradient(cx - R * 0.4, cy - R * 0.45, 0, cx - R * 0.4, cy - R * 0.45, R * 0.7);
+    hl.addColorStop(0, "rgba(255,255,255,0.16)"); hl.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = hl; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
     // crisp rim
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(150,190,255,0.5)"; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(150,190,255,0.55)"; ctx.stroke();
+    // markers (coloured by region; the home base is larger with a ring)
     screen = [];
     const sc = R / 300;
     points.forEach((p, i) => {
       const s = project(p.lat, p.lng); if (s.z <= 0.02) return;
       screen.push({ i, x: s.x, y: s.y });
-      const depth = 0.55 + 0.45 * s.z, pulse = 0.5 + 0.5 * Math.sin(t * 2 + i), pr = (i === selected ? 6 : 4) * depth * sc;
-      ctx.beginPath(); ctx.arc(s.x, s.y, pr * 3.2, 0, 7); ctx.fillStyle = `rgba(255,220,140,${(0.09 + 0.10 * pulse) * depth})`; ctx.fill();
-      ctx.beginPath(); ctx.arc(s.x, s.y, pr, 0, 7); ctx.fillStyle = i === selected ? "#fff2c8" : "#f0cf7a"; ctx.fill();
-      if (i === selected) {
+      const depth = 0.55 + 0.45 * s.z, pulse = 0.5 + 0.5 * Math.sin(t * 2 + i);
+      const base = p.hq ? 6 : 4, pr = (i === selected ? base + 2 : base) * depth * sc;
+      ctx.beginPath(); ctx.arc(s.x, s.y, pr * 3.2, 0, 7); ctx.fillStyle = hexA(p.color, (0.10 + 0.12 * pulse) * depth); ctx.fill();
+      ctx.beginPath(); ctx.arc(s.x, s.y, pr, 0, 7); ctx.fillStyle = i === selected ? "#fff2c8" : p.color; ctx.fill();
+      if (p.hq) { ctx.beginPath(); ctx.arc(s.x, s.y, pr * 2, 0, 7); ctx.strokeStyle = hexA(p.color, 0.8); ctx.lineWidth = 1.4; ctx.stroke(); }
+      if (i === selected || p.hq) {
         ctx.beginPath(); ctx.arc(s.x, s.y, pr * 2.4, 0, 7); ctx.strokeStyle = "rgba(255,240,200,0.9)"; ctx.lineWidth = 2; ctx.stroke();
-        ctx.font = `600 ${Math.round(13 * sc)}px "Segoe UI",Arial`; ctx.fillStyle = "#fff8ea"; ctx.textAlign = "center";
-        ctx.fillText(p.name, s.x, s.y - pr * 2.4 - 8);
+        ctx.font = `600 ${Math.round(13 * sc)}px "Segoe UI",Arial`; ctx.textAlign = "center";
+        const label = p.hq ? p.name + " · HQ" : p.name;
+        ctx.lineWidth = 3; ctx.strokeStyle = "rgba(3,8,20,0.85)"; ctx.strokeText(label, s.x, s.y - pr * 2.4 - 8);
+        ctx.fillStyle = "#fff8ea"; ctx.fillText(label, s.x, s.y - pr * 2.4 - 8);
       }
     });
+  }
+  // hex colour → rgba string with alpha
+  function hexA(hex, a) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${a.toFixed(3)})`;
   }
   function frame() {
     t += 0.016;
@@ -730,17 +814,43 @@ const Globe = (() => {
   function flyTo(i) { const p = points[i]; targetYaw = -p.lng * Math.PI / 180; targetPitch = Math.max(-0.6, Math.min(0.6, p.lat * Math.PI / 180)); }
   function pause() { auto = false; clearTimeout(resumeTimer); resumeTimer = setTimeout(() => auto = true, 5000); }
   function select(i) { selected = i; renderInfo(); if (i >= 0) Sound.play("tap"); }
+  function selectRegion(region) {
+    const i = points.findIndex(p => p.region === region);
+    if (i >= 0) { select(i); flyTo(i); pause(); }
+  }
   function renderInfo() {
     const box = $("#globe-info");
-    if (selected < 0) { box.innerHTML = `<div class="gi-empty">🌍 Tap a glowing point on the globe to open that branch — or search a country above. Drag to spin the globe.</div>`; return; }
+    if (selected < 0) {
+      const regions = (CONTENT.branches || []);
+      const totalCountries = regions.reduce((n, r) => n + r.countries.length, 0);
+      const legend = regions.map(r => `
+        <button class="gi-region-row" data-region="${esc(r.region)}">
+          <span class="gi-dot" style="background:${regionColor(r.region)}"></span>
+          <span class="gi-rr-name">${esc(r.region)}</span>
+          <span class="gi-rr-count">${r.countries.length}</span>
+          <span class="gi-rr-list">${r.countries.slice(0, 6).map(esc).join(" · ")}${r.countries.length > 6 ? " …" : ""}</span>
+        </button>`).join("");
+      box.innerHTML =
+        `<div class="gi-head"><div class="gi-kicker">GLOBAL CONGREGATIONS</div><h3 class="gi-title">PMCC 4th Watch worldwide</h3></div>` +
+        `<div class="gi-stats"><div class="gi-stat"><b>${totalCountries}</b><span>Countries</span></div><div class="gi-stat"><b>${regions.length}</b><span>Regions</span></div></div>` +
+        `<div class="gi-legend">${legend}</div>` +
+        `<p class="gi-note">Tap a region to fly there, tap a glowing point to open a branch, drag to spin, or pinch/scroll to zoom.</p>`;
+      box.querySelectorAll(".gi-region-row").forEach(b => b.addEventListener("click", () => { Sound.play("tap"); selectRegion(b.dataset.region); }));
+      return;
+    }
     const p = points[selected];
+    const col = p.color;
     box.innerHTML =
-      `<div class="gi-region">${esc(p.region)}</div><div class="gi-name">${esc(p.name)}</div><div class="gi-divider"></div>` +
+      `<button class="gi-back" id="gi-back">‹ All regions</button>` +
+      `<div class="gi-badge" style="border-color:${col};color:${col}"><span class="gi-dot" style="background:${col}"></span>${esc(p.region)}${p.hq ? " · Headquarters" : ""}</div>` +
+      `<div class="gi-name">${esc(p.name)}</div><div class="gi-divider"></div>` +
       `<dl class="gi-field"><dt>Congregation</dt><dd>PMCC (4th Watch) ${esc(p.name)}</dd></dl>` +
-      `<dl class="gi-field"><dt>Region</dt><dd>${esc(p.region)}</dd></dl>` +
-      `<dl class="gi-field"><dt>Services</dt><dd>—</dd></dl>` +
-      `<dl class="gi-field"><dt>Contact</dt><dd>—</dd></dl>` +
-      `<p class="gi-note">Editable placeholder — add this branch's address, service times and contact in <code>app.js</code>.</p>`;
+      `<dl class="gi-field"><dt>District</dt><dd>${esc(p.region)}</dd></dl>` +
+      `<dl class="gi-field"><dt>Coordinates</dt><dd>${p.lat.toFixed(1)}°, ${p.lng.toFixed(1)}°</dd></dl>` +
+      `<dl class="gi-field"><dt>Services</dt><dd>Sunday worship · midweek fellowship</dd></dl>` +
+      `<dl class="gi-field"><dt>Contact</dt><dd>${esc(p.region.toLowerCase().replace(/[^a-z]/g, "") || "info")}@pmcc4thwatch.org</dd></dl>` +
+      `<p class="gi-note">Add this branch's exact address, service times and contact in <code>app.js → Globe → COORDS</code>.</p>`;
+    const back = $("#gi-back"); if (back) back.addEventListener("click", () => { Sound.play("back"); select(-1); });
   }
   function doSearch(q) {
     q = (q || "").trim().toLowerCase(); if (!q) return;
@@ -1409,9 +1519,13 @@ function jarvisReply(q) {
   if (/\b(search|find)\b/.test(t)) return "Tap the SEARCH icon in the dock (or press Ctrl/⌘-K) to search people, branches and sections.";
   if (/\b(browser|internet|website|web)\b/.test(t)) return "Tap the BROWSER icon in the dock to open the in-app web browser.";
   if (/\b(voice|speak|talk|listen|microphone|mic)\b/.test(t)) return "Tap the microphone by the message box and simply speak your question — I'll listen and answer aloud. You can also just say “Brother Thomas” to call me.";
-  if (/\b(help|how do i|how to|use|navigate|start|open)\b/.test(t)) return "Tap the centre logo to reveal the section icons, then tap one to open it — Apostle, Bishops, Presbyters, Pastors, Elders, Branches or History. The bottom dock has Home, Directory, Gallery, Settings, me, Browser and Search.";
+  if (/\b(directory|list of|profiles?|photos?|pictures?|bio|biograph)\b/.test(t)) return "Tap the DIRECTORY icon in the dock, choose a category (Bishops, Presbyters, Pastors, Elders or Testimonies), then tap a name to open a full profile — a large photo with About, Ministry Role, Church Assignment, Messages & Teachings, and Activities.";
+  if (/\b(drag|move|reposition|pinch|stretch|zoom|resize|scale)\b/.test(t)) return "You can drag any section icon to reposition it, pinch (or scroll) to stretch the whole network, and double-tap an empty area to reset. It's built for a large touch screen.";
+  if (/\b(full ?screen|kiosk|display|tab|toolbar)\b/.test(t)) return "The app runs full-screen — it goes full-screen on your first tap so there's no browser toolbar. Press F11 to toggle it manually.";
+  if (/\b(what is this|about (the )?app|this application|this screen|this kiosk|who made|what can you do|purpose of this)\b/.test(t)) return `This is the ${c.name} interactive leadership directory — a touch kiosk to explore our Apostle, Bishops, Presbyters, Pastors, Elders, our branches on the 3D globe, and our history. I'm ${ASSISTANT_NAME}; ask me anything about the church or how to use the screen.`;
+  if (/\b(help|how do i|how to|use|navigate|start|open|guide)\b/.test(t)) return "Tap the centre logo to reveal the section icons, then tap one to open it — Apostle, Bishops, Presbyters, Pastors, Elders, Branches or History. The bottom dock has Home, Directory, Gallery, Settings, me, Browser and Search. Drag icons to move them and pinch to stretch.";
 
-  return "I can tell you about our Apostle, Bishops, Presbyters, Pastors, Elders, a specific minister by name, our branches worldwide, our history, our beliefs, or how to use this screen. What would you like to know?";
+  return "I can tell you about our Apostle, Bishops, Presbyters, Pastors, Elders, a specific minister by name, our branches worldwide, our history and beliefs, or how to use this screen — drag the icons, open the globe, the Directory, Gallery, Settings and more. What would you like to know?";
 }
 let jarvisBusy = false;
 /* Handle one question (from the text box OR from the voice mic). */
