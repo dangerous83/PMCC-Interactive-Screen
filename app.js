@@ -186,6 +186,10 @@ const CONTENT = {
         { name: "First Foreign Church", position: "1989",
           description: "The church's first overseas congregation is established in Hong Kong, growing out of Filipino labor migration, and reaches North America the same year — beginning decades of global expansion.",
           extra: { "First Abroad": "Hong Kong" } },
+        { name: "Our Humble Beginnings", position: "Early 2000",
+          description: "Brethren from Abu Dhabi started the Extension Worship Service in Dubai in favor of a few Marikina and Malagasang brethren who were working in the city at that time. Worship services were first held in a rented Christian compound in Oud Metha every Saturday night and eventually held in a small flat in Satwa.",
+          images: ["assets/Early 2000 - A.png", "assets/Early 2000 - B.png", "assets/Early 2000.png"],
+          extra: { Location: "Dubai, UAE", Services: "Oud Metha · Satwa" } },
         { name: "Golden (50th) Anniversary", position: "August 27, 2023",
           description: "Celebrated at New Clark City Athletics Stadium in Capas, Tarlac. The church reports presence in 72 countries with 1,055 locale churches and ~1 million members. Jonathan Ferriol takes his oath as Deputy Executive Minister.",
           extra: { Milestone: "50 years", Reach: "72 countries" } },
@@ -1015,13 +1019,24 @@ function openSection(sec, iconBtn) {
 function renderItem(sec, index) {
   const item = sec.items[index];
   for (const id of ["#detail-name","#detail-position","#detail-description","#panel-glyph"]) { const el = $(id); el.style.animation = "none"; void el.offsetWidth; el.style.animation = ""; }
-  // show the person's photo when available (falls back to the icon glyph)
+  // show the photo(s) when available (falls back to the icon glyph).
+  // `item.images` (array) renders a gallery; `item.image` is a single photo.
   const frame = $("#panel .media-frame");
+  const imgs = item.images && item.images.length ? item.images.slice()
+             : (item.image ? [item.image] : []);
   let img = frame.querySelector(".media-photo");
-  if (item.image) {
+  if (imgs.length) {
     if (!img) { img = document.createElement("img"); img.className = "media-photo"; img.alt = ""; img.onerror = () => img.remove(); frame.insertBefore(img, frame.firstChild); }
-    img.src = withV(item.image);
-  } else if (img) { img.remove(); }
+    img.src = withV(imgs[0]);
+    img.alt = item.name || "";
+    frame.classList.add("has-photo");
+    frame.onclick = () => Lightbox.open(imgs, 0, item.name);
+  } else {
+    if (img) img.remove();
+    frame.classList.remove("has-photo");
+    frame.onclick = null;
+  }
+  buildThumbs(imgs, item.name);
   $("#panel-caption").textContent = item.position || sec.label;
   $("#detail-name").textContent = item.name;
   $("#detail-position").textContent = item.position || "";
@@ -1039,6 +1054,32 @@ function buildChips(sec) {
     chip.innerHTML = `<span class="chip-glyph">${svg(ICONS[sec.icon] || ICONS.history)}</span><span>${item.name}</span>`;
     chip.addEventListener("click", () => { Sound.play("tap"); renderItem(sec, i); });
     list.appendChild(chip);
+  });
+}
+
+/* Thumbnail strip under the media frame (only for multi-image items, e.g.
+   the History timeline). Tapping a thumbnail swaps the hero and lets you
+   open the full-screen zoomable preview. */
+function buildThumbs(imgs, label) {
+  const strip = $("#panel-thumbs");
+  if (!strip) return;
+  strip.innerHTML = "";
+  if (!imgs || imgs.length < 2) { strip.classList.add("hidden"); return; }
+  strip.classList.remove("hidden");
+  const frame = $("#panel .media-frame");
+  imgs.forEach((src, i) => {
+    const t = document.createElement("button");
+    t.className = "pm-thumb" + (i === 0 ? " active" : "");
+    t.style.backgroundImage = `url("${withV(src)}")`;
+    t.setAttribute("aria-label", `View image ${i + 1} of ${imgs.length}`);
+    t.addEventListener("click", () => {
+      Sound.play("tap");
+      const hero = frame.querySelector(".media-photo");
+      if (hero) hero.src = withV(src);
+      frame.onclick = () => Lightbox.open(imgs, i, label);
+      strip.querySelectorAll(".pm-thumb").forEach((el, j) => el.classList.toggle("active", j === i));
+    });
+    strip.appendChild(t);
   });
 }
 
@@ -2013,6 +2054,101 @@ function makeStretchable(surface, applyZoom, { min = .6, max = 1.8, wheelNeedsCt
 }
 const stageStretch = makeStretchable($("#orbit-stage"), (z) => $("#orbit-stage").style.setProperty("--zoom", z.toFixed(3)), { min: .65, max: 1.6 });
 const panelStretch = makeStretchable($("#panel .panel-shell"), (z) => { $("#panel .panel-content").style.zoom = z.toFixed(3); }, { min: .8, max: 1.7, wheelNeedsCtrl: true });
+
+/* ══════════════════════════════════════════════════════════════════════
+   LIGHTBOX — full-screen, zoomable image preview
+   Tap any panel photo to open. Scroll / pinch / double-tap or the +/−
+   buttons scale the image; drag to pan when zoomed. ‹ › steps through a
+   multi-image set (e.g. the History gallery). Esc / backdrop / ✕ closes.
+   ══════════════════════════════════════════════════════════════════════ */
+const Lightbox = (() => {
+  const el = $("#lightbox");
+  if (!el) return { open() {} };
+  const img = $("#lb-img"), stage = $("#lb-stage"), val = $("#lb-zoom-val");
+  const prev = $(".lb-prev"), next = $(".lb-next"), counter = $("#lb-counter");
+  const MIN = 1, MAX = 5;
+  let set = [], idx = 0, label = "";
+  let zoom = 1, tx = 0, ty = 0;                 // pan offset in px
+  const pointers = new Map(); let d0 = 0, z0 = 1, lastTap = 0;
+  let panStart = null;
+
+  function apply() {
+    zoom = Math.min(MAX, Math.max(MIN, zoom));
+    if (zoom <= 1) { tx = ty = 0; }
+    img.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom.toFixed(3)})`;
+    val.textContent = Math.round(zoom * 100) + "%";
+    stage.classList.toggle("zoomed", zoom > 1);
+  }
+  function load(i) {
+    idx = (i + set.length) % set.length;
+    zoom = 1; tx = ty = 0;
+    img.src = withV(set[idx]);
+    img.alt = label ? `${label} — image ${idx + 1}` : "";
+    const multi = set.length > 1;
+    prev.classList.toggle("hidden", !multi);
+    next.classList.toggle("hidden", !multi);
+    counter.classList.toggle("hidden", !multi);
+    counter.textContent = `${idx + 1} / ${set.length}`;
+    apply();
+  }
+  function open(images, i = 0, lbl = "") {
+    set = (images || []).slice(); if (!set.length) return;
+    label = lbl || "";
+    el.classList.remove("hidden");
+    requestAnimationFrame(() => el.classList.add("open"));
+    Sound.play("open");
+    load(i);
+  }
+  function close() {
+    el.classList.remove("open");
+    setTimeout(() => el.classList.add("hidden"), 260);
+    Sound.play("back");
+  }
+  const step = (d) => { if (set.length > 1) { Sound.play("tap"); load(idx + d); } };
+
+  prev.addEventListener("click", (e) => { e.stopPropagation(); step(-1); });
+  next.addEventListener("click", (e) => { e.stopPropagation(); step(1); });
+  el.querySelectorAll("[data-lb-close]").forEach(b => b.addEventListener("click", close));
+  el.querySelectorAll("[data-lb-zoom]").forEach(b => b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const k = b.dataset.lbZoom;
+    if (k === "in") zoom *= 1.4; else if (k === "out") zoom /= 1.4; else { zoom = 1; tx = ty = 0; }
+    apply();
+  }));
+
+  // wheel to zoom, pinch to zoom, double-tap to toggle, drag to pan
+  stage.addEventListener("wheel", (e) => { e.preventDefault(); zoom *= (e.deltaY < 0 ? 1.12 : .89); apply(); }, { passive: false });
+  stage.addEventListener("pointerdown", (e) => {
+    stage.setPointerCapture?.(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) { const [a, b] = [...pointers.values()]; d0 = Math.hypot(a.x - b.x, a.y - b.y); z0 = zoom; }
+    else if (pointers.size === 1) {
+      const now = performance.now();
+      if (now - lastTap < 320) { zoom = zoom > 1 ? 1 : 2.4; if (zoom <= 1) { tx = ty = 0; } apply(); }
+      lastTap = now;
+      if (zoom > 1) panStart = { x: e.clientX - tx, y: e.clientY - ty };
+    }
+  });
+  stage.addEventListener("pointermove", (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2 && d0 > 0) { const [a, b] = [...pointers.values()]; zoom = z0 * (Math.hypot(a.x - b.x, a.y - b.y) / d0); apply(); }
+    else if (pointers.size === 1 && panStart && zoom > 1) { tx = e.clientX - panStart.x; ty = e.clientY - panStart.y; apply(); }
+  });
+  const lift = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) d0 = 0; if (pointers.size === 0) panStart = null; };
+  stage.addEventListener("pointerup", lift);
+  stage.addEventListener("pointercancel", lift);
+  document.addEventListener("keydown", (e) => {
+    if (el.classList.contains("hidden")) return;
+    if (e.key === "Escape") close();
+    else if (e.key === "ArrowRight") step(1);
+    else if (e.key === "ArrowLeft") step(-1);
+    else if (e.key === "+" || e.key === "=") { zoom *= 1.4; apply(); }
+    else if (e.key === "-") { zoom /= 1.4; apply(); }
+  });
+
+  return { open, close };
+})();
 
 /* ─────────────────────────── HUD clock ──────────────────────────────── */
 function tickClock() {
