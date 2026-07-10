@@ -130,6 +130,7 @@
             <div class="media-scanline" aria-hidden="true"></div>
           </div>
           <figcaption id="panel-caption">—</figcaption>
+          <div id="panel-thumbs" class="panel-thumbs hidden" aria-label="Gallery images"></div>
         </figure>
 
         <!-- Profile / content area -->
@@ -144,6 +145,31 @@
 
       <footer id="panel-list" class="panel-list" aria-label="Entries"></footer>
     </div>
+  </section>
+
+  <!-- ════════════════ LIGHTBOX (zoomable image preview) ═══════════════ -->
+  <section id="lightbox" class="lightbox hidden" aria-modal="true" role="dialog" aria-label="Image preview">
+    <div class="lb-backdrop" data-lb-close></div>
+    <button class="lb-x" data-lb-close aria-label="Close preview">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button class="lb-nav lb-prev" aria-label="Previous image">
+      <svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="lb-nav lb-next" aria-label="Next image">
+      <svg viewBox="0 0 24 24"><path d="M9 5 L16 12 L9 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div id="lb-stage" class="lb-stage">
+      <img id="lb-img" class="lb-img" alt="" draggable="false">
+    </div>
+    <span id="lb-counter" class="lb-counter hidden">1 / 1</span>
+    <div class="lb-tools" role="group" aria-label="Zoom controls">
+      <button data-lb-zoom="out" aria-label="Zoom out">−</button>
+      <span id="lb-zoom-val">100%</span>
+      <button data-lb-zoom="in" aria-label="Zoom in">+</button>
+      <button data-lb-zoom="reset" aria-label="Reset zoom">Reset</button>
+    </div>
+    <p class="lb-hint">Scroll, pinch or double-tap to zoom · drag to pan · ‹ › to browse</p>
   </section>
 
   <!-- ════════════════ BRANCHES PANEL (regions ▸ countries) ═══════════ -->
