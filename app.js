@@ -186,6 +186,10 @@ const CONTENT = {
           description: "As the number of worshippers had grown to 30, the services were then held at Lily Tower.",
           images: ["assets/Early 2004.png"],
           extra: { Location: "Dubai, UAE", Worshippers: "≈ 30" } },
+        { name: "Year 2008", position: "8th Anniversary · A Turning Point",
+          description: "In 2008, Abu Dhabi celebrated their 8th Church Anniversary in World Trade Center, with the first Dubai brethren joining them in the occasion. This also marked the \"turning point\" for the Dubai Extension to have their First Anniversary.",
+          images: ["assets/Early 2008 - A.png", "assets/Early 2008 - B.png", "assets/Early 2008-C.png.jpg", "assets/Early 2008-D.png"],
+          extra: { Venue: "World Trade Center, Abu Dhabi", Milestone: "Dubai Extension's 1st Anniversary" } },
         // ── PMCC (4th Watch) global milestones ──
         { name: "Founding of PMCC (4th Watch)", position: "1972",
           description: "Apostle Arsenio Tan Ferriol founds the church after separating from the Foursquare Gospel Church, following a claimed 1970 divine calling in Odiongan to restore the apostolic church.",
