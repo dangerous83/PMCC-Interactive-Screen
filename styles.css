@@ -614,10 +614,10 @@ input{ font-family:inherit; }
   background:var(--glass); border:1px solid var(--glass-line);
   box-shadow:0 0 2.6vmin color-mix(in srgb,var(--accent) 14%, transparent); animation:fade-up .4s var(--ease-out) both; }
 .j-card .jc-photo{ position:relative; flex:0 0 clamp(64px,9vmin,150px); aspect-ratio:3/4; border-radius:12px; overflow:hidden;
-  background:linear-gradient(158deg, rgba(32,52,110,.78), rgba(9,16,42,.86)); border:1px solid var(--tile-line);
+  background:radial-gradient(118% 116% at 50% 26%, #24262e 0%, #131418 58%, #08090c 100%); border:1px solid var(--tile-line);
   display:grid; place-items:center; }
 .j-card .jc-photo svg{ width:46%; height:46%; stroke:color-mix(in srgb,var(--accent-2) 70%, transparent); fill:none; stroke-width:1.4; }
-.j-card .jc-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
+.j-card .jc-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:50% 50%; z-index:1; }
 .j-card .jc-info{ flex:1; min-width:0; }
 .j-card .jc-name{ font-size:clamp(15px,1.9vmin,36px); font-weight:700; color:var(--accent-2); letter-spacing:.02em; }
 .j-card .jc-pos{ font-size:clamp(11px,1.35vmin,26px); letter-spacing:.14em; color:var(--accent); margin-top:.4vmin; text-transform:uppercase; }
@@ -840,10 +840,15 @@ input{ font-family:inherit; }
   gap:1.6vmin; padding:clamp(22px,3.2vmin,64px) clamp(20px,2.6vmin,52px); border-right:1px solid rgba(255,255,255,.12);
   background:radial-gradient(140% 120% at 30% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 62%); overflow-y:auto; }
 .pm-portrait{ position:relative; width:100%; max-width:clamp(320px,44vmin,600px); aspect-ratio:3/4; border-radius:calc(var(--radius)*.7);
-  overflow:hidden; display:grid; place-items:center; background:var(--tile); border:1.5px solid var(--tile-line);
+  overflow:hidden; display:grid; place-items:center;
+  /* Studio-charcoal backdrop matching the leadership portraits, so a full-length
+     shot shows head-to-toe (Bible included) with no crop — the fill blends into
+     the photo's own dark background and the subject appears to float. */
+  background:radial-gradient(118% 116% at 50% 26%, #24262e 0%, #131418 58%, #08090c 100%);
+  border:1.5px solid var(--tile-line);
   box-shadow:0 16px 44px rgba(0,0,0,.5), 0 0 3vmin color-mix(in srgb, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255,255,255,.25);
   animation:fade-up .45s var(--ease-out) both; }
-.pm-portrait img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 18%; }
+.pm-portrait img{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:50% 50%; }
 .pm-portrait svg{ width:36%; height:auto; stroke:var(--accent-2); fill:none; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 60%, transparent)); }
 .pm-portrait img ~ svg{ display:none; }   /* glyph only shows when no photo */
 #pm-name{ font-size:clamp(20px,2.5vmin,52px); font-weight:800; letter-spacing:.02em; color:#fff8ea; text-shadow:0 2px 14px rgba(0,0,0,.5); }
