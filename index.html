@@ -48,6 +48,17 @@
     <canvas id="ambient-canvas"></canvas><!-- drifting particles + light streaks -->
   </div>
 
+  <!-- ════════════════ AATF TOP-VIEW REVEAL VIDEO ════════════════
+       Full-screen backdrop (above the CSS scene, below the UI). At rest it
+       holds the first frame — the top view. Tapping the logo flies it forward
+       and the icons pop up (with a warp-glow burst at the end); tapping again
+       reverses it back to the top view. src is set by app.js (cache-busted). -->
+  <div id="reveal-stage" aria-hidden="true">
+    <video id="reveal-video" muted playsinline preload="auto"></video>
+    <div id="reveal-vignette"></div>
+  </div>
+  <div id="warp-burst" aria-hidden="true"></div>
+
   <!-- ════════════════════════ LOADING SCREEN ════════════════════════ -->
   <div id="loader">
     <div class="loader-logo-wrap">
