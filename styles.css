@@ -611,6 +611,25 @@ input{ font-family:inherit; }
 .jw-state.live{ color:var(--accent-2); }
 .jw-state.live::before{ color:#63d38f; animation:jw-blink 1s steps(1) infinite; }
 @keyframes jw-blink{ 50%{ opacity:.25; } }
+
+/* ── Voice Mode: waveform-only immersive view (no chat text/"subtitle") ── */
+.voice-controls{ display:none; align-items:center; gap:1.6vmin; margin-top:1.4vmin; }
+.jarvis-shell.voice-mode .voice-controls{ display:flex; }
+.jarvis-shell.voice-mode .jarvis-chat{ display:none; }                 /* hide the chat text */
+.jarvis-shell.voice-mode .jarvis-stage{ flex:1; border-right:none; }   /* waveform fills panel */
+.jarvis-shell.voice-mode .jarvis-core{ width:min(38vmin,42vh); }
+.jarvis-shell.voice-mode .jarvis-wave-wrap{ width:74%; height:clamp(110px,17vmin,300px); }
+.jarvis-shell.voice-mode .jw-state{ font-size:clamp(12px,1.5vmin,30px); letter-spacing:.32em; }
+.voice-mic{ width:clamp(56px,6vmin,120px); aspect-ratio:1; display:grid; place-items:center; border-radius:50%;
+  color:var(--text); background:var(--glass); border:1.5px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow:0 8px 26px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.22); cursor:pointer; transition:transform .2s var(--ease-spring), background .2s; }
+.voice-mic svg{ width:46%; height:46%; }
+.voice-mic:active{ transform:scale(.92); }
+.voice-mic.live{ color:#0a1330; background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-color:transparent; animation:mic-pulse 1.3s ease-in-out infinite; }
+.voice-type{ padding:clamp(9px,1.1vmin,22px) clamp(16px,1.8vmin,36px); border-radius:999px; cursor:pointer;
+  color:var(--text-dim); background:var(--glass); border:1px solid var(--glass-line);
+  font-size:clamp(12px,1.35vmin,28px); font-weight:600; letter-spacing:.06em; transition:background .2s, color .2s; }
+.voice-type:hover{ background:var(--glass-2); color:var(--text); }
 /* RIGHT · chat column */
 .jarvis-chat{ flex:1; min-width:0; display:flex; flex-direction:column; }
 .jarvis-chat .jarvis-log{ flex:1; }
