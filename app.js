@@ -593,16 +593,18 @@ function layoutOrbit() {
   const iconSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--icon-size")) || 160;
   const hubSize  = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hub-size")) || 300;
   // reserve the bottom band for the dock so orbit icons never collide with it
-  const bottomReserve = Math.min(h * 0.28, iconSize * 1.5 + 140);
+  const bottomReserve = Math.min(h * 0.24, iconSize * 1.35 + 120);
   const cx = w/2;
-  const cy = Math.max(hubSize*0.55 + 20, (h - bottomReserve) / 2);
+  // bias the whole constellation downward so the top (Apostle) icon isn't
+  // jammed under the title and the empty lower space gets used
+  const cy = Math.max(hubSize*0.55 + 20, (h - bottomReserve) / 2 + h*0.055);
   // pull the ring in from the edges (leave room for labels + the assistant orb)
   const rightReserve = iconSize * 1.3 + 40;
   const rx = Math.min(w/2 - iconSize*0.7 - rightReserve, w*0.37);
   // size vertical radius so the top (Apostle) and deepest bottom icons
   // (Branches/History, sin≈0.95) both stay clear of edges and the dock
-  const ryTop = cy - iconSize*0.5 - 10;
-  const ryBot = (h - Math.max(230, iconSize*1.3 + 96) - iconSize*0.5 - cy) / 0.96;
+  const ryTop = cy - iconSize*0.5 - 28;   // extra top margin below the title
+  const ryBot = (h - Math.max(200, iconSize*1.2 + 80) - iconSize*0.5 - cy) / 0.96;
   const ry = Math.max(120, Math.min(ryTop, ryBot));
   // move the center hub to match the icon/link center
   const hub = $(".hub"); if (hub) hub.style.top = `${cy}px`;

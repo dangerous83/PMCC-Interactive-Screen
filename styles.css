@@ -1028,11 +1028,9 @@ body.osk-open .search-box{ margin-top:2vh; }
 }
 
 /* ═══════════════ EVENTS · left HUD widget (Iron-Man monitor) ═══════════════ */
-.events-widget{ position:absolute; left:clamp(12px,1.6vmin,30px); top:50%; transform:translateY(-50%);
-  z-index:13; display:flex; align-items:stretch; pointer-events:none; }
-.events-widget > *{ pointer-events:auto; }
-/* collapsed square face */
-.ew-toggle{ position:relative; z-index:2; width:clamp(58px,6.2vmin,108px); aspect-ratio:1; flex:0 0 auto;
+.events-widget{ position:absolute; left:clamp(12px,1.6vmin,30px); top:50%; transform:translateY(-50%); z-index:13; }
+/* collapsed square face (this is ALL that shows until you tap it) */
+.ew-toggle{ position:relative; z-index:2; width:clamp(48px,5vmin,88px); aspect-ratio:1; flex:0 0 auto;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.5vmin; cursor:pointer;
   color:var(--accent-2); background:linear-gradient(158deg, rgba(20,34,78,.74), rgba(6,12,30,.88));
   border:1.5px solid color-mix(in srgb,var(--accent) 60%, transparent); overflow:hidden;
@@ -1051,22 +1049,27 @@ body.osk-open .search-box{ margin-top:2vh; }
 .events-widget.expanded .ew-toggle{ border-color:var(--accent); animation:none;
   box-shadow:0 12px 34px rgba(0,0,0,.55), 0 0 3.4vmin color-mix(in srgb,var(--accent) 42%, transparent); }
 
-/* holographic panel that unfolds to the right */
-.ew-panel{ position:relative; width:0; opacity:0; overflow:hidden; color:var(--text);
-  background:linear-gradient(158deg, rgba(16,28,66,.90), rgba(5,10,26,.94));
-  border:1.5px solid color-mix(in srgb,var(--accent) 40%, transparent); border-left:none;
+/* holographic panel: an absolute pop-out to the right of the square, so the
+   collapsed widget is nothing but the small square (no empty box). */
+.ew-panel{ position:absolute; left:calc(100% + 10px); top:50%; z-index:3; color:var(--text);
+  width:clamp(210px,23vmin,430px);
+  transform:translateY(-50%) translateX(-14px) scale(.95); transform-origin:left center;
+  opacity:0; visibility:hidden; pointer-events:none;
+  background:linear-gradient(158deg, rgba(16,28,66,.92), rgba(5,10,26,.95));
+  border:1.5px solid color-mix(in srgb,var(--accent) 42%, transparent);
   backdrop-filter:blur(calc(var(--glass-blur)+6px)); -webkit-backdrop-filter:blur(calc(var(--glass-blur)+6px));
   clip-path:polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
   box-shadow:0 18px 50px rgba(0,0,0,.55), 0 0 3vmin color-mix(in srgb,var(--accent) 18%, transparent);
-  transition:width .42s var(--ease-out), opacity .3s ease; }
-.events-widget.expanded .ew-panel{ width:clamp(212px,24vmin,440px); opacity:1; }
+  transition:opacity .3s ease, transform .38s var(--ease-out), visibility .3s; }
+.events-widget.expanded .ew-panel{ opacity:1; visibility:visible; pointer-events:auto;
+  transform:translateY(-50%) translateX(0) scale(1); }
 /* animated corner brackets + scanlines overlay */
 .ew-frame{ position:absolute; inset:0; pointer-events:none; z-index:3;
   background:repeating-linear-gradient(0deg, transparent 0 3px, color-mix(in srgb,var(--accent) 7%, transparent) 3px 4px); mix-blend-mode:screen; opacity:.5; }
 .ew-frame::before, .ew-frame::after{ content:""; position:absolute; width:16px; height:16px; border:2px solid var(--accent); filter:drop-shadow(0 0 5px var(--accent)); }
 .ew-frame::before{ top:6px; left:6px; border-right:none; border-bottom:none; }
 .ew-frame::after{ bottom:6px; right:6px; border-left:none; border-top:none; }
-.ew-head, .ew-list{ width:clamp(212px,24vmin,440px); box-sizing:border-box; }
+.ew-head, .ew-list{ width:100%; box-sizing:border-box; }
 .ew-head{ display:flex; align-items:center; gap:.7vmin; padding:1.1vmin 1.3vmin; position:relative; z-index:4;
   border-bottom:1px solid color-mix(in srgb,var(--accent) 24%, transparent); }
 .ew-dot{ width:9px; height:9px; border-radius:50%; background:#63d38f; box-shadow:0 0 9px #63d38f; animation:jw-blink 1.2s steps(1) infinite; }
