@@ -999,8 +999,11 @@ body.osk-open .search-box{ margin-top:2vh; }
 .sc-swatch[data-scheme="mono"] i:nth-child(1){ background:#cfe0ff; } .sc-swatch[data-scheme="mono"] i:nth-child(2){ background:#8ea2c4; } .sc-swatch[data-scheme="mono"] i:nth-child(3){ background:#141c2e; }
 
 /* voice select */
-#set-voice{ width:100%; margin-top:.6vmin; padding:clamp(9px,1.2vmin,22px) clamp(12px,1.6vmin,30px); background:var(--glass-2); border:1px solid var(--glass-line); border-radius:10px; color:var(--text); font-size:clamp(12px,1.4vmin,26px); }
+#set-voice{ width:100%; margin-top:.6vmin; padding:clamp(9px,1.2vmin,22px) clamp(12px,1.6vmin,30px); background:var(--glass-2); border:1px solid var(--glass-line); border-radius:10px; color:var(--text); font-size:clamp(12px,1.4vmin,26px); color-scheme:dark; }
 #set-voice:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 1.6vmin color-mix(in srgb, var(--accent) 35%, transparent); }
+/* the open dropdown list is drawn by the OS on a light background — force readable dark text so options don't vanish */
+#set-voice option, #set-voice optgroup{ background:#0f1830; color:#f4f8ff; font-size:15px; }
+#set-voice option:checked{ background:#1d2c52; color:#fff; }
 
 /* ═══════════════════════ SETTINGS LOCK OVERLAY ═══════════════════════ */
 .lock-shell{ width:min(460px, 92vw) !important; }
