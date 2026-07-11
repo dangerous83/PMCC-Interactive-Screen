@@ -155,25 +155,15 @@ const CONTENT = {
     },
     {
       id: "elders", label: "ELDERS", subtitle: "COUNCIL OF ELDERS", icon: "elders",
-      // SAMPLE elders (dummy data) — replace names/details with your real elders.
       items: [
-        { name: "Elder Nathaniel Cruz", position: "Elder · Worship Ministry", location: "Dubai, UAE",
-          description: "Sample elder profile. Oversees the worship and music ministry of the local church and mentors the praise team.",
-          ministryRole: "Leads worship ministry, service planning, and the spiritual care of the music team.",
-          assignment: "Main regional church, supporting midweek and weekend services.",
-          messages: ["A Heart of Worship", "Serving in Spirit and Truth"],
-          contact: { Email: "worship@pmcc4thwatch.org", Office: "By appointment", Branch: "PMCC (4th Watch) Dubai" },
-          extra: { Ministry: "Worship" } },
-        { name: "Elder Peter Villamor", position: "Elder · Discipleship", location: "Manila, Philippines",
-          description: "Sample elder profile. Leads discipleship classes and small-group pastoral care for new believers.",
-          ministryRole: "Guides discipleship, new-members classes, and small-group leaders.",
-          assignment: "Main church discipleship program and satellite groups.",
-          extra: { Ministry: "Discipleship" } },
-        { name: "Elder Ruth Delos Santos", position: "Elder · Women's Ministry", location: "Toronto, Canada",
-          description: "Sample elder profile. Coordinates the women's ministry, prayer groups, and community outreach.",
-          ministryRole: "Coordinates women's ministry, prayer, and outreach initiatives.",
-          assignment: "Canada District — Toronto locale and surrounding groups.",
-          extra: { Ministry: "Women's Ministry" } },
+        { name: "Elder Derek Acbang", position: "Elder · Council of Elders", location: "Dubai, United Arab Emirates",
+          ministryRole: "Serves on the Council of Elders, providing spiritual leadership, pastoral care, and ministry support within the local church.",
+          assignment: "PMCC (4th Watch) Dubai — Middle East District.",
+          extra: { District: "Middle East" } },
+        { name: "Elder Amy Eslava", position: "Elder · Council of Elders", location: "Dubai, United Arab Emirates",
+          ministryRole: "Serves on the Council of Elders, providing spiritual leadership, pastoral care, and ministry support within the local church.",
+          assignment: "PMCC (4th Watch) Dubai — Middle East District.",
+          extra: { District: "Middle East" } },
       ],
     },
     {
@@ -760,6 +750,10 @@ const Globe = (() => {
     "Pakistan":[30,70],"Sri Lanka":[7.9,80.8],"USA":[39,-98],"Canada":[56,-106],
     "Australia":[-25,133],"Netherlands":[52.3,5.6],"Philippines":[12.9,121.8],
   };
+  // Optional photo for a branch, shown in its detail panel. Keyed by branch name.
+  const BRANCH_IMAGES = {
+    "Dubai": { src: "assets/aatf-building.jpg", caption: "AATF Miracle Building — PMCC (4th Watch) Dubai" },
+  };
   // Real coastline outlines from Natural Earth (assets/world-land.js, simplified
   // to ~8.5k points). Falls back to a tiny built-in set if the file is missing.
   const LAND = (typeof window !== "undefined" && window.WORLD_LAND) ? window.WORLD_LAND : [
@@ -953,8 +947,10 @@ const Globe = (() => {
     }
     const p = points[selected];
     const col = p.color;
+    const photo = BRANCH_IMAGES[p.name];
     box.innerHTML =
       `<button class="gi-back" id="gi-back">‹ All regions</button>` +
+      (photo ? `<figure class="gi-photo"><img src="${withV(photo.src)}" alt="${esc(photo.caption || p.name)}" onerror="this.closest('.gi-photo').remove()"><figcaption>${esc(photo.caption || "")}</figcaption></figure>` : "") +
       `<div class="gi-badge" style="border-color:${col};color:${col}"><span class="gi-dot" style="background:${col}"></span>${esc(p.region)}${p.hq ? " · Headquarters" : ""}</div>` +
       `<div class="gi-name">${esc(p.name)}</div><div class="gi-divider"></div>` +
       `<dl class="gi-field"><dt>Congregation</dt><dd>PMCC (4th Watch) ${esc(p.name)}</dd></dl>` +

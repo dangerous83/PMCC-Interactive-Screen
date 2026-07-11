@@ -773,6 +773,12 @@ input{ font-family:inherit; }
 .gi-back{ display:inline-flex; align-items:center; margin-bottom:1.4vmin; padding:.5em 1em; background:var(--glass); border:1px solid var(--glass-line); border-radius:999px; color:var(--accent-2); font-size:clamp(11px,1.25vmin,26px); letter-spacing:.08em; cursor:pointer; transition:background .2s; }
 .gi-back:hover{ background:var(--glass-2); }
 .gi-badge{ display:inline-flex; align-items:center; gap:.7vmin; padding:.4em .9em; border:1px solid; border-radius:999px; font-size:clamp(11px,1.3vmin,26px); letter-spacing:.1em; text-transform:uppercase; }
+/* branch photo (e.g. the AATF Miracle Building for Dubai) */
+.gi-photo{ margin:0 0 1.6vmin; border-radius:calc(var(--radius)*.55); overflow:hidden; border:1px solid var(--tile-line);
+  box-shadow:0 14px 40px rgba(0,0,0,.5), 0 0 2.4vmin color-mix(in srgb, var(--accent) 20%, transparent); animation:fade-up .4s var(--ease-out) both; }
+.gi-photo img{ display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
+.gi-photo figcaption{ padding:.8vmin 1.2vmin; font-size:clamp(11px,1.25vmin,26px); color:var(--accent-2); letter-spacing:.03em;
+  background:linear-gradient(0deg, rgba(6,11,28,.72), rgba(6,11,28,.42)); }
 .globe-stage{ flex:1; position:relative; min-width:0; }
 #globe-canvas{ width:100%; height:100%; display:block; touch-action:none; cursor:grab; }
 #globe-canvas:active{ cursor:grabbing; }
