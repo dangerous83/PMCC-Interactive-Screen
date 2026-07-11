@@ -63,6 +63,7 @@ const CONTENT = {
       id: "bishops", label: "BISHOPS", subtitle: "EPISCOPAL COUNCIL", icon: "bishops",
       items: [
         { name: "Archbishop Arturo “Art” Ferriol", position: "Archbishop",
+          image: "assets/archbishop-arturo-ferriol.png",
           description: "Brother of founder Arsenio T. Ferriol. He established Maranatha Bible School International — the church's ministerial training arm — in 1975 and later led construction of the main church in Marikina.",
           extra: { Founded: "Maranatha Bible School (1975)" } },
         { name: "Bishop Osinando “Osie” Quillao", position: "Senior Bishop",
@@ -124,6 +125,16 @@ const CONTENT = {
     {
       id: "pastors", label: "PASTORS", subtitle: "PASTORAL TEAM · DISTRICT COORDINATORS", icon: "pastors",
       items: [
+        { name: "Pastor Loren Barredo", position: "Pastor", location: "Dubai, United Arab Emirates",
+          image: "assets/pastor-loren-barredo.png",
+          ministryRole: "Serves as a pastor of the church, providing pastoral care, worship leadership, and ministry support to the congregation.",
+          assignment: "PMCC (4th Watch) Dubai — Middle East District.",
+          extra: { District: "Middle East" } },
+        { name: "Pastor Marisol Calingasan", position: "Pastor", location: "Dubai, United Arab Emirates",
+          image: "assets/pastor-marisol-calingasan.png",
+          ministryRole: "Serves as a pastor of the church, providing pastoral care, worship leadership, and ministry support to the congregation.",
+          assignment: "PMCC (4th Watch) Dubai — Middle East District.",
+          extra: { District: "Middle East" } },
         { name: "Pastor Tess Salanap", position: "Southern Europe District Coordinator",
           description: "District Coordinator of the Southern Europe District — Spain, Portugal, Greece, Cyprus, Italy and Malta. She rallied ministers for Apostle Jonathan Ferriol's apostolic visitation in Madrid.",
           extra: { District: "Southern Europe" } },
@@ -1187,13 +1198,14 @@ function openFeature(id) {
     JarvisWave.start();                                                     // hi-tech voice waveform
     Voice.enabled = true; store.set("voiceOn", true); updateVoiceButton();  // opening = voice active
     if (Voice.supported) { try { speechSynthesis.resume(); } catch {} Voice.pick(); }
-    if (Listen.supported && !Listen.wantOn) Listen.start();   // activate voice input on open
-    updateMicButton();                                        // reflect mic state in the hint (even if unsupported)
+    // Open straight into the immersive waveform-only Voice Mode (no chat text);
+    // if speech isn't supported, fall back to the typed-chat layout.
+    if (Listen.supported) enterVoiceMode(); else { exitVoiceMode(); updateMicButton(); }
     if (!$("#jarvis-log").childElementCount) jarvisGreet(); else Voice.speak("Peace be with you. Brother Thomas here — how may I help?");
   }
   if (id === "browser") { /* lazy-load on open */ browserGo($("#browser-url").value); }
 }
-function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; if (el.id === "globe") Globe.stop(); if (el.id === "jarvis") { Voice.stop(); JarvisWave.stop(); } }
+function closeFeature(el) { el.classList.remove("open"); setTimeout(() => el.classList.add("hidden"), 400); if (el.id === "browser") $("#browser-frame").src = "about:blank"; if (el.id === "globe") Globe.stop(); if (el.id === "jarvis") { Voice.stop(); JarvisWave.stop(); JarvisWave.setListening(false); const sh = el.querySelector(".jarvis-shell"); if (sh) sh.classList.remove("voice-mode"); } }
 function closeAllFeatures() { $$(".feature-overlay").forEach(el => { if (!el.classList.contains("hidden")) closeFeature(el); }); }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1585,13 +1597,24 @@ const JarvisWave = {
     this.running = false; this.speaking = false;
     if (this.raf) cancelAnimationFrame(this.raf), this.raf = null;
   },
+  _listening: false,
   setSpeaking(on) {
     this.speaking = on;
-    this.target = on ? 0.72 : 0.06;
-    const s = document.getElementById("jarvis-wave-state");
-    if (s) { s.textContent = on ? "SPEAKING" : "STANDBY"; s.classList.toggle("live", on); }
+    this.target = on ? 0.72 : (this._listening ? 0.28 : 0.06);
+    this._refreshState();
     const stage = document.querySelector(".jarvis-stage");
     if (stage) stage.classList.toggle("speaking", on);
+  },
+  // gentle "hearing you" motion while the mic is live (and not speaking)
+  setListening(on) {
+    this._listening = on;
+    if (!this.speaking) this.target = on ? 0.28 : 0.06;
+    this._refreshState();
+  },
+  _refreshState() {
+    const s = document.getElementById("jarvis-wave-state"); if (!s) return;
+    const txt = this.speaking ? "SPEAKING" : (this._listening ? "LISTENING" : "STANDBY");
+    s.textContent = txt; s.classList.toggle("live", this.speaking || this._listening);
   },
   kick() { this.energy = Math.min(1, this.energy + 0.6); },   // a word was spoken
   draw() {
@@ -1767,10 +1790,14 @@ const Listen = {
   },
 };
 function updateMicButton() {
-  const b = $("#jarvis-mic"); if (!b) return;
   const live = Listen.on && Listen.wantOn;
-  b.classList.toggle("live", live);
-  b.title = Listen.wantOn ? "Listening… tap to stop (or say “Brother Thomas”)" : "Speak — or say “Brother Thomas”";
+  const b = $("#jarvis-mic");
+  if (b) {
+    b.classList.toggle("live", live);
+    b.title = Listen.wantOn ? "Listening… tap to stop (or say “Brother Thomas”)" : "Speak — or say “Brother Thomas”";
+  }
+  const vm = $("#voice-mic"); if (vm) vm.classList.toggle("live", live);
+  if (typeof JarvisWave !== "undefined") JarvisWave.setListening(live);
   const hint = $("#mic-hint");
   if (hint) {
     if (!Listen.supported) { hint.textContent = "🎙️ Voice input needs Chrome or Edge (with a microphone)."; hint.className = "mic-hint off"; }
@@ -1778,6 +1805,20 @@ function updateMicButton() {
     else if (Listen.wantOn){ hint.textContent = "🎙️ Starting the microphone…"; hint.className = "mic-hint"; }
     else                  { hint.textContent = "🎙️ Tap the mic and speak — or just say “Brother Thomas”."; hint.className = "mic-hint"; }
   }
+}
+/* Voice Mode: waveform-only immersive view (chat text hidden). Entering starts
+   voice detection; leaving returns to the typed-chat layout. */
+function enterVoiceMode() {
+  const shell = document.querySelector(".jarvis-shell"); if (shell) shell.classList.add("voice-mode");
+  if (Listen.supported) { if (!Listen.wantOn) Listen.start(); }
+  else toast("Voice input needs Chrome or Edge — you can still type to Brother Thomas.");
+  if (typeof JarvisWave !== "undefined") JarvisWave.setListening(Listen.on && Listen.wantOn);
+  updateMicButton();
+}
+function exitVoiceMode() {
+  const shell = document.querySelector(".jarvis-shell"); if (shell) shell.classList.remove("voice-mode");
+  if (typeof JarvisWave !== "undefined") JarvisWave.setListening(false);
+  setTimeout(() => { try { $("#jarvis-text").focus(); } catch {} }, 60);
 }
 
 function jarvisSay(cls, text) {
@@ -2601,7 +2642,23 @@ $("#lock-form").addEventListener("submit", (e) => { e.preventDefault(); tryUnloc
 $("#btn-voice-test").addEventListener("click", () => { Sound.ensure(); Voice.enabled = true; Voice.voice = null; Voice.pick(); Voice.speak("Peace be with you. I am Brother Thomas, and it is my joy to serve you today."); });
 // Brother Thomas voice toggle + floating widget
 $("#jarvis-voice").addEventListener("click", () => { Sound.play("tap"); Voice.toggle(); });
-$("#jarvis-mic").addEventListener("click", () => { Sound.play("tap"); Listen.toggle(); });
+// chat-row mic → switch into the immersive Voice Mode (waveform only)
+$("#jarvis-mic").addEventListener("click", () => { Sound.play("tap"); enterVoiceMode(); });
+// voice-mode mic → start/stop listening in place
+$("#voice-mic").addEventListener("click", () => { Sound.play("tap"); Listen.toggle(); });
+// voice-mode "Type instead" → back to the chat layout
+$("#voice-type").addEventListener("click", () => { Sound.play("tap"); exitVoiceMode(); });
+
+// Events HUD widget (Iron-Man style): square ↔ holographic monitor panel
+const eventsWidget = document.getElementById("events-widget");
+if (eventsWidget) {
+  const ewToggle = eventsWidget.querySelector(".ew-toggle");
+  const ewSet = (open) => { eventsWidget.classList.toggle("expanded", open); ewToggle.setAttribute("aria-expanded", open ? "true" : "false"); Sound.play(open ? "open" : "back"); };
+  ewToggle.addEventListener("click", () => { Sound.ensure(); ewSet(!eventsWidget.classList.contains("expanded")); });
+  eventsWidget.querySelectorAll(".ew-item").forEach(btn => btn.addEventListener("click", () => { Sound.play("tap"); toast((btn.dataset.ev || "Event") + " — updates coming soon"); }));
+  // collapse when tapping outside the widget
+  addEventListener("pointerdown", (e) => { if (eventsWidget.classList.contains("expanded") && !e.target.closest("#events-widget")) ewSet(false); }, true);
+}
 updateMicButton();
 $("#bt-widget").addEventListener("click", () => { Sound.ensure(); Sound.play("open"); openFeature("jarvis"); });
 updateVoiceButton();
