@@ -1188,6 +1188,7 @@ function openFeature(id) {
     Voice.enabled = true; store.set("voiceOn", true); updateVoiceButton();  // opening = voice active
     if (Voice.supported) { try { speechSynthesis.resume(); } catch {} Voice.pick(); }
     if (Listen.supported && !Listen.wantOn) Listen.start();   // activate voice input on open
+    updateMicButton();                                        // reflect mic state in the hint (even if unsupported)
     if (!$("#jarvis-log").childElementCount) jarvisGreet(); else Voice.speak("Peace be with you. Brother Thomas here — how may I help?");
   }
   if (id === "browser") { /* lazy-load on open */ browserGo($("#browser-url").value); }
@@ -1720,9 +1721,19 @@ const Listen = {
   init() {
     if (!this.supported || this.rec) return;
     const r = new this.SR();
-    r.continuous = true; r.interimResults = false; r.lang = "en-GB"; r.maxAlternatives = 1;
+    r.continuous = true; r.interimResults = true; r.lang = "en-GB"; r.maxAlternatives = 1;
     r.onstart = () => { this.on = true; updateMicButton(); };
-    r.onresult = (e) => { const res = e.results[e.results.length - 1]; if (res && res[0]) this.handle(res[0].transcript); };
+    r.onresult = (e) => {
+      let interim = "", finalT = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const seg = e.results[i]; if (!seg || !seg[0]) continue;
+        if (seg.isFinal) finalT += seg[0].transcript; else interim += seg[0].transcript;
+      }
+      // live proof it's hearing you: show the words in the input box as you speak
+      const input = $("#jarvis-text"), open = !$("#jarvis").classList.contains("hidden");
+      if (open && input) input.value = (finalT || interim).trim();
+      if (finalT.trim()) { if (open && input) input.value = ""; this.handle(finalT); }
+    };
     r.onerror = (e) => {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") { this.wantOn = false; toast("Allow microphone access to talk to Brother Thomas."); }
       // "no-speech"/"aborted"/"network" are transient — onend will restart if wanted
@@ -1731,7 +1742,7 @@ const Listen = {
     this.rec = r;
   },
   start() {
-    if (!this.supported) { toast("Voice input isn't supported in this browser — please use Chrome or Edge."); return; }
+    if (!this.supported) { toast("Voice input needs Chrome or Edge (with a microphone)."); updateMicButton(); return; }
     this.init(); this.wantOn = true;
     try { this.rec.start(); } catch {}
     updateMicButton();
@@ -1757,8 +1768,16 @@ const Listen = {
 };
 function updateMicButton() {
   const b = $("#jarvis-mic"); if (!b) return;
-  b.classList.toggle("live", Listen.on && Listen.wantOn);
+  const live = Listen.on && Listen.wantOn;
+  b.classList.toggle("live", live);
   b.title = Listen.wantOn ? "Listening… tap to stop (or say “Brother Thomas”)" : "Speak — or say “Brother Thomas”";
+  const hint = $("#mic-hint");
+  if (hint) {
+    if (!Listen.supported) { hint.textContent = "🎙️ Voice input needs Chrome or Edge (with a microphone)."; hint.className = "mic-hint off"; }
+    else if (live)        { hint.textContent = "🎙️ Listening… speak now."; hint.className = "mic-hint live"; }
+    else if (Listen.wantOn){ hint.textContent = "🎙️ Starting the microphone…"; hint.className = "mic-hint"; }
+    else                  { hint.textContent = "🎙️ Tap the mic and speak — or just say “Brother Thomas”."; hint.className = "mic-hint"; }
+  }
 }
 
 function jarvisSay(cls, text) {
