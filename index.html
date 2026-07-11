@@ -112,6 +112,48 @@
       <p class="hud-hint" id="hud-hint">TAP THE LOGO TO BEGIN</p>
       <nav id="dock" aria-label="Menu"></nav>
     </div>
+
+    <!-- ══════════ EVENTS · left HUD widget (Iron-Man style) ══════════
+         A small square that expands into a holographic monitor panel. -->
+    <aside id="events-widget" class="events-widget collapsed">
+      <button class="ew-toggle" type="button" aria-expanded="false" aria-label="Events">
+        <span class="ew-scan" aria-hidden="true"></span>
+        <span class="ew-toggle-ico">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 13h3M13.5 13h3M7.5 16.5h3M13.5 16.5h3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="ew-toggle-label">EVENTS</span>
+      </button>
+      <div class="ew-panel" role="region" aria-label="Church events">
+        <div class="ew-frame" aria-hidden="true"></div>
+        <header class="ew-head">
+          <span class="ew-dot"></span>
+          <span class="ew-title">EVENTS</span>
+          <span class="ew-sub">PMCC · LIVE FEED</span>
+        </header>
+        <ul class="ew-list">
+          <li><button class="ew-item" type="button" data-ev="Home Free">
+            <span class="ew-ico"><svg viewBox="0 0 24 24"><path d="M4 11l8-6 8 6M6 10v9h12v-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 19v-5h4v5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>
+            <span class="ew-tx"><b>Home Free</b><small>Fellowship gathering</small></span>
+            <span class="ew-chev">›</span>
+          </button></li>
+          <li><button class="ew-item" type="button" data-ev="Anniversaries">
+            <span class="ew-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.6 12.6 7.5 21l4.5-2.7L16.5 21l-1.1-8.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+            <span class="ew-tx"><b>Anniversaries</b><small>Church milestones</small></span>
+            <span class="ew-chev">›</span>
+          </button></li>
+          <li><button class="ew-item" type="button" data-ev="Christmas">
+            <span class="ew-ico"><svg viewBox="0 0 24 24"><path d="M12 3 6.5 11h3L5 18h14l-4.5-7h3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10.5 18h3v3h-3z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+            <span class="ew-tx"><b>Christmas</b><small>Season celebrations</small></span>
+            <span class="ew-chev">›</span>
+          </button></li>
+          <li><button class="ew-item" type="button" data-ev="Blogs">
+            <span class="ew-ico"><svg viewBox="0 0 24 24"><path d="M5 4h9l5 5v11H5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 4v5h5M8 13h8M8 16.5h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+            <span class="ew-tx"><b>Blogs</b><small>Latest articles</small></span>
+            <span class="ew-chev">›</span>
+          </button></li>
+        </ul>
+      </div>
+    </aside>
   </main>
 
   <!-- ════════════════════════ SECTION PANEL ════════════════════════ -->

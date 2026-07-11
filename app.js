@@ -63,6 +63,7 @@ const CONTENT = {
       id: "bishops", label: "BISHOPS", subtitle: "EPISCOPAL COUNCIL", icon: "bishops",
       items: [
         { name: "Archbishop Arturo “Art” Ferriol", position: "Archbishop",
+          image: "assets/archbishop-arturo-ferriol.png",
           description: "Brother of founder Arsenio T. Ferriol. He established Maranatha Bible School International — the church's ministerial training arm — in 1975 and later led construction of the main church in Marikina.",
           extra: { Founded: "Maranatha Bible School (1975)" } },
         { name: "Bishop Osinando “Osie” Quillao", position: "Senior Bishop",
@@ -124,6 +125,16 @@ const CONTENT = {
     {
       id: "pastors", label: "PASTORS", subtitle: "PASTORAL TEAM · DISTRICT COORDINATORS", icon: "pastors",
       items: [
+        { name: "Pastor Loren Barredo", position: "Pastor", location: "Dubai, United Arab Emirates",
+          image: "assets/pastor-loren-barredo.png",
+          ministryRole: "Serves as a pastor of the church, providing pastoral care, worship leadership, and ministry support to the congregation.",
+          assignment: "PMCC (4th Watch) Dubai — Middle East District.",
+          extra: { District: "Middle East" } },
+        { name: "Pastor Marisol Calingasan", position: "Pastor", location: "Dubai, United Arab Emirates",
+          image: "assets/pastor-marisol-calingasan.png",
+          ministryRole: "Serves as a pastor of the church, providing pastoral care, worship leadership, and ministry support to the congregation.",
+          assignment: "PMCC (4th Watch) Dubai — Middle East District.",
+          extra: { District: "Middle East" } },
         { name: "Pastor Tess Salanap", position: "Southern Europe District Coordinator",
           description: "District Coordinator of the Southern Europe District — Spain, Portugal, Greece, Cyprus, Italy and Malta. She rallied ministers for Apostle Jonathan Ferriol's apostolic visitation in Madrid.",
           extra: { District: "Southern Europe" } },
@@ -2637,6 +2648,17 @@ $("#jarvis-mic").addEventListener("click", () => { Sound.play("tap"); enterVoice
 $("#voice-mic").addEventListener("click", () => { Sound.play("tap"); Listen.toggle(); });
 // voice-mode "Type instead" → back to the chat layout
 $("#voice-type").addEventListener("click", () => { Sound.play("tap"); exitVoiceMode(); });
+
+// Events HUD widget (Iron-Man style): square ↔ holographic monitor panel
+const eventsWidget = document.getElementById("events-widget");
+if (eventsWidget) {
+  const ewToggle = eventsWidget.querySelector(".ew-toggle");
+  const ewSet = (open) => { eventsWidget.classList.toggle("expanded", open); ewToggle.setAttribute("aria-expanded", open ? "true" : "false"); Sound.play(open ? "open" : "back"); };
+  ewToggle.addEventListener("click", () => { Sound.ensure(); ewSet(!eventsWidget.classList.contains("expanded")); });
+  eventsWidget.querySelectorAll(".ew-item").forEach(btn => btn.addEventListener("click", () => { Sound.play("tap"); toast((btn.dataset.ev || "Event") + " — updates coming soon"); }));
+  // collapse when tapping outside the widget
+  addEventListener("pointerdown", (e) => { if (eventsWidget.classList.contains("expanded") && !e.target.closest("#events-widget")) ewSet(false); }, true);
+}
 updateMicButton();
 $("#bt-widget").addEventListener("click", () => { Sound.ensure(); Sound.play("open"); openFeature("jarvis"); });
 updateVoiceButton();
