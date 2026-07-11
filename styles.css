@@ -290,16 +290,18 @@ input{ font-family:inherit; }
 .icon-tile{
   width:calc(var(--icon-size)*.80); aspect-ratio:1; border-radius:30%;
   display:grid; place-items:center; position:relative; overflow:hidden;
-  background:linear-gradient(158deg, color-mix(in srgb, var(--accent) 12%, var(--tile)) 0%, var(--tile) 52%, color-mix(in srgb, #000 12%, var(--tile)) 100%);
+  /* dark, near-opaque frosted glass so the chip reads clearly over any
+     backdrop (bright sky included) while still looking like glass */
+  background:linear-gradient(158deg, rgba(24,40,88,.90) 0%, rgba(11,20,48,.93) 54%, rgba(6,11,28,.95) 100%);
   border:1.5px solid var(--tile-line);
-  backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur));
-  box-shadow:0 16px 44px rgba(0,0,0,.55), 0 0 2.6vmin color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 2.2vmin color-mix(in srgb, var(--accent) 12%, transparent);
+  backdrop-filter:blur(calc(var(--glass-blur) + 3px)); -webkit-backdrop-filter:blur(calc(var(--glass-blur) + 3px));
+  box-shadow:0 18px 48px rgba(0,0,0,.62), 0 0 0 1px rgba(0,0,0,.35), 0 0 2.8vmin color-mix(in srgb, var(--accent) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.32), inset 0 0 2.2vmin color-mix(in srgb, var(--accent) 14%, transparent);
   transition:box-shadow .35s ease, border-color .3s ease, transform .35s var(--ease-spring);
   animation:glow-pulse 4s ease-in-out infinite; animation-delay:var(--pulse-delay,0s);
 }
 @keyframes glow-pulse{
-  0%,100%{ box-shadow:0 16px 44px rgba(0,0,0,.55), 0 0 2vmin color-mix(in srgb, var(--accent) 26%, transparent), inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 2.2vmin color-mix(in srgb, var(--accent) 12%, transparent); }
-  50%{ box-shadow:0 16px 44px rgba(0,0,0,.55), 0 0 4.2vmin color-mix(in srgb, var(--accent) 50%, transparent), inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 3vmin color-mix(in srgb, var(--accent) 20%, transparent); }
+  0%,100%{ box-shadow:0 18px 48px rgba(0,0,0,.62), 0 0 0 1px rgba(0,0,0,.35), 0 0 2.2vmin color-mix(in srgb, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255,255,255,.32), inset 0 0 2.2vmin color-mix(in srgb, var(--accent) 14%, transparent); }
+  50%{ box-shadow:0 18px 48px rgba(0,0,0,.62), 0 0 0 1px rgba(0,0,0,.35), 0 0 4.4vmin color-mix(in srgb, var(--accent) 54%, transparent), inset 0 1px 0 rgba(255,255,255,.32), inset 0 0 3vmin color-mix(in srgb, var(--accent) 22%, transparent); }
 }
 /* inner emblem plate + gold ring for a premium layered look */
 .icon-tile::before{ content:""; position:absolute; inset:14%; border-radius:24%; border:1px solid color-mix(in srgb, var(--accent) 45%, transparent); box-shadow:inset 0 0 2vmin color-mix(in srgb, var(--accent) 18%, transparent); opacity:.8; z-index:1; }
@@ -949,9 +951,12 @@ body.osk-open .search-box{ margin-top:2vh; }
 #reveal-stage.on{ opacity:1; visibility:visible; }
 #reveal-video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
   transform-origin:50% 46%; will-change:transform, filter; }
-/* cinematic edge darkening so the floating UI stays legible over the footage */
+/* darkening scrim so the floating icons stay legible over bright footage:
+   a flat tint + a stronger vignette toward the edges. */
 #reveal-vignette{ position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(122% 104% at 50% 44%, transparent 44%, rgba(4,8,20,.52) 82%, rgba(3,6,16,.86) 100%); }
+  background:
+    linear-gradient(rgba(5,9,22,.42), rgba(5,9,22,.42)),
+    radial-gradient(126% 108% at 50% 44%, transparent 36%, rgba(4,8,20,.55) 80%, rgba(2,5,14,.9) 100%); }
 /* quick warp on the footage as the flight completes */
 #reveal-video.warp{ animation:reveal-warp 1.05s var(--ease-out); }
 @keyframes reveal-warp{

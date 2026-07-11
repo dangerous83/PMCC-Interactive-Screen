@@ -42,6 +42,7 @@ const CONTENT = {
       items: [
         { name: "Apostle Jonathan S. Ferriol",
           position: "Chief Executive Minister",
+          image: "assets/apostle-jonathan-ferriol.jpg",
           description:
             "Apostle Jonathan S. Ferriol is the Chief Executive Minister of the PMCC (4th Watch). The second eldest son of founder " +
             "Apostle Arsenio T. Ferriol and Evangelist Leticia S. Ferriol, he was appointed Deputy Executive Minister in May 2023 and " +
@@ -50,6 +51,7 @@ const CONTENT = {
           extra: { Role: "Chief Executive Minister", "Deputy Since": "May 2023", "CEM Since": "2024" } },
         { name: "Apostle Arsenio Tan Ferriol",
           position: "Founder · First Chief Executive Minister (1936 – 2024)",
+          image: "assets/apostle-arsenio-ferriol.jpg",
           description:
             "Born January 14, 1936 in Odiongan, Romblon, Apostle Arsenio Tan Ferriol founded the PMCC (4th Watch) in 1972 following a " +
             "claimed 1970 divine calling to restore the apostolic church. A former Foursquare Gospel minister, he led the fellowship into a " +
@@ -2477,7 +2479,7 @@ Keyboard.init();
    A full-screen backdrop (assets/AATF Top View.mp4). At rest it shows the
    first frame — the top view. expand() flies it forward and, when it reaches
    the end (~5s), fires a warp-glow "wasp" burst and pops the icons up.
-   collapse() hides the icons and plays the flight in reverse back to frame 0.
+   collapse() just hides the icons and leaves the footage where it is.
    Falls back to a plain icon reveal if the video can't load or autoplay.
    ══════════════════════════════════════════════════════════════════════ */
 const RevealVideo = {
@@ -2531,29 +2533,11 @@ const RevealVideo = {
     this.v.classList.add("warp"); if (b) b.classList.add("fire");
     Sound.play("surge");
   },
-  // Reverse flight → back to the top-view first frame.
+  // Collapse: just hide the icons and leave the video exactly where it is
+  // (no reverse playback — the footage stays put, per request).
   collapse() {
     if (this.busy || !orbitExpanded) return;
-    setOrbit(false);                 // icons hide immediately
-    if (!this.ready) return;
-    this.busy = true;
-    $("#orbit-stage").classList.add("reveal-playing");
-    try { this.v.pause(); } catch {}
-    let last = 0;
-    const step = (now) => {
-      if (!last) last = now;
-      const dt = (now - last) / 1000; last = now;
-      const t = this.v.currentTime - dt * this.RATE;
-      if (t <= 0.04) {
-        this.toFirstFrame();
-        $("#orbit-stage").classList.remove("reveal-playing");
-        this.busy = false;
-        return;
-      }
-      try { this.v.currentTime = t; } catch {}
-      this.rraf = requestAnimationFrame(step);
-    };
-    this.rraf = requestAnimationFrame(step);
+    setOrbit(false);
   },
 };
 
