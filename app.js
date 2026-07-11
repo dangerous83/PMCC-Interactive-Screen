@@ -639,6 +639,8 @@ function setOrbit(expand) {
   orbitExpanded = expand;
   const stage = $("#orbit-stage");
   stage.classList.toggle("expanded", expand);
+  const rv = document.getElementById("reveal-stage");   // fade the glow-orbs in with the icons
+  if (rv) rv.classList.toggle("revealed", expand);
   Sound.play(expand ? "open" : "back");
   // keep it clean: a short prompt before opening, nothing cluttering once open
   $("#hud-hint").textContent = expand ? "" : "TAP THE LOGO TO BEGIN";
@@ -2513,7 +2515,28 @@ const RevealVideo = {
     // paint the very first frame once it's decoded
     this.v.addEventListener("seeked", () => { this.stage.classList.add("on"); }, { once: true });
     this.v.addEventListener("error", () => { this.ready = false; this.stage.classList.remove("on"); });
+    this.buildSparks();
     try { this.v.load(); } catch {}
+  },
+  // create drifting golden glow-orbs (shown after the reveal, via .revealed)
+  buildSparks() {
+    if (!this.stage || this.stage.querySelector(".rv-sparks")) return;
+    const wrap = document.createElement("div"); wrap.className = "rv-sparks"; wrap.setAttribute("aria-hidden", "true");
+    const N = 16;
+    for (let i = 0; i < N; i++) {
+      const s = document.createElement("span"); s.className = "rv-spark";
+      const size = 4 + Math.random() * 12;
+      s.style.left = (Math.random() * 100).toFixed(2) + "%";
+      s.style.top = (Math.random() * 100).toFixed(2) + "%";
+      s.style.width = size + "px"; s.style.height = size + "px";
+      s.style.setProperty("--dur", (7 + Math.random() * 8).toFixed(1) + "s");
+      s.style.setProperty("--tw", (2.4 + Math.random() * 3).toFixed(1) + "s");
+      s.style.setProperty("--d", (-Math.random() * 6).toFixed(1) + "s");
+      s.style.setProperty("--mx", (Math.random() * 40 - 20).toFixed(0) + "px");
+      s.style.setProperty("--my", (-18 - Math.random() * 34).toFixed(0) + "px");
+      wrap.appendChild(s);
+    }
+    this.stage.appendChild(wrap);
   },
   toFirstFrame() { try { this.v.currentTime = 0.04; } catch {} },   // decode & show the top view
   // Forward flight → warp-glow → icons pop up.
