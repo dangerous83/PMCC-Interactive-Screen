@@ -157,10 +157,12 @@ const CONTENT = {
       id: "elders", label: "ELDERS", subtitle: "COUNCIL OF ELDERS", icon: "elders",
       items: [
         { name: "Elder Derek Acbang", position: "Elder · Council of Elders", location: "Dubai, United Arab Emirates",
+          image: "assets/elder-derek-acbang.jpg",
           ministryRole: "Serves on the Council of Elders, providing spiritual leadership, pastoral care, and ministry support within the local church.",
           assignment: "PMCC (4th Watch) Dubai — Middle East District.",
           extra: { District: "Middle East" } },
         { name: "Elder Amy Eslava", position: "Elder · Council of Elders", location: "Dubai, United Arab Emirates",
+          image: "assets/elder-amy-eslava.jpg",
           ministryRole: "Serves on the Council of Elders, providing spiritual leadership, pastoral care, and ministry support within the local church.",
           assignment: "PMCC (4th Watch) Dubai — Middle East District.",
           extra: { District: "Middle East" } },
