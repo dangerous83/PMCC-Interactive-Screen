@@ -542,8 +542,12 @@ input{ font-family:inherit; }
 .jarvis-input{ display:flex; gap:1.2vmin; padding:clamp(14px,1.8vmin,40px) clamp(20px,3vmin,60px); border-top:1px solid rgba(255,255,255,.14); }
 .jarvis-input input{ flex:1; padding:clamp(11px,1.4vmin,28px) clamp(16px,2vmin,40px); background:var(--glass-2); border:1px solid var(--glass-line); border-radius:999px; color:var(--text); font-size:clamp(13px,1.5vmin,30px); }
 .jarvis-input input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 1.6vmin color-mix(in srgb, var(--accent) 35%, transparent); }
-.pill.mic{ padding:clamp(9px,1.2vmin,24px); aspect-ratio:1; justify-content:center; }
+.pill.mic{ padding:clamp(9px,1.2vmin,24px); aspect-ratio:1; justify-content:center; border-color:color-mix(in srgb, var(--accent) 55%, transparent); }
 .pill.mic.live{ color:#0a1330; background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-color:transparent; animation:mic-pulse 1.3s ease-in-out infinite; }
+/* voice status line under the input — clear feedback that the mic is active */
+.mic-hint{ margin:.9vmin .4vmin 0; font-size:clamp(11px,1.15vmin,24px); letter-spacing:.02em; color:var(--text-dim); transition:color .25s; }
+.mic-hint.live{ color:var(--accent-2); font-weight:700; animation:hint-blink 1.2s ease-in-out infinite; }
+.mic-hint.off{ color:#ff9c9c; }
 @keyframes mic-pulse{ 0%,100%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 50%{ box-shadow:0 0 0 .9vmin color-mix(in srgb, var(--accent) 8%, transparent); } }
 /* connection status dot in the assistant header */
 .j-dot{ display:inline-block; width:.72em; height:.72em; border-radius:50%; margin-right:.5em; vertical-align:middle; background:var(--text-dim); box-shadow:0 0 7px currentColor; }
