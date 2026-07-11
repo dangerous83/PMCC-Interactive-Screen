@@ -1159,7 +1159,7 @@ function buildDock() {
 }
 function onMenu(id, anchor) {
   Sound.play("tap");
-  if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); closeDirDropdown(); closeProfile(); setOrbit(false); }
+  if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); closeDirDropdown(); closeProfile(); if (orbitExpanded) RevealVideo.collapse(); else setOrbit(false); }
   else if (id === "directory") toggleDirDropdown(anchor);
   else if (id === "settings") requestSettings();
   else if (id === "jarvis")   openFeature("jarvis");
@@ -2173,6 +2173,7 @@ function boot() {
   buildOrbit(); buildDock(); buildGallery(); buildSettings();
   SEARCH_INDEX = buildSearchIndex();
   applyScene(settings.scene);
+  RevealVideo.init();               // AATF top-view backdrop (first frame at rest)
   tickClock(); setInterval(tickClock, 1000);
   updateMuteButton(); updateJarvisMode();
   let step = 0; const bar = $("#loader-progress"), status = $("#loader-status");
@@ -2471,12 +2472,99 @@ const Keyboard = {
 
 /* ─────────────────────────── Wire-up ────────────────────────────────── */
 Keyboard.init();
-// Press the PMCC logo → cybersecurity / advanced-AI reveal, then the network
-// blooms open. Collapsing (a second press) is immediate.
+/* ══════════════════════════════════════════════════════════════════════
+   AATF TOP-VIEW REVEAL VIDEO
+   A full-screen backdrop (assets/AATF Top View.mp4). At rest it shows the
+   first frame — the top view. expand() flies it forward and, when it reaches
+   the end (~5s), fires a warp-glow "wasp" burst and pops the icons up.
+   collapse() hides the icons and plays the flight in reverse back to frame 0.
+   Falls back to a plain icon reveal if the video can't load or autoplay.
+   ══════════════════════════════════════════════════════════════════════ */
+const RevealVideo = {
+  v: null, stage: null, busy: false, ready: false, END: 5, RATE: 1.4, rraf: 0,
+  init() {
+    this.stage = $("#reveal-stage");
+    this.v = $("#reveal-video");
+    if (!this.v) return;
+    this.v.src = withV("assets/AATF Top View.mp4");
+    this.v.addEventListener("loadedmetadata", () => {
+      this.ready = true;
+      this.END = this.v.duration && isFinite(this.v.duration) ? this.v.duration : 5;
+      this.toFirstFrame();
+      this.stage.classList.add("on");        // show the top view as the backdrop
+    }, { once: true });
+    // paint the very first frame once it's decoded
+    this.v.addEventListener("seeked", () => { this.stage.classList.add("on"); }, { once: true });
+    this.v.addEventListener("error", () => { this.ready = false; this.stage.classList.remove("on"); });
+    try { this.v.load(); } catch {}
+  },
+  toFirstFrame() { try { this.v.currentTime = 0.04; } catch {} },   // decode & show the top view
+  // Forward flight → warp-glow → icons pop up.
+  expand() {
+    if (this.busy || orbitExpanded) return;
+    if (!this.ready) { setOrbit(true); return; }   // graceful fallback
+    this.busy = true;
+    cancelAnimationFrame(this.rraf);
+    this.stage.classList.add("on");
+    $("#orbit-stage").classList.add("reveal-playing");
+    let done = false;
+    const finish = () => {
+      if (done) return; done = true;
+      this.v.removeEventListener("timeupdate", onTime);
+      try { this.v.pause(); this.v.currentTime = Math.max(0, this.END - 0.05); } catch {}
+      $("#orbit-stage").classList.remove("reveal-playing");
+      this.warp();                 // "wasp" glow burst at the end
+      setOrbit(true);              // icons pop up
+      this.busy = false;
+    };
+    const onTime = () => { if (this.v.currentTime >= this.END - 0.12) finish(); };
+    this.v.addEventListener("timeupdate", onTime);
+    this.v.addEventListener("ended", finish, { once: true });
+    try { this.v.currentTime = 0; } catch {}
+    const pr = this.v.play();
+    if (pr && pr.catch) pr.catch(() => finish());   // autoplay blocked → just reveal
+  },
+  warp() {
+    const b = $("#warp-burst");
+    this.v.classList.remove("warp"); if (b) b.classList.remove("fire");
+    void this.v.offsetWidth; if (b) void b.offsetWidth;
+    this.v.classList.add("warp"); if (b) b.classList.add("fire");
+    Sound.play("surge");
+  },
+  // Reverse flight → back to the top-view first frame.
+  collapse() {
+    if (this.busy || !orbitExpanded) return;
+    setOrbit(false);                 // icons hide immediately
+    if (!this.ready) return;
+    this.busy = true;
+    $("#orbit-stage").classList.add("reveal-playing");
+    try { this.v.pause(); } catch {}
+    let last = 0;
+    const step = (now) => {
+      if (!last) last = now;
+      const dt = (now - last) / 1000; last = now;
+      const t = this.v.currentTime - dt * this.RATE;
+      if (t <= 0.04) {
+        this.toFirstFrame();
+        $("#orbit-stage").classList.remove("reveal-playing");
+        this.busy = false;
+        return;
+      }
+      try { this.v.currentTime = t; } catch {}
+      this.rraf = requestAnimationFrame(step);
+    };
+    this.rraf = requestAnimationFrame(step);
+  },
+};
+
+// Press the PMCC logo → fly the AATF top-view video forward; at the end a
+// warp-glow burst fires and the section icons pop up. Press again → the icons
+// hide and the video reverses back to the top-view first frame.
 $(".hub-core").addEventListener("click", () => {
-  Sound.ensure();
-  if (orbitExpanded) { setOrbit(false); return; }
-  CyberReveal.run(() => setOrbit(true));
+  Sound.ensure(); goFullscreen();
+  if (RevealVideo.busy) return;
+  if (orbitExpanded) RevealVideo.collapse();
+  else RevealVideo.expand();
 });
 $$("[data-close]").forEach(el => el.addEventListener("click", closeOverlay));
 $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => closeFeature(e.target.closest(".feature-overlay"))));
@@ -2517,7 +2605,7 @@ $("#btn-update").addEventListener("click", () => { $("#update-status").textConte
 function goFullscreen() {
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-  if (req && !document.fullscreenElement) { try { req.call(el); } catch {} }
+  if (req && !document.fullscreenElement) { try { const r = req.call(el); if (r && r.catch) r.catch(() => {}); } catch {} }
 }
 addEventListener("pointerdown", () => { Sound.ensure(); goFullscreen(); }, { once: true });
 // F11-style manual toggle for the kiosk operator
@@ -2531,7 +2619,7 @@ addEventListener("keydown", (e) => {
     const openFeat = $$(".feature-overlay").find(el => !el.classList.contains("hidden"));
     if (openFeat) return closeFeature(openFeat);
     if (activeOverlay) return closeOverlay();
-    return setOrbit(false);
+    return orbitExpanded ? RevealVideo.collapse() : setOrbit(false);
   }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openSearch(); }
 });
