@@ -16,7 +16,7 @@ const ASSISTANT_NAME = "Brother Thomas";   // ← rename your assistant here
 
 /* Bump this number whenever you replace a photo in assets/ — it forces every
    browser/kiosk to fetch the fresh image instead of showing a cached old one. */
-const ASSET_VERSION = 8;
+const ASSET_VERSION = 9;
 const withV = (src) => src + (src.includes("?") ? "&" : "?") + "v=" + ASSET_VERSION;
 
 /* ═══════════════════ 2. LEADERSHIP CONTENT — EDIT ════════════════════ */
@@ -957,14 +957,51 @@ const Globe = (() => {
   const BRANCH_IMAGES = {
     "Dubai": { src: "assets/aatf-building.jpg", caption: "AATF Miracle Building — PMCC (4th Watch) Dubai" },
   };
-  // Flag emoji per branch/country for the hover tooltip.
+  // ISO-3166 code per branch/country → a real flag image in the hover tooltip.
+  // (Windows doesn't render emoji flags, so we use actual flag graphics.)
   const FLAGS = {
-    "Dubai":"🇦🇪","Abu Dhabi":"🇦🇪","Turkey":"🇹🇷","Jordan":"🇯🇴","Lebanon":"🇱🇧","Israel":"🇮🇱",
-    "Syria":"🇸🇾","Qatar":"🇶🇦","Saudi Arabia":"🇸🇦","Kuwait":"🇰🇼","Yemen":"🇾🇪","Iran":"🇮🇷",
-    "China":"🇨🇳","Japan":"🇯🇵","Mongolia":"🇲🇳","North Korea":"🇰🇵","South Korea":"🇰🇷","Taiwan":"🇹🇼",
-    "Afghanistan":"🇦🇫","Bangladesh":"🇧🇩","Bhutan":"🇧🇹","India":"🇮🇳","Maldives":"🇲🇻","Nepal":"🇳🇵",
-    "Pakistan":"🇵🇰","Sri Lanka":"🇱🇰","USA":"🇺🇸","Canada":"🇨🇦","Australia":"🇦🇺","Netherlands":"🇳🇱",
-    "Philippines":"🇵🇭",
+    "Dubai":"ae","Abu Dhabi":"ae","Turkey":"tr","Jordan":"jo","Lebanon":"lb","Israel":"il",
+    "Syria":"sy","Qatar":"qa","Saudi Arabia":"sa","Kuwait":"kw","Yemen":"ye","Iran":"ir",
+    "China":"cn","Japan":"jp","Mongolia":"mn","North Korea":"kp","South Korea":"kr","Taiwan":"tw",
+    "Afghanistan":"af","Bangladesh":"bd","Bhutan":"bt","India":"in","Maldives":"mv","Nepal":"np",
+    "Pakistan":"pk","Sri Lanka":"lk","USA":"us","Canada":"ca","Australia":"au","Netherlands":"nl",
+    "Philippines":"ph",
+  };
+  const flagURL = (code) => `https://flagcdn.com/${code}.svg`;
+  // Locally-bundled SVG flags (30×20). Used as a bulletproof fallback when the
+  // flag CDN can't be reached — so the tooltip ALWAYS shows a real flag, never
+  // a letter code. Simplified but colour-accurate and recognisable.
+  const FLAG_SVG = {
+    ae:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect width="30" height="6.67" fill="#00732f"/><rect y="13.33" width="30" height="6.67" fill="#000"/><rect width="7.5" height="20" fill="#ce1126"/></svg>`,
+    tr:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#e30a17"/><circle cx="11" cy="10" r="4.6" fill="#fff"/><circle cx="12.4" cy="10" r="3.6" fill="#e30a17"/><path d="M16.4 10l3.4-1.1-2.1 2.9v-3.6z" fill="#fff"/></svg>`,
+    jo:`<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#000"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#007a3d"/><path d="M0 0L13 10L0 20Z" fill="#ce1126"/><circle cx="4" cy="10" r="1.5" fill="#fff"/></svg>`,
+    lb:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect width="30" height="5" fill="#ed1c24"/><rect y="15" width="30" height="5" fill="#ed1c24"/><path d="M15 6.5l2 3.2h-1.2l1.3 2.1h-1.1l1 1.7h-4l1-1.7h-1.1l1.3-2.1H13z" fill="#00a651"/></svg>`,
+    il:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect y="2.6" width="30" height="2.3" fill="#0038b8"/><rect y="15.1" width="30" height="2.3" fill="#0038b8"/><path d="M15 6.4l2 3.6h-4zM15 13.6l-2-3.6h4z" fill="none" stroke="#0038b8" stroke-width=".7"/></svg>`,
+    sy:`<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#ce1126"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#000"/><path d="M12 8.4l.45 1.4h1.5l-1.2.9.45 1.4-1.2-.85-1.2.85.45-1.4-1.2-.9h1.5z" fill="#007a3d"/><path d="M18 8.4l.45 1.4h1.5l-1.2.9.45 1.4-1.2-.85-1.2.85.45-1.4-1.2-.9h1.5z" fill="#007a3d"/></svg>`,
+    qa:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#8a1538"/><path d="M0 0H9L6 2.2 9 4.4 6 6.7 9 8.9 6 11.1 9 13.3 6 15.6 9 17.8 6 20H0Z" fill="#fff"/></svg>`,
+    sa:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#006c35"/><rect x="6" y="11.4" width="18" height="1.1" fill="#fff"/><path d="M6 15h15.5l2.5.9-2.5.9H6z" fill="#fff"/></svg>`,
+    kw:`<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#007a3d"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#ce1126"/><path d="M0 0L7 6.67V13.33L0 20Z" fill="#000"/></svg>`,
+    ye:`<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#ce1126"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#000"/></svg>`,
+    ir:`<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#239f40"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#da0000"/><path d="M13.7 9h2.6l-.8 1.3h.9l-1.6 1.4-1.6-1.4h.9z" fill="#da0000"/></svg>`,
+    cn:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#de2910"/><path d="M6 2.4l.9 2.7-2.3-1.7h2.8L5.1 5.1z" fill="#ffde00"/><circle cx="10.8" cy="2.3" r=".8" fill="#ffde00"/><circle cx="12.4" cy="4.2" r=".8" fill="#ffde00"/><circle cx="12.4" cy="6.8" r=".8" fill="#ffde00"/><circle cx="10.8" cy="8.7" r=".8" fill="#ffde00"/></svg>`,
+    jp:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="5.4" fill="#bc002d"/></svg>`,
+    mn:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#c4272e"/><rect x="10" width="10" height="20" fill="#015197"/><circle cx="3" cy="5" r="1" fill="#f9cf02"/><rect x="2" y="6.5" width="2" height="8" fill="#f9cf02"/></svg>`,
+    kp:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#024fa2"/><rect y="4" width="30" height="12" fill="#fff"/><rect y="5.4" width="30" height="9.2" fill="#ed1c27"/><circle cx="10" cy="10" r="3" fill="#fff"/><path d="M10 7.8l.65 2h2.1l-1.7 1.25.65 2-1.7-1.25-1.7 1.25.65-2-1.7-1.25h2.1z" fill="#ed1c27"/></svg>`,
+    kr:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><path d="M15 6a4 4 0 0 1 0 8 2 2 0 0 0 0-4 2 2 0 0 1 0-4z" fill="#cd2e3a"/><path d="M15 6a4 4 0 0 0 0 8 2 2 0 0 1 0-4 2 2 0 0 0 0-4z" fill="#0047a0"/></svg>`,
+    tw:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fe0000"/><rect width="15" height="10" fill="#000095"/><circle cx="7.5" cy="5" r="2.6" fill="#fff"/><circle cx="7.5" cy="5" r="1.3" fill="#000095"/></svg>`,
+    af:`<svg viewBox="0 0 30 20"><rect width="10" height="20" fill="#000"/><rect x="10" width="10" height="20" fill="#d32011"/><rect x="20" width="10" height="20" fill="#007a36"/><circle cx="15" cy="10" r="2.3" fill="none" stroke="#fff" stroke-width=".6"/></svg>`,
+    bd:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#006a4e"/><circle cx="13.5" cy="10" r="5" fill="#f42a41"/></svg>`,
+    bt:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#ff4e12"/><path d="M0 0H30L0 20Z" fill="#ffd520"/><circle cx="15" cy="10" r="2.2" fill="#fff"/></svg>`,
+    in:`<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#ff9933"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#138808"/><circle cx="15" cy="10" r="2.2" fill="none" stroke="#000080" stroke-width=".5"/><circle cx="15" cy="10" r=".5" fill="#000080"/></svg>`,
+    mv:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#d21034"/><rect x="6" y="4" width="18" height="12" fill="#007e3a"/><circle cx="16" cy="10" r="3" fill="#fff"/><circle cx="17.6" cy="10" r="2.4" fill="#007e3a"/></svg>`,
+    np:`<svg viewBox="0 0 30 20"><path d="M5 1L18 8H9.5L18 14H5Z" fill="#dc143c" stroke="#003893" stroke-width="1"/><circle cx="8" cy="5.4" r=".9" fill="#fff"/><circle cx="7.6" cy="11" r="1" fill="#fff"/></svg>`,
+    pk:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#01411c"/><rect width="7.5" height="20" fill="#fff"/><circle cx="18" cy="10" r="4" fill="#fff"/><circle cx="19.6" cy="10" r="3.2" fill="#01411c"/><path d="M23 8l1.7-.5-1.1 1.4.1 1.7-1-1.3-1.6.5.9-1.4-1-1.4z" fill="#fff"/></svg>`,
+    lk:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#ffbe29"/><rect x="1" y="1" width="7" height="18" fill="#00534e"/><rect x="5" y="1" width="3.2" height="18" fill="#eb7400"/><rect x="9" y="1" width="20" height="18" fill="#8d2029"/><rect x="24" y="4" width="2.6" height="2.6" fill="#ffbe29"/></svg>`,
+    us:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><g fill="#b22234"><rect width="30" height="1.54"/><rect y="3.08" width="30" height="1.54"/><rect y="6.15" width="30" height="1.54"/><rect y="9.23" width="30" height="1.54"/><rect y="12.3" width="30" height="1.54"/><rect y="15.38" width="30" height="1.54"/><rect y="18.46" width="30" height="1.54"/></g><rect width="12" height="10.77" fill="#3c3b6e"/></svg>`,
+    ca:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect width="7.5" height="20" fill="#f00"/><rect x="22.5" width="7.5" height="20" fill="#f00"/><path d="M15 5l.7 2 2-.6-.9 1.9 1.3.5-1.6 1 .3 1.2-1.8-.5v2.2h-.4V12l-1.8.5.3-1.2-1.6-1 1.3-.5-.9-1.9 2 .6z" fill="#f00"/></svg>`,
+    au:`<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#00008b"/><rect width="15" height="10" fill="#012169"/><path d="M0 0L15 10M15 0L0 10" stroke="#fff" stroke-width="1.4"/><path d="M7.5 0V10M0 5H15" stroke="#fff" stroke-width="2.2"/><path d="M7.5 0V10M0 5H15" stroke="#c8102e" stroke-width="1"/><circle cx="22" cy="15" r="1" fill="#fff"/><circle cx="7.5" cy="16" r="1.1" fill="#fff"/></svg>`,
+    nl:`<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#ae1c28"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#21468b"/></svg>`,
+    ph:`<svg viewBox="0 0 30 20"><rect width="30" height="10" fill="#0038a8"/><rect y="10" width="30" height="10" fill="#ce1126"/><path d="M0 0L13 10L0 20Z" fill="#fff"/><circle cx="4.6" cy="10" r="1.5" fill="#fcd116"/></svg>`,
   };
   // Real coastline outlines from Natural Earth (assets/world-land.js, simplified
   // to ~8.5k points). Falls back to a tiny built-in set if the file is missing.
@@ -1142,7 +1179,17 @@ const Globe = (() => {
     const tip = $("#globe-tip"); if (!tip) return;
     if (hoverIndex < 0) { tip.classList.add("hidden"); return; }
     const p = points[hoverIndex];
-    tip.querySelector(".gt-flag").textContent = FLAGS[p.name] || "🌍";
+    const code = FLAGS[p.name] || "";
+    const flagEl = tip.querySelector(".gt-flag");
+    const localSVG = FLAG_SVG[code] || "";
+    flagEl.innerHTML = localSVG;                          // show a real flag immediately
+    if (code) {                                          // then upgrade to the crisp CDN flag if online
+      const img = new Image();
+      img.alt = code.toUpperCase() + " flag";
+      img.onload = () => { flagEl.innerHTML = ""; flagEl.appendChild(img); };
+      img.onerror = () => {};                            // keep the local SVG on failure
+      img.src = flagURL(code);
+    }
     tip.querySelector(".gt-name").textContent = p.name + (p.hq ? " · HQ" : "");
     tip.querySelector(".gt-region").textContent = p.region;
     tip.querySelector(".gt-coord").textContent = `${p.lat.toFixed(1)}°, ${p.lng.toFixed(1)}°`;
