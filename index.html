@@ -85,9 +85,10 @@
       </div>
     </header>
 
-    <!-- Center hub + draggable node icons. Icons start hidden behind the logo;
-         TAP THE LOGO to expand the network. Drag an icon to move it; long-press
-         (hold) an icon to focus + open it. -->
+    <!-- Center hub + 3D leadership carousel. The cards start hidden behind the
+         logo; TAP THE LOGO to reveal them. Swipe / drag (or use the arrows) to
+         rotate the carousel; the front-and-center card is in focus — tap it to
+         open. The two flanking cards recede and blur until rotated forward. -->
     <div id="orbit-stage">
       <svg id="orbit-links" aria-hidden="true"></svg>
       <div class="hub">
@@ -97,7 +98,22 @@
           <img src="assets/logo.png" alt="Church logo" draggable="false">
         </div>
       </div>
-      <nav id="orbit-icons" aria-label="Directory sections"><!-- injected by app.js --></nav>
+
+      <!-- 3D rotating leadership carousel (cards injected by app.js) -->
+      <div id="hero-carousel" class="hero-carousel" aria-label="Leadership highlights">
+        <div id="hc-stage" class="hc-stage"><!-- cards injected by app.js --></div>
+        <button class="hc-nav hc-prev" type="button" aria-label="Rotate left">
+          <svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="hc-nav hc-next" type="button" aria-label="Rotate right">
+          <svg viewBox="0 0 24 24"><path d="M9 5 L16 12 L9 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="hc-caption">
+          <span id="hc-name" class="hc-name">—</span>
+          <span id="hc-role" class="hc-role">—</span>
+        </div>
+        <div id="hc-dots" class="hc-dots" role="tablist" aria-label="Choose leader"></div>
+      </div>
     </div>
 
     <!-- Bottom status strip: clock (left) · date (right) -->
