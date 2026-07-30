@@ -24,7 +24,7 @@
      ========================================================================== -->
 <title>PMCC 4th Watch — Leadership Directory</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 
@@ -96,15 +96,10 @@
         </div>
       </div>
 
-      <!-- 3D rotating leadership carousel (cards injected by app.js) -->
+      <!-- 3D rotating leadership carousel (cards injected by app.js).
+           No arrows — swipe/drag, tap a side/back card, or tap a dot to rotate. -->
       <div id="hero-carousel" class="hero-carousel" aria-label="Leadership highlights">
         <div id="hc-stage" class="hc-stage"><!-- cards injected by app.js --></div>
-        <button class="hc-nav hc-prev" type="button" aria-label="Rotate left">
-          <svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="hc-nav hc-next" type="button" aria-label="Rotate right">
-          <svg viewBox="0 0 24 24"><path d="M9 5 L16 12 L9 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
         <div class="hc-caption">
           <span id="hc-name" class="hc-name">—</span>
           <span id="hc-role" class="hc-role">—</span>
@@ -478,7 +473,13 @@
       </header>
       <div class="globe-body">
         <aside id="globe-info" class="globe-info"></aside>
-        <div class="globe-stage"><canvas id="globe-canvas"></canvas></div>
+        <div class="globe-stage"><canvas id="globe-canvas"></canvas>
+          <!-- floating hover tooltip: flag + branch + coordinates -->
+          <div id="globe-tip" class="globe-tip hidden" aria-hidden="true">
+            <span class="gt-flag"></span>
+            <span class="gt-body"><b class="gt-name"></b><i class="gt-region"></i><span class="gt-coord"></span></span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -557,7 +558,7 @@
   <!-- Toast for small confirmations (saved, updated…) -->
   <div id="toast" class="hidden"></div>
 
-<script src="assets/world-land.js?v=7"></script>
-<script src="app.js?v=7"></script>
+<script src="assets/world-land.js?v=8"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
