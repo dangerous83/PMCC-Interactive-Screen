@@ -416,23 +416,58 @@ input{ font-family:inherit; }
 .statusbar{ display:flex; justify-content:space-between; align-items:center; padding:0 clamp(20px,3vmin,72px) clamp(12px,1.6vmin,32px); font-size:clamp(11px,1.2vmin,25px); font-weight:600; letter-spacing:.2em; color:var(--text-dim); text-shadow:0 1px 3px rgba(0,0,0,.8); }
 #hud-clock{ color:var(--accent); font-variant-numeric:tabular-nums; text-shadow:0 1px 3px rgba(0,0,0,.8); }
 
-/* — bottom-center DOCK — */
-.dock-wrap{ position:absolute; left:50%; bottom:clamp(40px,5.5vmin,110px); translate:-50% 0; display:flex; flex-direction:column; align-items:center; gap:1.6vmin; z-index:12; }
-.hud-hint{ font-size:clamp(11px,1.25vmin,26px); font-weight:600; letter-spacing:.24em; color:var(--accent-2); text-shadow:0 1px 4px rgba(0,0,0,.9); animation:hint-blink 3s ease-in-out infinite; }
-@keyframes hint-blink{ 0%,100%{ opacity:.7;} 50%{ opacity:1;} }
-#dock{ display:flex; align-items:flex-end; gap:clamp(8px,1.3vmin,28px); padding:clamp(12px,1.5vmin,32px) clamp(18px,2.2vmin,50px); background:var(--panel); border:1px solid var(--panel-line); border-radius:calc(var(--radius)*1.4); backdrop-filter:blur(calc(var(--glass-blur)+8px)); -webkit-backdrop-filter:blur(calc(var(--glass-blur)+8px)); box-shadow:0 20px 60px rgba(0,0,0,.55), 0 0 4vmin color-mix(in srgb, var(--accent) 14%, transparent), inset 0 1px 0 rgba(255,255,255,.2); }
-/* gold hairline along the top edge of the dock */
-#dock{ position:relative; }
-#dock::before{ content:""; position:absolute; top:0; left:12%; right:12%; height:1px; background:linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow:0 0 12px var(--accent); opacity:.65; }
-.dock-btn{ display:flex; flex-direction:column; align-items:center; gap:.9vmin; padding:clamp(6px,.8vmin,16px) clamp(8px,1vmin,20px); min-width:clamp(74px,7.6vmin,150px); background:none; border:none; border-radius:calc(var(--radius)*.6); color:var(--text); transition:transform .22s var(--ease-spring); }
-.dock-btn .db-icon{ position:relative; width:clamp(52px,5.6vmin,116px); aspect-ratio:1; display:grid; place-items:center; border-radius:30%; overflow:hidden; background:var(--tile); border:1.5px solid var(--tile-line); box-shadow:0 8px 22px rgba(0,0,0,.5), 0 0 1.8vmin color-mix(in srgb, var(--accent) 22%, transparent), inset 0 1px 0 rgba(255,255,255,.28); transition:box-shadow .25s, border-color .25s, transform .22s var(--ease-spring); }
-.dock-btn .db-icon::before{ content:""; position:absolute; inset:16%; border-radius:26%; border:1px solid color-mix(in srgb, var(--accent) 40%, transparent); opacity:.7; }
+/* — bottom-center DOCK (premium command bar) — */
+.dock-wrap{ position:absolute; left:50%; bottom:clamp(28px,4.4vmin,96px); translate:-50% 0; display:flex; flex-direction:column; align-items:center; gap:1.7vmin; z-index:12; }
+.hud-hint{ font-size:clamp(11px,1.25vmin,26px); font-weight:700; letter-spacing:.32em; color:var(--accent-2); text-shadow:0 1px 4px rgba(0,0,0,.9); animation:hint-blink 3s ease-in-out infinite; }
+@keyframes hint-blink{ 0%,100%{ opacity:.65;} 50%{ opacity:1;} }
+
+#dock{
+  position:relative; display:flex; align-items:flex-end; gap:clamp(6px,1vmin,22px);
+  padding:clamp(12px,1.5vmin,30px) clamp(16px,2vmin,46px) clamp(11px,1.35vmin,26px);
+  border-radius:calc(var(--radius)*1.5);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent) 0%, transparent 42%),
+    linear-gradient(180deg, rgba(17,28,60,.72) 0%, rgba(7,12,30,.82) 100%);
+  border:1px solid var(--panel-line);
+  backdrop-filter:blur(calc(var(--glass-blur)+10px)); -webkit-backdrop-filter:blur(calc(var(--glass-blur)+10px));
+  box-shadow:
+    0 30px 80px rgba(0,0,0,.62),
+    0 0 5vmin color-mix(in srgb, var(--accent) 16%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -14px 34px rgba(0,0,0,.35);
+}
+/* gold framing: a bright hairline sweep on top + a soft glow underline */
+#dock::before{ content:""; position:absolute; top:0; left:8%; right:8%; height:1.5px; background:linear-gradient(90deg, transparent, var(--accent) 20%, #fff4d6 50%, var(--accent) 80%, transparent); box-shadow:0 0 14px var(--accent); opacity:.8; border-radius:2px; }
+#dock::after{ content:""; position:absolute; left:50%; translate:-50% 0; bottom:-1.4vmin; width:56%; height:2.6vmin; background:radial-gradient(60% 100% at 50% 0, color-mix(in srgb, var(--accent) 40%, transparent), transparent 72%); filter:blur(6px); opacity:.5; pointer-events:none; }
+
+.dock-btn{ position:relative; display:flex; flex-direction:column; align-items:center; gap:1vmin; padding:clamp(6px,.8vmin,16px) clamp(8px,1vmin,20px); min-width:clamp(70px,7.2vmin,144px); background:none; border:none; border-radius:calc(var(--radius)*.7); color:var(--text); transition:transform .22s var(--ease-spring); }
+/* subtle divider between buttons for a structured, professional row */
+.dock-btn + .dock-btn::before{ content:""; position:absolute; left:calc(-1 * clamp(3px,.5vmin,11px)); top:14%; bottom:32%; width:1px; background:linear-gradient(180deg, transparent, rgba(255,255,255,.14), transparent); }
+.dock-btn .db-icon{
+  position:relative; width:clamp(50px,5.4vmin,112px); aspect-ratio:1; display:grid; place-items:center; border-radius:30%; overflow:hidden;
+  background:linear-gradient(158deg, rgba(30,48,102,.85) 0%, rgba(12,22,52,.92) 60%, rgba(6,11,28,.95) 100%);
+  border:1.5px solid var(--tile-line);
+  box-shadow:0 10px 24px rgba(0,0,0,.5), 0 0 1.8vmin color-mix(in srgb, var(--accent) 20%, transparent), inset 0 1px 0 rgba(255,255,255,.3);
+  transition:box-shadow .25s, border-color .25s, transform .22s var(--ease-spring), background .25s;
+}
+.dock-btn .db-icon::before{ content:""; position:absolute; inset:15%; border-radius:26%; border:1px solid color-mix(in srgb, var(--accent) 42%, transparent); opacity:.7; }
+/* soft shine sweep across the tile on hover */
+.dock-btn .db-icon::after{ content:""; position:absolute; inset:0; background:linear-gradient(115deg, transparent 38%, rgba(255,244,214,.28) 50%, transparent 62%); transform:translateX(-140%); transition:transform .6s var(--ease-out); }
+.dock-btn:hover .db-icon::after{ transform:translateX(140%); }
 .dock-btn .db-icon svg{ position:relative; width:52%; height:52%; stroke:var(--ic-stroke, #fff6e2); fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 9px color-mix(in srgb, var(--accent) 85%, transparent)); }
-.dock-btn .db-label{ font-size:clamp(11px,1.2vmin,26px); font-weight:600; letter-spacing:.12em; color:var(--text-dim); text-shadow:0 1px 3px rgba(0,0,0,.8); white-space:nowrap; }
-.dock-btn:hover .db-icon{ border-color:var(--accent); box-shadow:0 10px 26px rgba(0,0,0,.55), 0 0 3vmin color-mix(in srgb, var(--accent) 60%, transparent); transform:translateY(-.9vmin) scale(1.04); }
+.dock-btn .db-label{ font-size:clamp(10px,1.15vmin,24px); font-weight:700; letter-spacing:.16em; color:var(--text-dim); text-shadow:0 1px 3px rgba(0,0,0,.8); white-space:nowrap; transition:color .25s; }
+.dock-btn:hover{ transform:translateY(-.3vmin); }
+.dock-btn:hover .db-icon{ border-color:var(--accent); background:linear-gradient(158deg, rgba(40,60,120,.9), rgba(14,26,60,.95)); box-shadow:0 14px 30px rgba(0,0,0,.58), 0 0 3.2vmin color-mix(in srgb, var(--accent) 62%, transparent); transform:translateY(-.9vmin) scale(1.05); }
 .dock-btn:hover .db-label{ color:var(--accent-2); }
 .dock-btn:active{ transform:scale(.9); }
 .dock-btn.muted .db-icon{ opacity:.5; }
+
+/* events dropdown: two-line items (label + sub) + a gold chevron */
+.events-dropdown .dir-drop-item{ min-height:62px; }
+.dir-drop-item .ddi-label{ display:flex; flex-direction:column; gap:.25vmin; }
+.ddi-sub{ font-size:clamp(10px,1.1vmin,20px); font-weight:500; letter-spacing:.05em; color:var(--text-dim); }
+.ddi-chev{ margin-left:auto; font-size:clamp(18px,2vmin,34px); line-height:1; color:var(--accent-2); opacity:.7; transition:transform .2s var(--ease-spring), opacity .2s; }
+.dir-drop-item:hover .ddi-chev{ transform:translateX(.4vmin); opacity:1; }
 
 /* ══════════════════════════ SECTION / BRANCHES PANEL ═════════════════ */
 #panel, #branches-panel{ position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; }

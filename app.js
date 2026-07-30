@@ -250,7 +250,7 @@ const CONTENT = {
 /* ═══════════════════ 4. GALLERY SCENES (backgrounds) ══════════════════ */
 /* Built-in CSS scenes need no image files. "photo" points at your own file. */
 const SCENES = [
-  { id: "photo",   label: "Signature",     type: "photo", src: "assets/background.jpg" }, // ships by default
+  { id: "photo",   label: "AATF Building",  type: "photo", src: "assets/AATF Building.jpg" }, // ships by default
   { id: "royal",   label: "Royal Night",   type: "scene" },                                // CSS navy-gold fallback
   { id: "golden",  label: "Golden Aura",   type: "css", css: "radial-gradient(circle at 50% 42%, #3a3212 0%, #14265e 42%, #05091a 82%)" },
   { id: "deep",    label: "Deep Navy",     type: "css", css: "radial-gradient(circle at 50% 40%, #17285f, #060b20 72%)" },
@@ -316,6 +316,12 @@ const ICONS = {
   search: `<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>`,
   directory: `<path d="M5 5.5A2 2 0 0 1 7 4h4.5v16H7a2 2 0 0 0-2 1.2z"/><path d="M19 5.5A2 2 0 0 0 17 4h-4.5v16H17a2 2 0 0 1 2 1.2z"/><path d="M8 8h2M14 8h2M8 11h2M14 11h2"/>`,
   testimonies: `<path d="M5 5h14a1.6 1.6 0 0 1 1.6 1.6v8A1.6 1.6 0 0 1 19 16.2H10l-4 3.4V16.2H5A1.6 1.6 0 0 1 3.4 14.6V6.6A1.6 1.6 0 0 1 5 5z"/><path d="M8.2 10.4h.01M12 10.4h.01M15.8 10.4h.01"/>`,
+  // events (dock button + dropdown item glyphs)
+  events:      `<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 13.5h3M13.5 13.5h3M7.5 17h3M13.5 17h3"/>`,
+  homefree:    `<path d="M4 11l8-6 8 6M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/>`,
+  anniversary: `<circle cx="12" cy="9" r="4.6"/><path d="M8.6 12.6 7.5 21l4.5-2.7L16.5 21l-1.1-8.4"/>`,
+  christmas:   `<path d="M12 3 6.5 11h3L5 18h14l-4.5-7h3z"/><path d="M10.5 18h3v3h-3z"/>`,
+  blogs:       `<path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5M8 13h8M8 16.5h5"/>`,
 };
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1126,6 +1132,7 @@ function closeOverlay() {
 const MENU = [
   { id: "home",     label: "HOME",     sub: "Return to dashboard", icon: "home" },
   { id: "directory",label: "DIRECTORY",sub: "Bishops · Pastors · Elders · Testimonies", icon: "directory" },
+  { id: "events",   label: "EVENTS",   sub: "Home Free · Anniversaries · Christmas · Blogs", icon: "events" },
   { id: "settings", label: "SETTINGS", sub: "Theme · sound · colors · icons", icon: "settings" },
   { id: "browser",  label: "BROWSER",  sub: "Open the web", icon: "browser" },
   { id: "search",   label: "SEARCH",   sub: "Find anything", icon: "search" },
@@ -1140,6 +1147,7 @@ function buildDock() {
     b.innerHTML = `<span class="db-icon">${svg(ICONS[m.icon])}</span><span class="db-label">${m.label}</span>`;
     b.addEventListener("click", () => onMenu(m.id, b));
     if (m.id === "directory") dirDockBtn = b;
+    if (m.id === "events") eventsDockBtn = b;
     dock.appendChild(b);
   });
   // mute toggle lives in the dock too
@@ -1156,8 +1164,9 @@ function buildDock() {
 }
 function onMenu(id, anchor) {
   Sound.play("tap");
-  if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); closeDirDropdown(); closeProfile(); if (orbitExpanded) RevealVideo.collapse(); else setOrbit(false); }
-  else if (id === "directory") toggleDirDropdown(anchor);
+  if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); closeDirDropdown(); closeEventsDropdown(); closeProfile(); if (orbitExpanded) RevealVideo.collapse(); else setOrbit(false); }
+  else if (id === "directory") { closeEventsDropdown(); toggleDirDropdown(anchor); }
+  else if (id === "events")    { closeDirDropdown(); toggleEventsDropdown(anchor); }
   else if (id === "settings") requestSettings();
   else if (id === "jarvis")   openFeature("jarvis");
   else if (id === "browser")  openFeature("browser");
@@ -1260,6 +1269,43 @@ function openDirDropdown(anchor) {
 }
 function closeDirDropdown() { const dd = $("#dir-dropdown"); if (dd.classList.contains("hidden")) return; dd.classList.remove("open"); setTimeout(() => dd.classList.add("hidden"), 200); }
 function toggleDirDropdown(anchor) { const dd = $("#dir-dropdown"); dd.classList.contains("hidden") ? openDirDropdown(anchor) : closeDirDropdown(); }
+
+/* ── Events dropdown (opened from the EVENTS dock button) ────────────────
+   The four church events plus a shortcut to the Directory, surfaced from the
+   bottom panel. Church events currently toast a "coming soon" note; wire real
+   destinations here as they go live. */
+let eventsDockBtn = null;
+const EVENTS_ITEMS = [
+  { id: "directory",     label: "Directory",     sub: "Leaders & ministries", icon: "directory",   action: () => { closeEventsDropdown(); onMenu("directory", dirDockBtn || eventsDockBtn); } },
+  { id: "home-free",     label: "Home Free",     sub: "Fellowship gathering",  icon: "homefree",    action: () => eventToast("Home Free") },
+  { id: "anniversaries", label: "Anniversaries", sub: "Church milestones",     icon: "anniversary", action: () => eventToast("Anniversaries") },
+  { id: "christmas",     label: "Christmas",     sub: "Season celebrations",   icon: "christmas",   action: () => eventToast("Christmas") },
+  { id: "blogs",         label: "Blogs",         sub: "Latest articles",       icon: "blogs",       action: () => eventToast("Blogs") },
+];
+function eventToast(name) { closeEventsDropdown(); Sound.play("tap"); toast(name + " — updates coming soon"); }
+function buildEventsDropdown() {
+  const dd = $("#events-dropdown"); dd.innerHTML = "";
+  EVENTS_ITEMS.forEach(it => {
+    const b = document.createElement("button");
+    b.className = "dir-drop-item"; b.setAttribute("role", "menuitem");
+    b.innerHTML = `<span class="ddi-icon">${svg(ICONS[it.icon] || ICONS.events)}</span><span class="ddi-label">${it.label}<span class="ddi-sub">${it.sub}</span></span><span class="ddi-chev">›</span>`;
+    b.addEventListener("click", it.action);
+    dd.appendChild(b);
+  });
+}
+function openEventsDropdown(anchor) {
+  const dd = $("#events-dropdown"); buildEventsDropdown();
+  dd.classList.remove("hidden");
+  const r = (anchor || eventsDockBtn).getBoundingClientRect();
+  dd.style.left = Math.round(r.left + r.width / 2) + "px";
+  Sound.play("open");
+  requestAnimationFrame(() => {
+    dd.style.top = Math.round(r.top - dd.offsetHeight - 14) + "px";
+    dd.classList.add("open");
+  });
+}
+function closeEventsDropdown() { const dd = $("#events-dropdown"); if (dd.classList.contains("hidden")) return; dd.classList.remove("open"); setTimeout(() => dd.classList.add("hidden"), 200); }
+function toggleEventsDropdown(anchor) { const dd = $("#events-dropdown"); dd.classList.contains("hidden") ? openEventsDropdown(anchor) : closeEventsDropdown(); }
 
 /* ── NameList (in the directory overlay) ─────────────────────────────── */
 function dirShowCategory(catId) {
@@ -2519,101 +2565,28 @@ const Keyboard = {
 /* ─────────────────────────── Wire-up ────────────────────────────────── */
 Keyboard.init();
 /* ══════════════════════════════════════════════════════════════════════
-   AATF TOP-VIEW REVEAL VIDEO
-   A full-screen backdrop (assets/AATF Top View.mp4). At rest it shows the
-   first frame — the top view. expand() flies it forward and, when it reaches
-   the end (~5s), fires a warp-glow "wasp" burst and pops the icons up.
-   collapse() just hides the icons and leaves the footage where it is.
-   Falls back to a plain icon reveal if the video can't load or autoplay.
+   LOGO REVEAL (still image — no video)
+   The background is a still photo (assets/AATF Building.jpg, set via the
+   "photo" gallery scene). Pressing the PMCC logo simply expands the 3D
+   leadership carousel; pressing it again collapses it. The old MP4 fly-in
+   backdrop has been removed.
    ══════════════════════════════════════════════════════════════════════ */
 const RevealVideo = {
-  v: null, stage: null, busy: false, ready: false, END: 5, RATE: 1.4, rraf: 0,
+  busy: false,
   init() {
-    this.stage = $("#reveal-stage");
-    this.v = $("#reveal-video");
-    if (!this.v) return;
-    this.v.src = withV("assets/AATF Top View.mp4");
-    this.v.addEventListener("loadedmetadata", () => {
-      this.ready = true;
-      this.END = this.v.duration && isFinite(this.v.duration) ? this.v.duration : 5;
-      this.toFirstFrame();
-      this.stage.classList.add("on");        // show the top view as the backdrop
-    }, { once: true });
-    // paint the very first frame once it's decoded
-    this.v.addEventListener("seeked", () => { this.stage.classList.add("on"); }, { once: true });
-    this.v.addEventListener("error", () => { this.ready = false; this.stage.classList.remove("on"); });
-    this.buildSparks();
-    try { this.v.load(); } catch {}
+    // make sure no MP4 loads and no dark video backdrop covers the photo
+    const v = $("#reveal-video"); if (v) { v.removeAttribute("src"); try { v.load(); } catch {} v.remove(); }
+    const stage = $("#reveal-stage"); if (stage) stage.remove();
+    const burst = $("#warp-burst"); if (burst) burst.remove();
   },
-  // create drifting golden glow-orbs (shown after the reveal, via .revealed)
-  buildSparks() {
-    if (!this.stage || this.stage.querySelector(".rv-sparks")) return;
-    const wrap = document.createElement("div"); wrap.className = "rv-sparks"; wrap.setAttribute("aria-hidden", "true");
-    const N = 16;
-    for (let i = 0; i < N; i++) {
-      const s = document.createElement("span"); s.className = "rv-spark";
-      const size = 4 + Math.random() * 12;
-      s.style.left = (Math.random() * 100).toFixed(2) + "%";
-      s.style.top = (Math.random() * 100).toFixed(2) + "%";
-      s.style.width = size + "px"; s.style.height = size + "px";
-      s.style.setProperty("--dur", (7 + Math.random() * 8).toFixed(1) + "s");
-      s.style.setProperty("--tw", (2.4 + Math.random() * 3).toFixed(1) + "s");
-      s.style.setProperty("--d", (-Math.random() * 6).toFixed(1) + "s");
-      s.style.setProperty("--mx", (Math.random() * 40 - 20).toFixed(0) + "px");
-      s.style.setProperty("--my", (-18 - Math.random() * 34).toFixed(0) + "px");
-      wrap.appendChild(s);
-    }
-    this.stage.appendChild(wrap);
-  },
-  toFirstFrame() { try { this.v.currentTime = 0.04; } catch {} },   // decode & show the top view
-  // Forward flight → warp-glow → icons pop up.
-  expand() {
-    if (this.busy || orbitExpanded) return;
-    if (!this.ready) { setOrbit(true); return; }   // graceful fallback
-    this.busy = true;
-    cancelAnimationFrame(this.rraf);
-    this.stage.classList.add("on");
-    $("#orbit-stage").classList.add("reveal-playing");
-    let done = false;
-    const finish = () => {
-      if (done) return; done = true;
-      this.v.removeEventListener("timeupdate", onTime);
-      try { this.v.pause(); this.v.currentTime = Math.max(0, this.END - 0.05); } catch {}
-      $("#orbit-stage").classList.remove("reveal-playing");
-      this.warp();                 // "wasp" glow burst at the end
-      setOrbit(true);              // icons pop up
-      this.busy = false;
-    };
-    const onTime = () => { if (this.v.currentTime >= this.END - 0.12) finish(); };
-    this.v.addEventListener("timeupdate", onTime);
-    this.v.addEventListener("ended", finish, { once: true });
-    try { this.v.currentTime = 0; } catch {}
-    const pr = this.v.play();
-    if (pr && pr.catch) pr.catch(() => finish());   // autoplay blocked → just reveal
-  },
-  warp() {
-    const b = $("#warp-burst");
-    this.v.classList.remove("warp"); if (b) b.classList.remove("fire");
-    void this.v.offsetWidth; if (b) void b.offsetWidth;
-    this.v.classList.add("warp"); if (b) b.classList.add("fire");
-    Sound.play("surge");
-  },
-  // Collapse: just hide the icons and leave the video exactly where it is
-  // (no reverse playback — the footage stays put, per request).
-  collapse() {
-    if (this.busy || !orbitExpanded) return;
-    setOrbit(false);
-  },
+  expand() { setOrbit(true); },
+  collapse() { setOrbit(false); },
 };
 
-// Press the PMCC logo → fly the AATF top-view video forward; at the end a
-// warp-glow burst fires and the section icons pop up. Press again → the icons
-// hide and the video reverses back to the top-view first frame.
+// Press the PMCC logo → reveal the 3 leadership cards. Press again → hide them.
 $(".hub-core").addEventListener("click", () => {
   Sound.ensure(); goFullscreen();
-  if (RevealVideo.busy) return;
-  if (orbitExpanded) RevealVideo.collapse();
-  else RevealVideo.expand();
+  orbitExpanded ? RevealVideo.collapse() : RevealVideo.expand();
 });
 $$("[data-close]").forEach(el => el.addEventListener("click", closeOverlay));
 $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => closeFeature(e.target.closest(".feature-overlay"))));
@@ -2633,16 +2606,6 @@ $("#voice-mic").addEventListener("click", () => { Sound.play("tap"); Listen.togg
 // voice-mode "Type instead" → back to the chat layout
 $("#voice-type").addEventListener("click", () => { Sound.play("tap"); exitVoiceMode(); });
 
-// Events HUD widget (Iron-Man style): square ↔ holographic monitor panel
-const eventsWidget = document.getElementById("events-widget");
-if (eventsWidget) {
-  const ewToggle = eventsWidget.querySelector(".ew-toggle");
-  const ewSet = (open) => { eventsWidget.classList.toggle("expanded", open); ewToggle.setAttribute("aria-expanded", open ? "true" : "false"); Sound.play(open ? "open" : "back"); };
-  ewToggle.addEventListener("click", () => { Sound.ensure(); ewSet(!eventsWidget.classList.contains("expanded")); });
-  eventsWidget.querySelectorAll(".ew-item").forEach(btn => btn.addEventListener("click", () => { Sound.play("tap"); toast((btn.dataset.ev || "Event") + " — updates coming soon"); }));
-  // collapse when tapping outside the widget
-  addEventListener("pointerdown", (e) => { if (eventsWidget.classList.contains("expanded") && !e.target.closest("#events-widget")) ewSet(false); }, true);
-}
 updateMicButton();
 $("#bt-widget").addEventListener("click", () => { Sound.ensure(); Sound.play("open"); openFeature("jarvis"); });
 updateVoiceButton();
@@ -2655,6 +2618,13 @@ addEventListener("pointerdown", (e) => {
   if (dd.classList.contains("hidden")) return;
   if (e.target.closest("#dir-dropdown") || e.target.closest('.dock-btn[data-id="directory"]')) return;
   closeDirDropdown();
+}, true);
+// close the events dropdown when clicking outside it (or the EVENTS button)
+addEventListener("pointerdown", (e) => {
+  const dd = $("#events-dropdown");
+  if (dd.classList.contains("hidden")) return;
+  if (e.target.closest("#events-dropdown") || e.target.closest('.dock-btn[data-id="events"]')) return;
+  closeEventsDropdown();
 }, true);
 // close the per-icon name dropdown on outside tap (but not when tapping an icon)
 addEventListener("pointerdown", (e) => {
@@ -2680,6 +2650,7 @@ addEventListener("keydown", (e) => {
     if (!$("#profile-modal").classList.contains("hidden")) return closeProfile();
     if (!$("#icon-menu").classList.contains("hidden")) return closeIconMenu();
     if (!$("#dir-dropdown").classList.contains("hidden")) return closeDirDropdown();
+    if (!$("#events-dropdown").classList.contains("hidden")) return closeEventsDropdown();
     if (!$("#search").classList.contains("hidden")) return closeSearch();
     const openFeat = $$(".feature-overlay").find(el => !el.classList.contains("hidden"));
     if (openFeat) return closeFeature(openFeat);
