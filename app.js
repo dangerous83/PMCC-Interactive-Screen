@@ -16,7 +16,7 @@ const ASSISTANT_NAME = "Brother Thomas";   // ← rename your assistant here
 
 /* Bump this number whenever you replace a photo in assets/ — it forces every
    browser/kiosk to fetch the fresh image instead of showing a cached old one. */
-const ASSET_VERSION = 5;
+const ASSET_VERSION = 6;
 const withV = (src) => src + (src.includes("?") ? "&" : "?") + "v=" + ASSET_VERSION;
 
 /* ═══════════════════ 2. LEADERSHIP CONTENT — EDIT ════════════════════ */
@@ -422,7 +422,9 @@ const Sound = {
   toggleMute() { this.muted = !this.muted; store.set("muted", this.muted); updateMuteButton(); if (this.muted && typeof Voice !== "undefined") Voice.stop(); if (!this.muted) this.play("tap"); },
 };
 function updateMuteButton() {
-  $("#btn-mute").classList.toggle("muted", Sound.muted);
+  // the dock SOUND button was removed; guard in case it isn't present
+  const b = $("#btn-mute"); if (!b) return;
+  b.classList.toggle("muted", Sound.muted);
   $("#icon-sound-on").classList.toggle("hidden", Sound.muted);
   $("#icon-sound-off").classList.toggle("hidden", !Sound.muted);
 }
@@ -635,7 +637,9 @@ const Carousel = {
         `translateX(${x}%) translateZ(${z}px) rotateY(${rot}deg) scale(${scale})`;
       btn.style.zIndex = String(100 - abs);
       btn.style.opacity = abs > 1 ? "0" : "1";      // show focus + its two neighbors
-      btn.style.pointerEvents = abs > 1 ? "none" : "auto";
+      // far cards drop out of hit-testing; ALL cards are non-interactive while
+      // collapsed (handled in CSS) so they never block the logo behind them.
+      btn.classList.toggle("hc-off", abs > 1);
       btn.classList.toggle("focused", off === 0);
       btn.setAttribute("aria-hidden", off === 0 ? "false" : "true");
     });
@@ -1130,14 +1134,14 @@ function closeOverlay() {
 
 /* ─────────────────────── Bottom icon DOCK (menu) ────────────────────── */
 const MENU = [
-  { id: "home",     label: "HOME",     sub: "Return to dashboard", icon: "home" },
-  { id: "directory",label: "DIRECTORY",sub: "Bishops · Pastors · Elders · Testimonies", icon: "directory" },
-  { id: "events",   label: "EVENTS",   sub: "Home Free · Anniversaries · Christmas · Blogs", icon: "events" },
-  { id: "settings", label: "SETTINGS", sub: "Theme · sound · colors · icons", icon: "settings" },
-  { id: "browser",  label: "BROWSER",  sub: "Open the web", icon: "browser" },
-  { id: "search",   label: "SEARCH",   sub: "Find anything", icon: "search" },
-  // Brother Thomas is reachable from his floating widget (right edge); the
-  // Theme chooser now lives inside Settings — so neither needs a dock button.
+  { id: "directory",     label: "DIRECTORY",     sub: "Bishops · Pastors · Elders · Testimonies", icon: "directory" },
+  { id: "home-free",     label: "HOME FREE",     sub: "Fellowship gathering", icon: "homefree" },
+  { id: "anniversaries", label: "ANNIVERSARIES", sub: "Church milestones",    icon: "anniversary" },
+  { id: "christmas",     label: "CHRISTMAS",     sub: "Season celebrations",  icon: "christmas" },
+  { id: "blogs",         label: "BLOGS",         sub: "Latest articles",      icon: "blogs" },
+  { id: "settings",      label: "SETTINGS",      sub: "Theme · sound · colors · icons", icon: "settings" },
+  // Search is still available via Ctrl/⌘-K; Brother Thomas via his floating
+  // widget (right edge). Home/Browser/Sound buttons were removed per request.
 ];
 function buildDock() {
   const dock = $("#dock"); dock.innerHTML = "";
@@ -1147,30 +1151,17 @@ function buildDock() {
     b.innerHTML = `<span class="db-icon">${svg(ICONS[m.icon])}</span><span class="db-label">${m.label}</span>`;
     b.addEventListener("click", () => onMenu(m.id, b));
     if (m.id === "directory") dirDockBtn = b;
-    if (m.id === "events") eventsDockBtn = b;
     dock.appendChild(b);
   });
-  // mute toggle lives in the dock too
-  const mute = document.createElement("button");
-  mute.className = "dock-btn"; mute.id = "btn-mute"; mute.title = "Mute / unmute";
-  mute.innerHTML =
-    `<span class="db-icon">
-       <svg id="icon-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#eaf7ff" stroke="none"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#eaf7ff" stroke-width="1.8" stroke-linecap="round"/></svg>
-       <svg id="icon-sound-off" viewBox="0 0 24 24" class="hidden"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#eaf7ff" stroke="none"/><path d="M16 9l6 6M22 9l-6 6" fill="none" stroke="#eaf7ff" stroke-width="1.8" stroke-linecap="round"/></svg>
-     </span><span class="db-label">SOUND</span>`;
-  mute.addEventListener("click", () => { Sound.ensure(); Sound.toggleMute(); });
-  dock.appendChild(mute);
-  updateMuteButton();
 }
 function onMenu(id, anchor) {
   Sound.play("tap");
-  if (id === "home")     { closeOverlay(); closeAllFeatures(); closeSearch(); closeDirDropdown(); closeEventsDropdown(); closeProfile(); if (orbitExpanded) RevealVideo.collapse(); else setOrbit(false); }
-  else if (id === "directory") { closeEventsDropdown(); toggleDirDropdown(anchor); }
-  else if (id === "events")    { closeDirDropdown(); toggleEventsDropdown(anchor); }
-  else if (id === "settings") requestSettings();
-  else if (id === "jarvis")   openFeature("jarvis");
-  else if (id === "browser")  openFeature("browser");
-  else if (id === "search")   openSearch();
+  if (id === "directory")      toggleDirDropdown(anchor);
+  else if (id === "settings")  requestSettings();
+  // the four church events → quick note (wire real destinations here later)
+  else if (["home-free", "anniversaries", "christmas", "blogs"].includes(id)) {
+    eventToast(MENU.find(m => m.id === id)?.label || "Event");
+  }
 }
 
 /* ───────────────────── Cyber-style open transition ──────────────────── */
@@ -1270,42 +1261,9 @@ function openDirDropdown(anchor) {
 function closeDirDropdown() { const dd = $("#dir-dropdown"); if (dd.classList.contains("hidden")) return; dd.classList.remove("open"); setTimeout(() => dd.classList.add("hidden"), 200); }
 function toggleDirDropdown(anchor) { const dd = $("#dir-dropdown"); dd.classList.contains("hidden") ? openDirDropdown(anchor) : closeDirDropdown(); }
 
-/* ── Events dropdown (opened from the EVENTS dock button) ────────────────
-   The four church events plus a shortcut to the Directory, surfaced from the
-   bottom panel. Church events currently toast a "coming soon" note; wire real
-   destinations here as they go live. */
-let eventsDockBtn = null;
-const EVENTS_ITEMS = [
-  { id: "directory",     label: "Directory",     sub: "Leaders & ministries", icon: "directory",   action: () => { closeEventsDropdown(); onMenu("directory", dirDockBtn || eventsDockBtn); } },
-  { id: "home-free",     label: "Home Free",     sub: "Fellowship gathering",  icon: "homefree",    action: () => eventToast("Home Free") },
-  { id: "anniversaries", label: "Anniversaries", sub: "Church milestones",     icon: "anniversary", action: () => eventToast("Anniversaries") },
-  { id: "christmas",     label: "Christmas",     sub: "Season celebrations",   icon: "christmas",   action: () => eventToast("Christmas") },
-  { id: "blogs",         label: "Blogs",         sub: "Latest articles",       icon: "blogs",       action: () => eventToast("Blogs") },
-];
-function eventToast(name) { closeEventsDropdown(); Sound.play("tap"); toast(name + " — updates coming soon"); }
-function buildEventsDropdown() {
-  const dd = $("#events-dropdown"); dd.innerHTML = "";
-  EVENTS_ITEMS.forEach(it => {
-    const b = document.createElement("button");
-    b.className = "dir-drop-item"; b.setAttribute("role", "menuitem");
-    b.innerHTML = `<span class="ddi-icon">${svg(ICONS[it.icon] || ICONS.events)}</span><span class="ddi-label">${it.label}<span class="ddi-sub">${it.sub}</span></span><span class="ddi-chev">›</span>`;
-    b.addEventListener("click", it.action);
-    dd.appendChild(b);
-  });
-}
-function openEventsDropdown(anchor) {
-  const dd = $("#events-dropdown"); buildEventsDropdown();
-  dd.classList.remove("hidden");
-  const r = (anchor || eventsDockBtn).getBoundingClientRect();
-  dd.style.left = Math.round(r.left + r.width / 2) + "px";
-  Sound.play("open");
-  requestAnimationFrame(() => {
-    dd.style.top = Math.round(r.top - dd.offsetHeight - 14) + "px";
-    dd.classList.add("open");
-  });
-}
-function closeEventsDropdown() { const dd = $("#events-dropdown"); if (dd.classList.contains("hidden")) return; dd.classList.remove("open"); setTimeout(() => dd.classList.add("hidden"), 200); }
-function toggleEventsDropdown(anchor) { const dd = $("#events-dropdown"); dd.classList.contains("hidden") ? openEventsDropdown(anchor) : closeEventsDropdown(); }
+// Church events are their own dock buttons now — tapping one shows a short
+// "coming soon" note. Wire real destinations here as they go live.
+function eventToast(name) { toast(name + " — updates coming soon"); }
 
 /* ── NameList (in the directory overlay) ─────────────────────────────── */
 function dirShowCategory(catId) {
@@ -2584,9 +2542,11 @@ const RevealVideo = {
 };
 
 // Press the PMCC logo → reveal the 3 leadership cards. Press again → hide them.
+// Toggle the carousel FIRST so nothing (audio/fullscreen quirks) can block it.
 $(".hub-core").addEventListener("click", () => {
-  Sound.ensure(); goFullscreen();
-  orbitExpanded ? RevealVideo.collapse() : RevealVideo.expand();
+  setOrbit(!orbitExpanded);
+  try { Sound.ensure(); } catch {}
+  try { goFullscreen(); } catch {}
 });
 $$("[data-close]").forEach(el => el.addEventListener("click", closeOverlay));
 $$("[data-feature-close]").forEach(el => el.addEventListener("click", (e) => closeFeature(e.target.closest(".feature-overlay"))));
@@ -2619,13 +2579,6 @@ addEventListener("pointerdown", (e) => {
   if (e.target.closest("#dir-dropdown") || e.target.closest('.dock-btn[data-id="directory"]')) return;
   closeDirDropdown();
 }, true);
-// close the events dropdown when clicking outside it (or the EVENTS button)
-addEventListener("pointerdown", (e) => {
-  const dd = $("#events-dropdown");
-  if (dd.classList.contains("hidden")) return;
-  if (e.target.closest("#events-dropdown") || e.target.closest('.dock-btn[data-id="events"]')) return;
-  closeEventsDropdown();
-}, true);
 // close the per-icon name dropdown on outside tap (but not when tapping an icon)
 addEventListener("pointerdown", (e) => {
   const m = $("#icon-menu");
@@ -2650,7 +2603,6 @@ addEventListener("keydown", (e) => {
     if (!$("#profile-modal").classList.contains("hidden")) return closeProfile();
     if (!$("#icon-menu").classList.contains("hidden")) return closeIconMenu();
     if (!$("#dir-dropdown").classList.contains("hidden")) return closeDirDropdown();
-    if (!$("#events-dropdown").classList.contains("hidden")) return closeEventsDropdown();
     if (!$("#search").classList.contains("hidden")) return closeSearch();
     const openFeat = $$(".feature-overlay").find(el => !el.classList.contains("hidden"));
     if (openFeat) return closeFeature(openFeat);
