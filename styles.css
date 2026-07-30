@@ -339,6 +339,12 @@ input{ font-family:inherit; }
 }
 #orbit-stage.expanded .hero-carousel{ opacity:1; pointer-events:auto; transform:none; }
 
+/* Cards never intercept pointers while collapsed (they sit over the logo).
+   Only the focused + neighbor cards are interactive once expanded. */
+.hc-card{ pointer-events:none; }
+#orbit-stage.expanded .hc-card{ pointer-events:auto; }
+#orbit-stage.expanded .hc-card.hc-off{ pointer-events:none; }
+
 /* pull the hub logo up + small once expanded so the cards own the stage */
 .hub{ transition:top .6s var(--ease-out), scale .6s var(--ease-out), opacity .5s ease; }
 #orbit-stage.expanded .hub{ top:13%; scale:.46; }
