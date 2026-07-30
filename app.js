@@ -1329,7 +1329,7 @@ const MENU = [
   { id: "district",      label: "DISTRICT",      sub: "Districts & locale churches", icon: "district" },
   { id: "home-free",     label: "HOME FREE",     sub: "Fellowship gathering", icon: "homefree" },
   { id: "anniversaries", label: "ANNIVERSARIES", sub: "Church milestones",    icon: "anniversary" },
-  { id: "christmas",     label: "CHRISTMAS",     sub: "Season celebrations",  icon: "christmas" },
+  { id: "branches",      label: "BRANCHES",      sub: "Global congregations · interactive globe", icon: "branches" },
   { id: "blogs",         label: "BLOGS",         sub: "Latest articles",      icon: "blogs" },
   { id: "settings",      label: "SETTINGS",      sub: "Theme · sound · colors · icons", icon: "settings" },
   // Search is still available via Ctrl/⌘-K; Brother Thomas via his floating
@@ -1351,9 +1351,10 @@ function onMenu(id, anchor) {
   if (id === "directory")      toggleDirDropdown(anchor);
   else if (id === "region")    Pages.openRoot(regionView());
   else if (id === "district")  Pages.openRoot(districtView());
+  else if (id === "branches")  openGlobe();          // interactive rotating globe
   else if (id === "settings")  requestSettings();
-  // the four church events → quick note (wire real destinations here later)
-  else if (["home-free", "anniversaries", "christmas", "blogs"].includes(id)) {
+  // the church events → quick note (wire real destinations here later)
+  else if (["home-free", "anniversaries", "blogs"].includes(id)) {
     eventToast(MENU.find(m => m.id === id)?.label || "Event");
   }
 }
