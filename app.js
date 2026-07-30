@@ -250,7 +250,7 @@ const CONTENT = {
 /* ═══════════════════ 4. GALLERY SCENES (backgrounds) ══════════════════ */
 /* Built-in CSS scenes need no image files. "photo" points at your own file. */
 const SCENES = [
-  { id: "photo",   label: "AATF Building",  type: "photo", src: "assets/AATF Building.jpg" }, // ships by default
+  { id: "photo",   label: "AATF Building",  type: "photo", src: "assets/aatf-building.jpg" }, // ships by default
   { id: "royal",   label: "Royal Night",   type: "scene" },                                // CSS navy-gold fallback
   { id: "golden",  label: "Golden Aura",   type: "css", css: "radial-gradient(circle at 50% 42%, #3a3212 0%, #14265e 42%, #05091a 82%)" },
   { id: "deep",    label: "Deep Navy",     type: "css", css: "radial-gradient(circle at 50% 40%, #17285f, #060b20 72%)" },
@@ -651,32 +651,35 @@ const Carousel = {
       d.classList.toggle("active", on);
       d.setAttribute("aria-selected", on ? "true" : "false");
     });
+    if (orbitExpanded) this.animateConnectors();     // keep the logo↔card links attached
   },
   attachGestures() {
     const surf = $("#hero-carousel");
-    let x0 = 0, moved = 0, id = null;
+    let x0 = 0, moved = 0, id = null, dragging = false;
     const down = (e) => {
-      if (e.target.closest(".hc-nav")) return;      // let the arrows handle themselves
+      if (e.target.closest(".hc-nav")) return;       // let the arrows handle themselves
       if (e.button != null && e.button !== 0) return;
-      id = e.pointerId; x0 = e.clientX; moved = 0; this.dragged = false;
-      try { surf.setPointerCapture(id); } catch {}
-      e.stopPropagation();
+      id = e.pointerId; x0 = e.clientX; moved = 0; dragging = false; this.dragged = false;
+      // NOTE: do NOT capture the pointer here — capturing would redirect the
+      // click to the surface and the card's own click (open) would never fire.
     };
     const move = (e) => {
       if (id === null || e.pointerId !== id) return;
       moved = e.clientX - x0;
-      e.stopPropagation();
+      if (!dragging && Math.abs(moved) > 10) {        // a real swipe has begun
+        dragging = true; this.dragged = true;
+        try { surf.setPointerCapture(id); } catch {}
+      }
     };
     const up = (e) => {
       if (id === null || e.pointerId !== id) return;
       try { surf.releasePointerCapture(id); } catch {}
-      id = null;
-      if (Math.abs(moved) > 48) {                   // swipe threshold
-        this.dragged = true;
-        moved < 0 ? this.next() : this.prev();
-        setTimeout(() => { this.dragged = false; }, 50);
+      const wasDrag = dragging; id = null; dragging = false;
+      if (wasDrag) {                                  // swipe → rotate
+        if (Math.abs(moved) > 42) { moved < 0 ? this.next() : this.prev(); }
+        setTimeout(() => { this.dragged = false; }, 30);
       }
-      e.stopPropagation();
+      // a pure tap was never captured, so the card's click handler runs → open
     };
     surf.addEventListener("pointerdown", down);
     surf.addEventListener("pointermove", move);
@@ -685,6 +688,44 @@ const Carousel = {
     surf.addEventListener("wheel", (e) => { e.preventDefault(); e.deltaY > 0 ? this.next() : this.prev(); }, { passive: false });
     $(".hc-prev", surf).addEventListener("click", (e) => { e.stopPropagation(); this.prev(); });
     $(".hc-next", surf).addEventListener("click", (e) => { e.stopPropagation(); this.next(); });
+  },
+  /* Glowing connector lines from the central logo to each visible card, so the
+     three nodes read as one connected network. Redrawn each frame during the
+     rotate/expand animation, then left in place. */
+  drawConnectors() {
+    const links = $("#orbit-links"); if (!links) return;
+    const stage = $("#orbit-stage"); const sr = stage.getBoundingClientRect();
+    if (!sr.width) return;
+    links.setAttribute("viewBox", `0 0 ${sr.width} ${sr.height}`);
+    const hb = $(".hub-core").getBoundingClientRect();
+    const hx = hb.left + hb.width / 2 - sr.left;
+    const hy = hb.top + hb.height / 2 - sr.top;
+    const n = this.cards.length; let out = "";
+    this.cards.forEach((btn, i) => {
+      let off = i - this.cur; if (off > n / 2) off -= n; if (off < -n / 2) off += n;
+      if (Math.abs(off) > 1) return;                  // only the three visible nodes
+      const r = btn.getBoundingClientRect();
+      const cx = r.left + r.width / 2 - sr.left;
+      const cy = r.top - sr.top + Math.min(20, r.height * 0.06);
+      out += `<line class="link-base" x1="${hx.toFixed(1)}" y1="${hy.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}"/>`
+           + `<line class="link-flow" x1="${hx.toFixed(1)}" y1="${hy.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}"/>`
+           + `<circle class="link-node-ring" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8"/>`
+           + `<circle class="link-node" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4"/>`;
+    });
+    links.innerHTML = out;
+  },
+  animateConnectors() {
+    cancelAnimationFrame(this._craf);
+    const t0 = performance.now();
+    const step = () => {
+      this.drawConnectors();
+      if (orbitExpanded && performance.now() - t0 < 760) this._craf = requestAnimationFrame(step);
+    };
+    this._craf = requestAnimationFrame(step);
+  },
+  clearConnectors() {
+    cancelAnimationFrame(this._craf);
+    const links = $("#orbit-links"); if (links) links.innerHTML = "";
   },
 };
 
@@ -698,12 +739,15 @@ function setOrbit(expand) {
   orbitExpanded = expand;
   const stage = $("#orbit-stage");
   stage.classList.toggle("expanded", expand);
-  const rv = document.getElementById("reveal-stage");   // fade the glow-orbs in with the icons
-  if (rv) rv.classList.toggle("revealed", expand);
+  document.body.classList.toggle("carousel-open", expand);   // deepen the focus scrim
   Sound.play(expand ? "open" : "back");
   // keep it clean: a short prompt before opening, nothing cluttering once open
   $("#hud-hint").textContent = expand ? "" : "TAP THE LOGO TO BEGIN";
-  stage.querySelectorAll("#orbit-links .link-base").forEach(b => { b.style.strokeDashoffset = expand ? 0 : parseFloat(b.style.strokeDasharray || 0); });
+  // refresh the carousel (pointer-events + connector lines follow the state)
+  if (typeof Carousel !== "undefined" && Carousel.cards.length) {
+    Carousel.layout();                 // (re)draws the logo↔card connectors when expanded
+    if (!expand) Carousel.clearConnectors();
+  }
 }
 
 /* Open a section directly (used by the carousel + directory flows). */
