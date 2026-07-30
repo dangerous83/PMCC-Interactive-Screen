@@ -16,7 +16,7 @@ const ASSISTANT_NAME = "Brother Thomas";   // ← rename your assistant here
 
 /* Bump this number whenever you replace a photo in assets/ — it forces every
    browser/kiosk to fetch the fresh image instead of showing a cached old one. */
-const ASSET_VERSION = 7;
+const ASSET_VERSION = 8;
 const withV = (src) => src + (src.includes("?") ? "&" : "?") + "v=" + ASSET_VERSION;
 
 /* ═══════════════════ 2. LEADERSHIP CONTENT — EDIT ════════════════════ */
@@ -588,9 +588,9 @@ const Carousel = {
   // third sits behind in the centre (blurred). This keeps the two Apostles
   // prominent side-by-side on first open. Rotating cycles which card is back.
   SLOTS: [
-    { x: -66, z:  36, ry:  15, s: .94, back: false },  // 0 · front-left
-    { x:  66, z:  36, ry: -15, s: .94, back: false },  // 1 · front-right
-    { x:   0, z: -205, ry:  0, s: .72, back: true  },  // 2 · back-centre
+    { x: -86, z:  50, ry:  13, s: 1.02, back: false },  // 0 · front-left  (bigger, pushed out)
+    { x:  86, z:  50, ry: -13, s: 1.02, back: false },  // 1 · front-right (bigger, pushed out)
+    { x:   0, z: -230, ry:  0, s: .74,  back: true  },  // 2 · back-centre
   ],
   slotOf(i) { return ((i - this.rot) % 3 + 3) % 3; },
   build() {
@@ -681,17 +681,6 @@ const Carousel = {
     surf.addEventListener("pointerup", up);
     surf.addEventListener("pointercancel", up);
     surf.addEventListener("wheel", (e) => { e.preventDefault(); e.deltaY > 0 ? this.next() : this.prev(); }, { passive: false });
-    // Arrows: fire on pointerup OR click (whichever lands first), debounced so a
-    // single tap only rotates once. Works reliably on both touch and mouse.
-    const bindNav = (sel, fn) => {
-      const el = $(sel, surf); if (!el) return;
-      let last = 0;
-      const go = (e) => { e.stopPropagation(); e.preventDefault(); const t = Date.now(); if (t - last < 350) return; last = t; fn(); };
-      el.addEventListener("pointerup", go);
-      el.addEventListener("click", go);
-    };
-    bindNav(".hc-prev", () => this.prev());
-    bindNav(".hc-next", () => this.next());
   },
   /* Glowing connector lines from the central logo to each visible card, so the
      three nodes read as one connected network. Redrawn each frame during the
@@ -760,9 +749,23 @@ const Pages = {
       : `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Close`;
     const body = $("#stack-body"); body.innerHTML = "";
     body.classList.remove("anim"); void body.offsetWidth; body.classList.add("anim");
-    if (v.type === "cards")  body.appendChild(this._cards(v.cards));
+    if (v.type === "cards") {
+      if (v.actions && v.actions.length) body.appendChild(this._actionbar(v.actions));
+      body.appendChild(this._cards(v.cards));
+    }
     else if (v.type === "person") body.appendChild(this._person(v));
     else if (v.type === "list")   body.appendChild(this._list(v.items));
+  },
+  _actionbar(actions) {
+    const bar = document.createElement("div"); bar.className = "sp-actionbar";
+    actions.forEach(a => {
+      const b = document.createElement("button");
+      b.className = "sp-btn" + (a.glow ? " glow" : "");
+      b.innerHTML = `<span class="sp-btn-ico">${svg(ICONS[a.icon] || ICONS.region)}</span><span class="sp-btn-tx"><b>${esc(a.label)}</b>${a.sub ? `<i>${esc(a.sub)}</i>` : ""}</span><span class="sp-btn-chev">›</span>`;
+      b.addEventListener("click", () => { Sound.play("open"); a.onClick(); });
+      bar.appendChild(b);
+    });
+    return bar;
   },
   _cards(cards) {
     const grid = document.createElement("div"); grid.className = "sp-grid";
@@ -842,6 +845,7 @@ function bishopsView() {
   const items = (CONTENT.sections.find(s => s.id === "bishops")?.items || []).filter(i => i.confidence !== "placeholder");
   return {
     type: "cards", title: "BISHOPS", subtitle: "Episcopal Council · tap a bishop",
+    actions: [{ label: "Region", icon: "region", sub: "Regional fellowships · MEQAF & more", glow: true, onClick: () => Pages.push(regionView()) }],
     cards: items.map(it => ({
       name: it.name, sub: it.position, image: it.image, glyph: "bishops",
       onClick: () => Pages.push({ type: "person", glyph: "bishops", title: "BISHOP", subtitle: it.position || "Episcopal Council", person: it }),
@@ -953,6 +957,15 @@ const Globe = (() => {
   const BRANCH_IMAGES = {
     "Dubai": { src: "assets/aatf-building.jpg", caption: "AATF Miracle Building — PMCC (4th Watch) Dubai" },
   };
+  // Flag emoji per branch/country for the hover tooltip.
+  const FLAGS = {
+    "Dubai":"🇦🇪","Abu Dhabi":"🇦🇪","Turkey":"🇹🇷","Jordan":"🇯🇴","Lebanon":"🇱🇧","Israel":"🇮🇱",
+    "Syria":"🇸🇾","Qatar":"🇶🇦","Saudi Arabia":"🇸🇦","Kuwait":"🇰🇼","Yemen":"🇾🇪","Iran":"🇮🇷",
+    "China":"🇨🇳","Japan":"🇯🇵","Mongolia":"🇲🇳","North Korea":"🇰🇵","South Korea":"🇰🇷","Taiwan":"🇹🇼",
+    "Afghanistan":"🇦🇫","Bangladesh":"🇧🇩","Bhutan":"🇧🇹","India":"🇮🇳","Maldives":"🇲🇻","Nepal":"🇳🇵",
+    "Pakistan":"🇵🇰","Sri Lanka":"🇱🇰","USA":"🇺🇸","Canada":"🇨🇦","Australia":"🇦🇺","Netherlands":"🇳🇱",
+    "Philippines":"🇵🇭",
+  };
   // Real coastline outlines from Natural Earth (assets/world-land.js, simplified
   // to ~8.5k points). Falls back to a tiny built-in set if the file is missing.
   const LAND = (typeof window !== "undefined" && window.WORLD_LAND) ? window.WORLD_LAND : [
@@ -974,7 +987,7 @@ const Globe = (() => {
   let canvas, ctx, raf = 0, W = 0, H = 0, R = 0, baseR = 0, cx = 0, cy = 0, dpr = 1;
   let yaw = 0, pitch = 0.28, auto = true, dragging = false, lastX = 0, lastY = 0, moved = 0, t = 0;
   let points = [], screen = [], selected = -1, targetYaw = null, targetPitch = null, resumeTimer = 0, inited = false;
-  let stars = [], hqIndex = -1, zoomG = 1;
+  let stars = [], hqIndex = -1, zoomG = 1, hoverIndex = -1;
   const setZoom = (z) => { zoomG = Math.max(1, Math.min(5, z)); R = baseR * zoomG; };
 
   function buildPoints() {
@@ -1114,9 +1127,41 @@ const Globe = (() => {
     if (targetYaw != null) { yaw += (targetYaw - yaw) * 0.09; if (Math.abs(targetYaw - yaw) < 0.002) { yaw = targetYaw; targetYaw = null; } }
     else if (auto && !dragging) yaw += 0.0022;
     if (targetPitch != null) { pitch += (targetPitch - pitch) * 0.09; if (Math.abs(targetPitch - pitch) < 0.002) { pitch = targetPitch; targetPitch = null; } }
-    draw(); raf = requestAnimationFrame(frame);
+    draw(); positionTip(); raf = requestAnimationFrame(frame);
   }
   function hit(mx, my) { let b = -1, bd = 1e9; screen.forEach(s => { const d = Math.hypot(s.x - mx, s.y - my); if (d < bd) { bd = d; b = s.i; } }); return bd <= 24 ? b : -1; }
+  // ── Hover tooltip: flag + branch name + region + coordinates ──
+  function setHover(i) {
+    if (i === hoverIndex) return;
+    hoverIndex = i;
+    if (canvas) canvas.style.cursor = i >= 0 ? "pointer" : "";
+    auto = (i < 0);                              // pause the spin while reading a dot
+    fillTip();
+  }
+  function fillTip() {
+    const tip = $("#globe-tip"); if (!tip) return;
+    if (hoverIndex < 0) { tip.classList.add("hidden"); return; }
+    const p = points[hoverIndex];
+    tip.querySelector(".gt-flag").textContent = FLAGS[p.name] || "🌍";
+    tip.querySelector(".gt-name").textContent = p.name + (p.hq ? " · HQ" : "");
+    tip.querySelector(".gt-region").textContent = p.region;
+    tip.querySelector(".gt-coord").textContent = `${p.lat.toFixed(1)}°, ${p.lng.toFixed(1)}°`;
+    tip.style.borderColor = p.color;
+    tip.querySelector(".gt-flag").style.background = hexA(p.color, 0.18);
+  }
+  function positionTip() {
+    const tip = $("#globe-tip"); if (!tip) return;
+    if (hoverIndex < 0) { tip.classList.add("hidden"); return; }
+    const s = screen.find(o => o.i === hoverIndex);
+    if (!s) { tip.classList.add("hidden"); return; }   // dot rotated out of view
+    tip.classList.remove("hidden");
+    const tw = tip.offsetWidth || 220, th = tip.offsetHeight || 90;
+    let left = s.x + 22, top = s.y - th / 2;
+    if (left + tw > W - 8) left = s.x - tw - 22;         // flip to the left near the edge
+    left = Math.max(8, Math.min(W - tw - 8, left));
+    top = Math.max(8, Math.min(H - th - 8, top));
+    tip.style.left = left + "px"; tip.style.top = top + "px";
+  }
   function flyTo(i) { const p = points[i]; targetYaw = -p.lng * Math.PI / 180; targetPitch = Math.max(-0.6, Math.min(0.6, p.lat * Math.PI / 180)); }
   function pause() { auto = false; clearTimeout(resumeTimer); resumeTimer = setTimeout(() => auto = true, 5000); }
   function select(i) { selected = i; renderInfo(); if (i >= 0) Sound.play("tap"); }
@@ -1173,17 +1218,23 @@ const Globe = (() => {
       gp.set(e.pointerId, { x: e.clientX, y: e.clientY });
       try { canvas.setPointerCapture(e.pointerId); } catch {}
       if (gp.size === 2) { const [a, b] = [...gp.values()]; pd0 = Math.hypot(a.x - b.x, a.y - b.y); pz0 = zoomG; dragging = false; }
-      else { dragging = true; auto = false; moved = 0; lastX = e.clientX; lastY = e.clientY;
+      else { dragging = true; auto = false; moved = 0; lastX = e.clientX; lastY = e.clientY; setHover(-1);
         const now = performance.now(); if (now - lastTap < 320) { setZoom(1); Sound.play("tap"); } lastTap = now; }
     });
     canvas.addEventListener("pointermove", e => {
       if (gp.has(e.pointerId)) gp.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (gp.size >= 2 && pd0 > 0) { const [a, b] = [...gp.values()]; setZoom(pz0 * (Math.hypot(a.x - b.x, a.y - b.y) / pd0)); moved += 20; return; }
-      if (!dragging) return;
+      if (!dragging) {                                  // hover (mouse, no button) → tooltip
+        const r = canvas.getBoundingClientRect();
+        setHover(hit(e.clientX - r.left, e.clientY - r.top));
+        return;
+      }
+      setHover(-1);
       const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY;
       moved += Math.abs(dx) + Math.abs(dy);
       yaw += dx * 0.006 / zoomG; pitch = Math.max(-1.2, Math.min(1.2, pitch + dy * 0.006 / zoomG)); targetYaw = targetPitch = null;
     });
+    canvas.addEventListener("pointerleave", () => setHover(-1));
     const glift = e => {
       gp.delete(e.pointerId); try { canvas.releasePointerCapture(e.pointerId); } catch {}
       if (gp.size < 2) pd0 = 0;
@@ -1199,8 +1250,8 @@ const Globe = (() => {
     $("#globe-search-form").addEventListener("submit", e => { e.preventDefault(); doSearch($("#globe-search").value); });
     addEventListener("resize", () => { if (!$("#globe").classList.contains("hidden")) resize(); });
   }
-  function start() { init(); selected = -1; zoomG = 1; auto = true; renderInfo(); resize(); if (!raf) frame(); }
-  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+  function start() { init(); selected = -1; hoverIndex = -1; zoomG = 1; auto = true; renderInfo(); const tip = $("#globe-tip"); if (tip) tip.classList.add("hidden"); resize(); if (!raf) frame(); }
+  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } hoverIndex = -1; const tip = $("#globe-tip"); if (tip) tip.classList.add("hidden"); }
   return { start, stop };
 })();
 function openGlobe() { Sound.play("open"); const el = $("#globe"); el.classList.remove("hidden"); requestAnimationFrame(() => el.classList.add("open")); Globe.start(); }
@@ -1325,15 +1376,13 @@ function closeOverlay() {
 /* ─────────────────────── Bottom icon DOCK (menu) ────────────────────── */
 const MENU = [
   { id: "directory",     label: "DIRECTORY",     sub: "Bishops · Pastors · Elders · Testimonies", icon: "directory" },
-  { id: "region",        label: "REGION",        sub: "Regional fellowships", icon: "region", glow: true },
   { id: "district",      label: "DISTRICT",      sub: "Districts & locale churches", icon: "district" },
   { id: "home-free",     label: "HOME FREE",     sub: "Fellowship gathering", icon: "homefree" },
-  { id: "anniversaries", label: "ANNIVERSARIES", sub: "Church milestones",    icon: "anniversary" },
   { id: "branches",      label: "BRANCHES",      sub: "Global congregations · interactive globe", icon: "branches" },
   { id: "blogs",         label: "BLOGS",         sub: "Latest articles",      icon: "blogs" },
   { id: "settings",      label: "SETTINGS",      sub: "Theme · sound · colors · icons", icon: "settings" },
-  // Search is still available via Ctrl/⌘-K; Brother Thomas via his floating
-  // widget (right edge). Home/Browser/Sound buttons were removed per request.
+  // Region now lives inside the Bishops page. Search via Ctrl/⌘-K; Brother
+  // Thomas via his floating widget. Anniversaries / Christmas removed per request.
 ];
 function buildDock() {
   const dock = $("#dock"); dock.innerHTML = "";
@@ -1349,12 +1398,11 @@ function buildDock() {
 function onMenu(id, anchor) {
   Sound.play("tap");
   if (id === "directory")      toggleDirDropdown(anchor);
-  else if (id === "region")    Pages.openRoot(regionView());
   else if (id === "district")  Pages.openRoot(districtView());
   else if (id === "branches")  openGlobe();          // interactive rotating globe
   else if (id === "settings")  requestSettings();
   // the church events → quick note (wire real destinations here later)
-  else if (["home-free", "anniversaries", "blogs"].includes(id)) {
+  else if (["home-free", "blogs"].includes(id)) {
     eventToast(MENU.find(m => m.id === id)?.label || "Event");
   }
 }
