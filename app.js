@@ -16,7 +16,7 @@ const ASSISTANT_NAME = "Brother Thomas";   // ← rename your assistant here
 
 /* Bump this number whenever you replace a photo in assets/ — it forces every
    browser/kiosk to fetch the fresh image instead of showing a cached old one. */
-const ASSET_VERSION = 6;
+const ASSET_VERSION = 7;
 const withV = (src) => src + (src.includes("?") ? "&" : "?") + "v=" + ASSET_VERSION;
 
 /* ═══════════════════ 2. LEADERSHIP CONTENT — EDIT ════════════════════ */
@@ -579,7 +579,16 @@ const HERO_CARDS = [
 ];
 
 const Carousel = {
-  cur: 1, cards: [], stage: null, dragged: false,   // start focused on the CEM
+  rot: 0, cards: [], stage: null, dragged: false,
+  // three fixed slots: two cards are FRONT (left + right, both sharp), the
+  // third sits behind in the centre (blurred). This keeps the two Apostles
+  // prominent side-by-side on first open. Rotating cycles which card is back.
+  SLOTS: [
+    { x: -66, z:  36, ry:  15, s: .94, back: false },  // 0 · front-left
+    { x:  66, z:  36, ry: -15, s: .94, back: false },  // 1 · front-right
+    { x:   0, z: -205, ry:  0, s: .72, back: true  },  // 2 · back-centre
+  ],
+  slotOf(i) { return ((i - this.rot) % 3 + 3) % 3; },
   build() {
     this.stage = $("#hc-stage");
     const dots = $("#hc-dots");
@@ -596,58 +605,40 @@ const Carousel = {
          <span class="hc-plate"><b>${esc(c.name)}</b><i>${esc(c.role)}</i></span>
          <span class="hc-edge" aria-hidden="true"></span>`;
       btn.addEventListener("click", () => {
-        if (this.dragged) return;                 // ignore the click that ends a swipe
-        if (i === this.cur) { Sound.play("open"); c.open(); }
-        else this.go(i);
+        if (this.dragged) return;                     // ignore the click that ends a swipe
+        if (this.slotOf(i) === 2) this.rotateTo(i);   // back card → bring it forward
+        else { Sound.play("open"); c.open(); }        // a front card → open it
       });
       this.stage.appendChild(btn);
 
       const dot = document.createElement("button");
       dot.className = "hc-dot"; dot.type = "button"; dot.setAttribute("role", "tab");
       dot.setAttribute("aria-label", c.name);
-      dot.addEventListener("click", () => this.go(i));
+      dot.addEventListener("click", () => this.rotateTo(i));
       dots.appendChild(dot);
       return btn;
     });
     this.attachGestures();
     this.layout();
   },
-  go(i) {
-    const n = this.cards.length; if (!n) return;
-    i = ((i % n) + n) % n;
-    if (i === this.cur) return;
-    Sound.play("tap");
-    this.cur = i;
-    this.layout();
-  },
-  next() { this.go(this.cur + 1); },
-  prev() { this.go(this.cur - 1); },
+  rotateTo(i) { if (this.rot === i) return; Sound.play("tap"); this.rot = i; this.layout(); },
+  next() { Sound.play("tap"); this.rot = (this.rot + 1) % 3; this.layout(); },
+  prev() { Sound.play("tap"); this.rot = (this.rot + 2) % 3; this.layout(); },
+  go(i) { this.rotateTo(i); },
   layout() {
-    const n = this.cards.length; if (!n) return;
+    if (!this.cards.length) return;
     this.cards.forEach((btn, i) => {
-      let off = i - this.cur;                      // shortest signed offset
-      if (off >  n / 2) off -= n;
-      if (off < -n / 2) off += n;
-      const abs = Math.abs(off);
-      const x     = off * 62;                       // % translate along the arc
-      const z     = -abs * 200;                     // px depth (recede back)
-      const rot   = off * -28;                      // deg Y-rotation (faces center)
-      const scale = Math.max(.62, 1 - abs * .16);
-      btn.style.transform =
-        `translateX(${x}%) translateZ(${z}px) rotateY(${rot}deg) scale(${scale})`;
-      btn.style.zIndex = String(100 - abs);
-      btn.style.opacity = abs > 1 ? "0" : "1";      // show focus + its two neighbors
-      // far cards drop out of hit-testing; ALL cards are non-interactive while
-      // collapsed (handled in CSS) so they never block the logo behind them.
-      btn.classList.toggle("hc-off", abs > 1);
-      btn.classList.toggle("focused", off === 0);
-      btn.setAttribute("aria-hidden", off === 0 ? "false" : "true");
+      const S = this.SLOTS[this.slotOf(i)];
+      btn.style.transform = `translateX(${S.x}%) translateZ(${S.z}px) rotateY(${S.ry}deg) scale(${S.s})`;
+      btn.style.zIndex = String(S.back ? 5 : 20);
+      btn.style.opacity = "1";
+      btn.classList.remove("hc-off");
+      btn.classList.toggle("focused", !S.back);       // both front cards are sharp
+      btn.classList.toggle("hc-back", S.back);        // the back card is blurred
+      btn.setAttribute("aria-hidden", S.back ? "true" : "false");
     });
-    const card = HERO_CARDS[this.cur];
-    $("#hc-name").textContent = card.name;
-    $("#hc-role").textContent = card.role;
     $$("#hc-dots .hc-dot").forEach((d, i) => {
-      const on = i === this.cur;
+      const on = i === this.rot;                        // dot of the front-left card
       d.classList.toggle("active", on);
       d.setAttribute("aria-selected", on ? "true" : "false");
     });
@@ -700,10 +691,8 @@ const Carousel = {
     const hb = $(".hub-core").getBoundingClientRect();
     const hx = hb.left + hb.width / 2 - sr.left;
     const hy = hb.top + hb.height / 2 - sr.top;
-    const n = this.cards.length; let out = "";
-    this.cards.forEach((btn, i) => {
-      let off = i - this.cur; if (off > n / 2) off -= n; if (off < -n / 2) off += n;
-      if (Math.abs(off) > 1) return;                  // only the three visible nodes
+    let out = "";
+    this.cards.forEach((btn) => {                      // link all three visible nodes
       const r = btn.getBoundingClientRect();
       const cx = r.left + r.width / 2 - sr.left;
       const cy = r.top - sr.top + Math.min(20, r.height * 0.06);
