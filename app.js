@@ -543,109 +543,143 @@ function navSections() {
 }
 const NAV = navSections();
 
-/* Organized node network (deg: 0=right, 90=bottom, -90=top, 180=left).
-   Evenly spaced ring (≈51.4° apart), symmetric top-to-bottom, with glowing
-   connector lines from the logo to each node. */
-const ORBIT_ANGLES = {
-  apostle:    -90,
-  bishops:  -141.4, presbyters: -38.6,
-  pastors:   167.2, elders:      12.8,
-  branches:  115.8, history:     64.2,
+/* ─────────────── 3D leadership carousel (replaces the icon ring) ─────────
+   Tapping the PMCC logo reveals a rotating carousel of leadership cards.
+   The front-and-center card is in focus (sharp, forward); the two flanking
+   cards recede and blur. Swipe / drag, use the ‹ › arrows, tap a side card,
+   scroll, or tap a dot to rotate. Tapping the focused card opens it.
+   Extendable — just add entries to HERO_CARDS. */
+
+// open the leadership panel focused on a specific person within a section
+function openPerson(secId, nameNeedle) {
+  const sec = CONTENT.sections.find(s => s.id === secId); if (!sec) return;
+  openSection(sec, null);
+  const idx = sec.items.findIndex(it => it.name.includes(nameNeedle));
+  if (idx > 0) setTimeout(() => renderItem(sec, idx), 60);
+}
+
+const HERO_CARDS = [
+  { id: "arsenio",  name: "Apostle Arsenio Tan Ferriol", role: "Founder · First Chief Executive Minister",
+    image: "assets/apostle-arsenio-ferriol.jpg", glyph: "apostle",
+    open: () => openPerson("apostle", "Arsenio") },
+  { id: "jonathan", name: "Apostle Jonathan S. Ferriol", role: "Chief Executive Minister",
+    image: "assets/apostle-jonathan-ferriol.jpg", glyph: "apostle",
+    open: () => openPerson("apostle", "Jonathan") },
+  { id: "bishops",  name: "Bishops", role: "Episcopal Council",
+    image: "assets/archbishop-arturo-ferriol.png", glyph: "bishops",
+    open: () => openSection(CONTENT.sections.find(s => s.id === "bishops"), null) },
+];
+
+const Carousel = {
+  cur: 1, cards: [], stage: null, dragged: false,   // start focused on the CEM
+  build() {
+    this.stage = $("#hc-stage");
+    const dots = $("#hc-dots");
+    this.stage.innerHTML = ""; dots.innerHTML = "";
+    this.cards = HERO_CARDS.map((c, i) => {
+      const btn = document.createElement("button");
+      btn.className = "hc-card"; btn.type = "button"; btn.dataset.i = i;
+      btn.setAttribute("aria-label", c.name);
+      btn.innerHTML =
+        `<span class="hc-photo">
+           <span class="hc-glyph">${svg(ICONS[c.glyph] || ICONS.apostle)}</span>
+           <img src="${withV(c.image)}" alt="${esc(c.name)}" draggable="false" onerror="this.remove()">
+         </span>
+         <span class="hc-plate"><b>${esc(c.name)}</b><i>${esc(c.role)}</i></span>
+         <span class="hc-edge" aria-hidden="true"></span>`;
+      btn.addEventListener("click", () => {
+        if (this.dragged) return;                 // ignore the click that ends a swipe
+        if (i === this.cur) { Sound.play("open"); c.open(); }
+        else this.go(i);
+      });
+      this.stage.appendChild(btn);
+
+      const dot = document.createElement("button");
+      dot.className = "hc-dot"; dot.type = "button"; dot.setAttribute("role", "tab");
+      dot.setAttribute("aria-label", c.name);
+      dot.addEventListener("click", () => this.go(i));
+      dots.appendChild(dot);
+      return btn;
+    });
+    this.attachGestures();
+    this.layout();
+  },
+  go(i) {
+    const n = this.cards.length; if (!n) return;
+    i = ((i % n) + n) % n;
+    if (i === this.cur) return;
+    Sound.play("tap");
+    this.cur = i;
+    this.layout();
+  },
+  next() { this.go(this.cur + 1); },
+  prev() { this.go(this.cur - 1); },
+  layout() {
+    const n = this.cards.length; if (!n) return;
+    this.cards.forEach((btn, i) => {
+      let off = i - this.cur;                      // shortest signed offset
+      if (off >  n / 2) off -= n;
+      if (off < -n / 2) off += n;
+      const abs = Math.abs(off);
+      const x     = off * 62;                       // % translate along the arc
+      const z     = -abs * 200;                     // px depth (recede back)
+      const rot   = off * -28;                      // deg Y-rotation (faces center)
+      const scale = Math.max(.62, 1 - abs * .16);
+      btn.style.transform =
+        `translateX(${x}%) translateZ(${z}px) rotateY(${rot}deg) scale(${scale})`;
+      btn.style.zIndex = String(100 - abs);
+      btn.style.opacity = abs > 1 ? "0" : "1";      // show focus + its two neighbors
+      btn.style.pointerEvents = abs > 1 ? "none" : "auto";
+      btn.classList.toggle("focused", off === 0);
+      btn.setAttribute("aria-hidden", off === 0 ? "false" : "true");
+    });
+    const card = HERO_CARDS[this.cur];
+    $("#hc-name").textContent = card.name;
+    $("#hc-role").textContent = card.role;
+    $$("#hc-dots .hc-dot").forEach((d, i) => {
+      const on = i === this.cur;
+      d.classList.toggle("active", on);
+      d.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  },
+  attachGestures() {
+    const surf = $("#hero-carousel");
+    let x0 = 0, moved = 0, id = null;
+    const down = (e) => {
+      if (e.target.closest(".hc-nav")) return;      // let the arrows handle themselves
+      if (e.button != null && e.button !== 0) return;
+      id = e.pointerId; x0 = e.clientX; moved = 0; this.dragged = false;
+      try { surf.setPointerCapture(id); } catch {}
+      e.stopPropagation();
+    };
+    const move = (e) => {
+      if (id === null || e.pointerId !== id) return;
+      moved = e.clientX - x0;
+      e.stopPropagation();
+    };
+    const up = (e) => {
+      if (id === null || e.pointerId !== id) return;
+      try { surf.releasePointerCapture(id); } catch {}
+      id = null;
+      if (Math.abs(moved) > 48) {                   // swipe threshold
+        this.dragged = true;
+        moved < 0 ? this.next() : this.prev();
+        setTimeout(() => { this.dragged = false; }, 50);
+      }
+      e.stopPropagation();
+    };
+    surf.addEventListener("pointerdown", down);
+    surf.addEventListener("pointermove", move);
+    surf.addEventListener("pointerup", up);
+    surf.addEventListener("pointercancel", up);
+    surf.addEventListener("wheel", (e) => { e.preventDefault(); e.deltaY > 0 ? this.next() : this.prev(); }, { passive: false });
+    $(".hc-prev", surf).addEventListener("click", (e) => { e.stopPropagation(); this.prev(); });
+    $(".hc-next", surf).addEventListener("click", (e) => { e.stopPropagation(); this.next(); });
+  },
 };
-// Reveal sweeps from the top, one node (icon + its line) at a time.
-const REVEAL_ORDER = { apostle:0, presbyters:1, elders:2, history:3, branches:4, pastors:5, bishops:6 };
 
-function buildOrbit() {
-  const nav = $("#orbit-icons"), links = $("#orbit-links");
-  nav.innerHTML = ""; links.innerHTML = "";
-  NAV.forEach((sec, i) => {
-    const g = document.createElementNS(SVG_NS, "g");
-    g.innerHTML = `<line class="link-base"></line><line class="link-flow"></line><circle class="link-node" r="3.5"></circle><circle class="link-node-ring" r="8"></circle>`;
-    links.appendChild(g);
-
-    const btn = document.createElement("button");
-    btn.className = "orbit-icon"; btn.dataset.section = sec.id;
-    btn.style.setProperty("--pulse-delay", `${(i * .45).toFixed(2)}s`);
-    // node-by-node reveal: each icon glides out in sequence around the ring
-    const ro = REVEAL_ORDER[sec.id] ?? i;
-    btn.style.transitionDelay = `${ro * 200}ms`;
-    btn.innerHTML = `
-      <span class="press-ring"></span>
-      <span class="icon-float" style="--float-delay:${(i*.7).toFixed(2)}s">
-        <span class="icon-tile ${settings.iconStyle === 'solid' ? 'solid' : ''}" style="--shine-delay:${(i*0.9).toFixed(2)}s">
-          <span class="tile-shine"></span>
-          ${svg(ICONS[sec.icon] || ICONS.history)}
-        </span>
-        <span class="icon-label">${sec.label}</span>
-      </span>`;
-    attachIconGestures(btn, sec);
-    nav.appendChild(btn);
-  });
-  layoutOrbit();
-}
-
-function layoutOrbit() {
-  const stage = $("#orbit-stage");
-  const { width: w, height: h } = stage.getBoundingClientRect();
-  if (!w || !h) return;
-  const icons = $$(".orbit-icon", stage), groups = $$("#orbit-links g", stage);
-  const n = icons.length;
-  const iconSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--icon-size")) || 160;
-  const hubSize  = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hub-size")) || 300;
-  // reserve the bottom band for the dock so orbit icons never collide with it
-  const bottomReserve = Math.min(h * 0.24, iconSize * 1.35 + 120);
-  const cx = w/2;
-  // bias the whole constellation downward so the top (Apostle) icon isn't
-  // jammed under the title and the empty lower space gets used
-  const cy = Math.max(hubSize*0.55 + 20, (h - bottomReserve) / 2 + h*0.055);
-  // pull the ring in from the edges (leave room for labels + the assistant orb)
-  const rightReserve = iconSize * 1.3 + 40;
-  const rx = Math.min(w/2 - iconSize*0.7 - rightReserve, w*0.37);
-  // size vertical radius so the top (Apostle) and deepest bottom icons
-  // (Branches/History, sin≈0.95) both stay clear of edges and the dock
-  const ryTop = cy - iconSize*0.5 - 28;   // extra top margin below the title
-  const ryBot = (h - Math.max(200, iconSize*1.2 + 80) - iconSize*0.5 - cy) / 0.96;
-  const ry = Math.max(120, Math.min(ryTop, ryBot));
-  // move the center hub to match the icon/link center
-  const hub = $(".hub"); if (hub) hub.style.top = `${cy}px`;
-  $("#orbit-links").setAttribute("viewBox", `0 0 ${w} ${h}`);
-  icons.forEach((btn, i) => {
-    const aDeg = ORBIT_ANGLES[btn.dataset.section];
-    const ang = ((aDeg != null ? aDeg : -90 + i * 360 / n)) * Math.PI / 180;
-    const dx = Math.cos(ang)*rx, dy = Math.sin(ang)*ry;
-    btn.style.left = `${cx}px`; btn.style.top = `${cy}px`;
-    btn.style.setProperty("--tx", `${dx}px`); btn.style.setProperty("--ty", `${dy}px`);
-    if (!btn._drag) { btn.style.setProperty("--dx", "0px"); btn.style.setProperty("--dy", "0px"); }
-    const g = groups[i]; if (!g) return;
-    const len = Math.hypot(dx, dy), ux = dx/len, uy = dy/len;
-    const x1 = cx + ux*(hubSize*0.42), y1 = cy + uy*(hubSize*0.42);
-    const x2 = cx + ux*(len - iconSize*0.62), y2 = cy + uy*(len - iconSize*0.62);
-    g._end = { x2, y2 };
-    for (const cls of ["link-base","link-flow"]) { const L = g.querySelector("."+cls); L.setAttribute("x1",x1); L.setAttribute("y1",y1); L.setAttribute("x2",x2); L.setAttribute("y2",y2); }
-    const base = g.querySelector(".link-base"); const seg = Math.hypot(x2-x1, y2-y1);
-    // each node's connector draws right after ITS icon glides in — one at a time
-    const ro = REVEAL_ORDER[btn.dataset.section] ?? i;
-    base.style.strokeDasharray = seg; base.style.strokeDashoffset = stage.classList.contains("expanded") ? 0 : seg; base.style.transitionDelay = `${ro*200 + 120}ms`;
-    g.querySelector(".link-flow").style.transitionDelay = `${ro*200 + 220}ms`;
-    for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx",x2); cc.setAttribute("cy",y2); cc.style.transitionDelay = `${ro*200 + 200}ms`; }
-    btn._linkGroup = g; btn._center = { cx, cy };
-  });
-}
-addEventListener("resize", layoutOrbit);
-
-/* update one icon's connector line + node to follow it while dragging */
-function updateLinkFor(btn) {
-  const g = btn._linkGroup; if (!g || !g._end) return;
-  const dx = parseFloat(btn.style.getPropertyValue("--dx")) || 0;
-  const dy = parseFloat(btn.style.getPropertyValue("--dy")) || 0;
-  const x2 = g._end.x2 + dx, y2 = g._end.y2 + dy;
-  for (const sel of [".link-base",".link-flow"]) { const L = g.querySelector(sel); L.setAttribute("x2", x2); L.setAttribute("y2", y2); }
-  for (const sel of [".link-node",".link-node-ring"]) { const cc = g.querySelector(sel); cc.setAttribute("cx", x2); cc.setAttribute("cy", y2); }
-  const base = g.querySelector(".link-base");
-  const x1 = +base.getAttribute("x1"), y1 = +base.getAttribute("y1");
-  const seg = Math.hypot(x2 - x1, y2 - y1);
-  base.style.strokeDasharray = seg; base.style.strokeDashoffset = 0;
-}
+function buildOrbit() { Carousel.build(); }
+function layoutOrbit() { /* carousel is CSS-centered — nothing to compute */ }
 
 /* ───────────────── Expand / collapse the icon network ───────────────── */
 let orbitExpanded = false;
@@ -662,59 +696,7 @@ function setOrbit(expand) {
   stage.querySelectorAll("#orbit-links .link-base").forEach(b => { b.style.strokeDashoffset = expand ? 0 : parseFloat(b.style.strokeDasharray || 0); });
 }
 
-/* ──────────── Draggable icons + long-press to open ──────────────────────
-   Drag a node to reposition it (its connector line follows and the position is
-   remembered); a quick tap OR press-and-hold opens the section. */
-function attachIconGestures(btn, sec) {
-  let startX, startY, baseDX, baseDY, moved, holdTimer, longFired, pid;
-  const THRESH = 10, HOLD = 500;
-
-  const down = (e) => {
-    if (!orbitExpanded) return;
-    pid = e.pointerId; btn.setPointerCapture(pid);
-    startX = e.clientX; startY = e.clientY; moved = false; longFired = false;
-    baseDX = parseFloat(btn.style.getPropertyValue("--dx")) || 0;
-    baseDY = parseFloat(btn.style.getPropertyValue("--dy")) || 0;
-    btn.classList.add("pressing");
-    Sound.play("tap");
-    holdTimer = setTimeout(() => {          // long-press → open
-      if (moved) return;
-      longFired = true;
-      btn.classList.remove("pressing");
-      openFor(sec, btn);
-    }, HOLD);
-  };
-  const move = (e) => {
-    if (pid === undefined) return;
-    const dx = e.clientX - startX, dy = e.clientY - startY;
-    if (!moved && Math.hypot(dx, dy) > THRESH) { moved = true; clearTimeout(holdTimer); btn.classList.remove("pressing"); btn.classList.add("dragging"); btn._drag = true; }
-    if (moved) {
-      const zoom = stageZoom();
-      btn.style.setProperty("--dx", `${baseDX + dx / zoom}px`);
-      btn.style.setProperty("--dy", `${baseDY + dy / zoom}px`);
-      updateLinkFor(btn);
-    }
-  };
-  const up = () => {
-    if (pid === undefined) return;
-    clearTimeout(holdTimer);
-    btn.classList.remove("pressing", "dragging");
-    try { btn.releasePointerCapture(pid); } catch {}
-    if (!moved && !longFired) openFor(sec, btn);   // quick tap = open
-    else if (moved) store.set("pos-" + sec.id, { dx: parseFloat(btn.style.getPropertyValue("--dx")), dy: parseFloat(btn.style.getPropertyValue("--dy")) });
-    pid = undefined;
-  };
-  btn.addEventListener("pointerdown", down);
-  btn.addEventListener("pointermove", move);
-  btn.addEventListener("pointerup", up);
-  btn.addEventListener("pointercancel", up);
-
-  // restore any saved drag position (double-tap the empty stage resets zoom;
-  // to reset a moved icon, drag it back)
-  const saved = store.get("pos-" + sec.id, null);
-  if (saved) { btn.style.setProperty("--dx", saved.dx + "px"); btn.style.setProperty("--dy", saved.dy + "px"); btn._drag = true; }
-}
-
+/* Open a section directly (used by the carousel + directory flows). */
 function openFor(sec, btn) {
   if (sec.isBranches) return openGlobe(btn);          // interactive globe
   if (sec.id === "history") return openSection(sec, btn);  // timeline panel
