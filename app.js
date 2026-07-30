@@ -322,6 +322,10 @@ const ICONS = {
   anniversary: `<circle cx="12" cy="9" r="4.6"/><path d="M8.6 12.6 7.5 21l4.5-2.7L16.5 21l-1.1-8.4"/>`,
   christmas:   `<path d="M12 3 6.5 11h3L5 18h14l-4.5-7h3z"/><path d="M10.5 18h3v3h-3z"/>`,
   blogs:       `<path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5M8 13h8M8 16.5h5"/>`,
+  region:      `<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.4 2.5 14.6 0 17M12 3.5c-2.5 2.4-2.5 14.6 0 17"/>`,
+  district:    `<path d="M9 3 3.5 5.2v15.8L9 18.8l6 2.2 5.5-2.2V3L15 5.2 9 3z"/><path d="M9 3v15.8M15 5.2V21"/>`,
+  church:      `<path d="M12 3v4M10 5h4"/><path d="M12 7 5 12v9h14v-9L12 7z"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/>`,
+  pin:         `<path d="M12 21s6-5.3 6-10a6 6 0 1 0-12 0c0 4.7 6 10 6 10z"/><circle cx="12" cy="11" r="2.2"/>`,
 };
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -575,7 +579,7 @@ const HERO_CARDS = [
     open: () => openPerson("apostle", "Jonathan") },
   { id: "bishops",  name: "Bishops", role: "Episcopal Council",
     image: "assets/archbishop-arturo-ferriol.png", glyph: "bishops",
-    open: () => openSection(CONTENT.sections.find(s => s.id === "bishops"), null) },
+    open: () => Pages.openRoot(bishopsView()) },
 ];
 
 const Carousel = {
@@ -677,8 +681,17 @@ const Carousel = {
     surf.addEventListener("pointerup", up);
     surf.addEventListener("pointercancel", up);
     surf.addEventListener("wheel", (e) => { e.preventDefault(); e.deltaY > 0 ? this.next() : this.prev(); }, { passive: false });
-    $(".hc-prev", surf).addEventListener("click", (e) => { e.stopPropagation(); this.prev(); });
-    $(".hc-next", surf).addEventListener("click", (e) => { e.stopPropagation(); this.next(); });
+    // Arrows: fire on pointerup OR click (whichever lands first), debounced so a
+    // single tap only rotates once. Works reliably on both touch and mouse.
+    const bindNav = (sel, fn) => {
+      const el = $(sel, surf); if (!el) return;
+      let last = 0;
+      const go = (e) => { e.stopPropagation(); e.preventDefault(); const t = Date.now(); if (t - last < 350) return; last = t; fn(); };
+      el.addEventListener("pointerup", go);
+      el.addEventListener("click", go);
+    };
+    bindNav(".hc-prev", () => this.prev());
+    bindNav(".hc-next", () => this.next());
   },
   /* Glowing connector lines from the central logo to each visible card, so the
      three nodes read as one connected network. Redrawn each frame during the
@@ -720,6 +733,150 @@ const Carousel = {
 
 function buildOrbit() { Carousel.build(); }
 function layoutOrbit() { /* carousel is CSS-centered — nothing to compute */ }
+
+/* ══════════════════════════════════════════════════════════════════════
+   STACKED CARD PAGES  ·  Bishops grid · Region · District · Locale churches
+   A small back-stack renderer for card grids, person previews and lists.
+   Views:  { type:"cards", title, subtitle, cards:[{name,sub,image,glyph,
+             badge,disabled,glow,onClick}] }
+           { type:"person", title, subtitle, person:{...}, buttons:[{label,
+             sub,glow,onClick}] }
+           { type:"list", title, subtitle, items:[string] }
+   ══════════════════════════════════════════════════════════════════════ */
+const Pages = {
+  stack: [],
+  openRoot(view) { this.stack = [view]; this.render(); openFeature("stackpage"); },
+  push(view) { this.stack.push(view); this.render(); },
+  back() {
+    if (this.stack.length > 1) { this.stack.pop(); Sound.play("back"); this.render(); }
+    else closeFeature($("#stackpage"));
+  },
+  render() {
+    const v = this.stack[this.stack.length - 1];
+    $("#stack-title").textContent = v.title || "";
+    $("#stack-sub").textContent = v.subtitle || "";
+    $("#stack-back").innerHTML = (this.stack.length > 1)
+      ? `<svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Back`
+      : `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Close`;
+    const body = $("#stack-body"); body.innerHTML = "";
+    body.classList.remove("anim"); void body.offsetWidth; body.classList.add("anim");
+    if (v.type === "cards")  body.appendChild(this._cards(v.cards));
+    else if (v.type === "person") body.appendChild(this._person(v));
+    else if (v.type === "list")   body.appendChild(this._list(v.items));
+  },
+  _cards(cards) {
+    const grid = document.createElement("div"); grid.className = "sp-grid";
+    (cards || []).forEach(c => {
+      const el = document.createElement(c.disabled ? "div" : "button");
+      el.className = "sp-card" + (c.disabled ? " disabled" : "") + (c.glow ? " glow" : "");
+      const photo = c.image
+        ? `<img src="${withV(c.image)}" alt="${esc(c.name)}" draggable="false" onerror="this.remove()">`
+        : "";
+      el.innerHTML =
+        `<span class="sp-photo"><span class="sp-glyph">${svg(ICONS[c.glyph] || ICONS.apostle)}</span>${photo}</span>` +
+        (c.badge ? `<span class="sp-badge">${esc(c.badge)}</span>` : "") +
+        `<span class="sp-meta"><b>${esc(c.name)}</b>${c.sub ? `<i>${esc(c.sub)}</i>` : ""}</span>` +
+        `<span class="sp-edge" aria-hidden="true"></span>`;
+      if (!c.disabled && c.onClick) el.addEventListener("click", () => { Sound.play("open"); c.onClick(); });
+      grid.appendChild(el);
+    });
+    return grid;
+  },
+  _person(v) {
+    const p = v.person;
+    const wrap = document.createElement("div"); wrap.className = "sp-person";
+    const photo = p.image
+      ? `<img src="${withV(p.image)}" alt="${esc(p.name)}" draggable="false" onerror="this.remove()">`
+      : "";
+    const extra = Object.entries(p.extra || {}).map(([k, val]) =>
+      `<div><dt>${esc(k).toUpperCase()}</dt><dd>${esc(val)}</dd></div>`).join("");
+    wrap.innerHTML =
+      `<aside class="sp-portrait"><span class="sp-portrait-glyph">${svg(ICONS[v.glyph] || ICONS.presbyters)}</span>${photo}</aside>` +
+      `<div class="sp-pinfo">` +
+        `<h3>${esc(p.name)}</h3>` +
+        `<p class="sp-role">${esc(p.role || "")}</p>` +
+        (p.location ? `<p class="sp-loc">${svg(ICONS.pin)} ${esc(p.location)}</p>` : "") +
+        `<div class="sp-divider"></div>` +
+        (p.description ? `<p class="sp-desc">${esc(p.description)}</p>` : "") +
+        (extra ? `<dl class="sp-extra">${extra}</dl>` : "") +
+        `<div class="sp-actions"></div>` +
+      `</div>`;
+    const actions = wrap.querySelector(".sp-actions");
+    (v.buttons || []).forEach(btn => {
+      const b = document.createElement("button");
+      b.className = "sp-btn" + (btn.glow ? " glow" : "");
+      b.innerHTML = `<span class="sp-btn-ico">${svg(ICONS[btn.icon] || ICONS.church)}</span><span class="sp-btn-tx"><b>${esc(btn.label)}</b>${btn.sub ? `<i>${esc(btn.sub)}</i>` : ""}</span><span class="sp-btn-chev">›</span>`;
+      b.addEventListener("click", () => { Sound.play("open"); btn.onClick(); });
+      actions.appendChild(b);
+    });
+    return wrap;
+  },
+  _list(items) {
+    const list = document.createElement("div"); list.className = "sp-list";
+    (items || []).forEach((it, i) => {
+      const row = document.createElement("div"); row.className = "sp-list-row";
+      row.style.setProperty("--i", i);
+      row.innerHTML = `<span class="sp-list-ico">${svg(ICONS.pin)}</span><span class="sp-list-name">${esc(it)}</span>`;
+      list.appendChild(row);
+    });
+    return list;
+  },
+};
+
+/* ── Data for Region / District / Locale churches ─────────────────────── */
+const DISTRICT_PRESBYTERS = [
+  { name: "Presbyter Elleza Palanca", role: "Middle East District",
+    image: "assets/presbyter-elleza-palanca.jpg", location: "Dubai, United Arab Emirates",
+    description: "Presbyter of the Middle East District, providing pastoral oversight, discipleship and support to the locale churches across the Gulf region and beyond.",
+    churches: ["Dubai", "Abu Dhabi", "Al Ain", "Ajman", "Sharjah", "Bahrain", "Salmiya, Kuwait", "Muscat",
+      "Riyadh", "Jeddah", "Al Khobar", "Dammam", "Al Kharj", "Qassim", "Israel", "Ras Al Khaimah",
+      "Umm Al Quwain", "Fujairah", "International City", "Sohar", "Mangaf", "Al Hassa", "Jubail", "Jazan",
+      "Girne, Turkey", "Lebanon", "Istanbul", "Jordan"] },
+  { name: "Presbyter Andy Pabelico", role: "Qatar / Africa District",
+    image: null, location: "Doha, Qatar",
+    description: "Presbyter of the Qatar / Africa District, shepherding the locale churches across Qatar and the African mission fields.",
+    churches: ["Doha", "Al Khor", "Ivory Coast", "Egypt", "Madagascar", "Mauritius", "Ghana", "Bangladesh", "India", "Morocco"] },
+];
+
+function bishopsView() {
+  const items = (CONTENT.sections.find(s => s.id === "bishops")?.items || []).filter(i => i.confidence !== "placeholder");
+  return {
+    type: "cards", title: "BISHOPS", subtitle: "Episcopal Council · tap a bishop",
+    cards: items.map(it => ({
+      name: it.name, sub: it.position, image: it.image, glyph: "bishops",
+      onClick: () => Pages.push({ type: "person", glyph: "bishops", title: "BISHOP", subtitle: it.position || "Episcopal Council", person: it }),
+    })),
+  };
+}
+function regionView() {
+  const soon = (n) => ({ name: "Coming Soon", sub: `Region ${n}`, glyph: "region", disabled: true, badge: "SOON" });
+  return {
+    type: "cards", title: "REGION", subtitle: "Select a region",
+    cards: [
+      { name: "MEQAF", sub: "Middle East · Qatar · Africa", glyph: "region", glow: true, onClick: () => Pages.push(districtView()) },
+      soon(2), soon(3), soon(4), soon(5),
+    ],
+  };
+}
+function districtView() {
+  return {
+    type: "cards", title: "DISTRICT", subtitle: "Select a district presbyter",
+    cards: DISTRICT_PRESBYTERS.map(pr => ({
+      name: pr.name, sub: pr.role, image: pr.image, glyph: "presbyters",
+      onClick: () => Pages.push(presbyterView(pr)),
+    })),
+  };
+}
+function presbyterView(pr) {
+  return {
+    type: "person", glyph: "presbyters", title: "DISTRICT", subtitle: pr.role,
+    person: { name: pr.name, role: pr.role, image: pr.image, location: pr.location, description: pr.description },
+    buttons: [{
+      label: "Locale Churches", icon: "church", sub: `${pr.churches.length} locale churches`, glow: true,
+      onClick: () => Pages.push({ type: "list", title: "LOCALE CHURCHES", subtitle: pr.role, items: pr.churches }),
+    }],
+  };
+}
 
 /* ───────────────── Expand / collapse the icon network ───────────────── */
 let orbitExpanded = false;
@@ -1168,6 +1325,8 @@ function closeOverlay() {
 /* ─────────────────────── Bottom icon DOCK (menu) ────────────────────── */
 const MENU = [
   { id: "directory",     label: "DIRECTORY",     sub: "Bishops · Pastors · Elders · Testimonies", icon: "directory" },
+  { id: "region",        label: "REGION",        sub: "Regional fellowships", icon: "region", glow: true },
+  { id: "district",      label: "DISTRICT",      sub: "Districts & locale churches", icon: "district" },
   { id: "home-free",     label: "HOME FREE",     sub: "Fellowship gathering", icon: "homefree" },
   { id: "anniversaries", label: "ANNIVERSARIES", sub: "Church milestones",    icon: "anniversary" },
   { id: "christmas",     label: "CHRISTMAS",     sub: "Season celebrations",  icon: "christmas" },
@@ -1180,7 +1339,7 @@ function buildDock() {
   const dock = $("#dock"); dock.innerHTML = "";
   MENU.forEach(m => {
     const b = document.createElement("button");
-    b.className = "dock-btn"; b.dataset.id = m.id; b.title = m.sub;
+    b.className = "dock-btn" + (m.glow ? " glow" : ""); b.dataset.id = m.id; b.title = m.sub;
     b.innerHTML = `<span class="db-icon">${svg(ICONS[m.icon])}</span><span class="db-label">${m.label}</span>`;
     b.addEventListener("click", () => onMenu(m.id, b));
     if (m.id === "directory") dirDockBtn = b;
@@ -1190,6 +1349,8 @@ function buildDock() {
 function onMenu(id, anchor) {
   Sound.play("tap");
   if (id === "directory")      toggleDirDropdown(anchor);
+  else if (id === "region")    Pages.openRoot(regionView());
+  else if (id === "district")  Pages.openRoot(districtView());
   else if (id === "settings")  requestSettings();
   // the four church events → quick note (wire real destinations here later)
   else if (["home-free", "anniversaries", "christmas", "blogs"].includes(id)) {
@@ -2602,6 +2763,8 @@ $("#voice-type").addEventListener("click", () => { Sound.play("tap"); exitVoiceM
 updateMicButton();
 $("#bt-widget").addEventListener("click", () => { Sound.ensure(); Sound.play("open"); openFeature("jarvis"); });
 updateVoiceButton();
+// Stacked pages (Bishops grid · Region · District) back button
+$("#stack-back").addEventListener("click", () => Pages.back());
 // Directory flow wiring
 $("#dir-back").addEventListener("click", dirBack);
 $$("[data-pm-close]").forEach(el => el.addEventListener("click", closeProfile));

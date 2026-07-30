@@ -408,10 +408,10 @@ body.carousel-open #focus-scrim{ opacity:.9; }
 .hc-plate i{ font-style:normal; font-size:clamp(8px,1vmin,15px); font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--accent);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 
-/* ‹ › rotate arrows */
+/* ‹ › rotate arrows — sit ABOVE the cards so they're always tappable */
 .hc-nav{
-  position:absolute; top:50%; translate:0 -50%; z-index:20;
-  width:clamp(46px,5.4vmin,84px); aspect-ratio:1; border-radius:50%;
+  position:absolute; top:50%; translate:0 -50%; z-index:60;
+  width:clamp(56px,6.4vmin,104px); aspect-ratio:1; border-radius:50%;
   display:grid; place-items:center; color:var(--text);
   background:var(--glass); border:1px solid var(--glass-line);
   backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur));
@@ -484,6 +484,81 @@ body.carousel-open #focus-scrim{ opacity:.9; }
 .dock-btn:hover .db-label{ color:var(--accent-2); }
 .dock-btn:active{ transform:scale(.9); }
 .dock-btn.muted .db-icon{ opacity:.5; }
+
+/* glowing dock button (REGION) — pulsing gold ring to draw the eye */
+.dock-btn.glow .db-icon{ border-color:var(--accent); box-shadow:0 12px 28px rgba(0,0,0,.55), 0 0 3vmin color-mix(in srgb, var(--accent) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.3); animation:dock-glow 2.4s ease-in-out infinite; }
+.dock-btn.glow .db-label{ color:var(--accent); }
+@keyframes dock-glow{ 0%,100%{ box-shadow:0 12px 28px rgba(0,0,0,.55), 0 0 2.2vmin color-mix(in srgb, var(--accent) 40%, transparent), inset 0 1px 0 rgba(255,255,255,.3); } 50%{ box-shadow:0 12px 30px rgba(0,0,0,.55), 0 0 4.4vmin color-mix(in srgb, var(--accent) 78%, transparent), inset 0 1px 0 rgba(255,255,255,.35); } }
+
+/* ══════════════════════ STACKED CARD PAGES ══════════════════════ */
+.stack-shell{ width:min(94vw, 1400px); height:min(90vh, 60vw); }
+#stack-back{ display:flex; align-items:center; gap:1vmin; }
+#stack-back svg{ width:clamp(15px,1.7vmin,30px); height:clamp(15px,1.7vmin,30px); }
+.stack-body{ flex:1; overflow-y:auto; padding:clamp(16px,2.4vmin,44px); }
+.stack-body.anim{ animation:sp-fade .4s var(--ease-out); }
+@keyframes sp-fade{ from{ opacity:0; transform:translateY(1.4vmin); } to{ opacity:1; transform:none; } }
+
+/* card grid (Bishops · Region · District) */
+.sp-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(clamp(160px,20vmin,240px), 1fr)); gap:clamp(14px,2vmin,32px); }
+.sp-card{ position:relative; display:flex; flex-direction:column; text-align:left; padding:0; overflow:hidden; cursor:pointer; color:var(--text);
+  background:linear-gradient(160deg, rgba(22,36,78,.6), rgba(8,14,32,.78)); border:1px solid var(--tile-line); border-radius:calc(var(--radius)*.8);
+  box-shadow:0 14px 36px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14); transition:transform .25s var(--ease-spring), box-shadow .3s, border-color .3s; }
+.sp-card:hover{ transform:translateY(-.7vmin); border-color:var(--accent); box-shadow:0 20px 46px rgba(0,0,0,.6), 0 0 3vmin color-mix(in srgb, var(--accent) 45%, transparent); }
+.sp-card:active{ transform:scale(.97); }
+.sp-card.disabled{ cursor:default; opacity:.5; filter:grayscale(.5); }
+.sp-card.glow{ border-color:color-mix(in srgb, var(--accent) 60%, transparent); box-shadow:0 16px 40px rgba(0,0,0,.55), 0 0 3vmin color-mix(in srgb, var(--accent) 45%, transparent); }
+.sp-photo{ position:relative; width:100%; aspect-ratio:1/1; display:grid; place-items:center; overflow:hidden; background:radial-gradient(circle at 50% 40%, rgba(30,48,102,.5), rgba(6,11,28,.7)); }
+.sp-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 20%; z-index:1; }
+.sp-glyph{ position:absolute; inset:0; display:grid; place-items:center; z-index:0; }
+.sp-glyph svg{ width:36%; stroke:var(--accent-2); fill:none; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; opacity:.75; filter:drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 55%, transparent)); }
+.sp-badge{ position:absolute; top:1vmin; right:1vmin; z-index:2; font-size:clamp(9px,1vmin,16px); font-weight:800; letter-spacing:.14em; color:#0a1020; background:var(--accent); padding:.3em .7em; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.4); }
+.sp-meta{ position:relative; z-index:2; display:flex; flex-direction:column; gap:.3vmin; padding:clamp(10px,1.4vmin,22px) clamp(12px,1.6vmin,24px) clamp(12px,1.6vmin,24px); }
+.sp-meta b{ font-size:clamp(13px,1.55vmin,26px); font-weight:800; color:#fff8ea; line-height:1.15; }
+.sp-meta i{ font-style:normal; font-size:clamp(10px,1.15vmin,19px); font-weight:600; letter-spacing:.06em; color:var(--accent); }
+.sp-edge{ position:absolute; inset:0; border-radius:inherit; pointer-events:none; box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* person preview (bishop · presbyter) */
+.sp-person{ display:grid; grid-template-columns:clamp(220px,32%,380px) 1fr; gap:clamp(20px,3vmin,56px); align-items:start; }
+.sp-portrait{ position:relative; width:100%; aspect-ratio:3/4; border-radius:calc(var(--radius)*.7); overflow:hidden; background:radial-gradient(circle at 50% 36%, rgba(30,48,102,.5), rgba(6,11,28,.72)); border:1px solid var(--tile-line); box-shadow:0 18px 44px rgba(0,0,0,.55); display:grid; place-items:center; }
+.sp-portrait img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 18%; z-index:1; }
+.sp-portrait-glyph{ position:absolute; inset:0; display:grid; place-items:center; z-index:0; }
+.sp-portrait-glyph svg{ width:34%; stroke:var(--accent-2); fill:none; stroke-width:1.3; opacity:.7; }
+.sp-pinfo h3{ font-size:clamp(20px,2.8vmin,46px); font-weight:800; color:#fff8ea; letter-spacing:.01em; }
+.sp-role{ margin-top:.4vmin; font-size:clamp(11px,1.35vmin,24px); font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sp-loc{ margin-top:1vmin; display:flex; align-items:center; gap:.7vmin; font-size:clamp(11px,1.3vmin,22px); color:var(--text-dim); }
+.sp-loc svg{ width:clamp(15px,1.7vmin,26px); height:auto; stroke:var(--accent-2); fill:none; stroke-width:1.6; }
+.sp-divider{ height:1px; margin:2vmin 0; background:linear-gradient(90deg, var(--accent), transparent); opacity:.5; }
+.sp-desc{ font-size:clamp(12px,1.4vmin,24px); line-height:1.6; color:var(--text); }
+.sp-extra{ margin-top:2vmin; display:flex; flex-wrap:wrap; gap:1.4vmin; }
+.sp-extra > div{ background:var(--glass); border:1px solid var(--glass-line); border-radius:calc(var(--radius)*.5); padding:1vmin 1.6vmin; }
+.sp-extra dt{ font-size:clamp(9px,1vmin,16px); letter-spacing:.16em; color:var(--accent-2); }
+.sp-extra dd{ font-size:clamp(12px,1.35vmin,22px); color:#fff8ea; margin-top:.3vmin; }
+.sp-actions{ margin-top:2.6vmin; display:flex; flex-direction:column; gap:1.4vmin; }
+
+/* action button (Locale Churches) */
+.sp-btn{ display:flex; align-items:center; gap:1.6vmin; text-align:left; padding:clamp(12px,1.6vmin,26px) clamp(16px,2vmin,32px); cursor:pointer; color:var(--text);
+  background:linear-gradient(158deg, rgba(30,48,102,.5), rgba(10,18,44,.72)); border:1px solid var(--tile-line); border-radius:calc(var(--radius)*.7);
+  box-shadow:0 10px 26px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.14); transition:transform .2s var(--ease-spring), box-shadow .28s, border-color .28s; }
+.sp-btn:hover{ transform:translateX(.4vmin); border-color:var(--accent); box-shadow:0 12px 30px rgba(0,0,0,.5), 0 0 2.8vmin color-mix(in srgb, var(--accent) 50%, transparent); }
+.sp-btn:active{ transform:scale(.98); }
+.sp-btn.glow{ border-color:color-mix(in srgb, var(--accent) 55%, transparent); animation:dock-glow 2.6s ease-in-out infinite; }
+.sp-btn-ico{ width:clamp(40px,4vmin,68px); aspect-ratio:1; flex:0 0 auto; display:grid; place-items:center; border-radius:26%; background:var(--tile); border:1px solid var(--tile-line); }
+.sp-btn-ico svg{ width:56%; height:56%; stroke:#fff6e2; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.sp-btn-tx{ flex:1; display:flex; flex-direction:column; gap:.3vmin; }
+.sp-btn-tx b{ font-size:clamp(13px,1.55vmin,26px); font-weight:800; color:#fff8ea; }
+.sp-btn-tx i{ font-style:normal; font-size:clamp(10px,1.15vmin,19px); color:var(--accent); letter-spacing:.05em; }
+.sp-btn-chev{ font-size:clamp(20px,2.2vmin,36px); color:var(--accent-2); }
+
+/* locale-church list */
+.sp-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(clamp(180px,22vmin,280px), 1fr)); gap:clamp(10px,1.3vmin,22px); }
+.sp-list-row{ display:flex; align-items:center; gap:1.2vmin; padding:clamp(11px,1.4vmin,22px) clamp(14px,1.7vmin,26px);
+  background:var(--glass); border:1px solid var(--glass-line); border-radius:calc(var(--radius)*.55);
+  animation:sp-fade .4s var(--ease-out) both; animation-delay:calc(var(--i) * 24ms); transition:background .2s, border-color .2s, transform .2s; }
+.sp-list-row:hover{ background:var(--glass-2); border-color:var(--accent); transform:translateX(.3vmin); }
+.sp-list-ico{ width:clamp(26px,2.6vmin,44px); aspect-ratio:1; flex:0 0 auto; display:grid; place-items:center; }
+.sp-list-ico svg{ width:100%; height:100%; stroke:var(--accent); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 45%, transparent)); }
+.sp-list-name{ font-size:clamp(12px,1.4vmin,24px); font-weight:600; color:#fff8ea; }
+@media (max-width:720px){ .sp-person{ grid-template-columns:1fr; } .sp-portrait{ max-width:60vw; margin:0 auto; } }
 
 /* events dropdown: two-line items (label + sub) + a gold chevron */
 .events-dropdown .dir-drop-item{ min-height:62px; }

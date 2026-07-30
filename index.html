@@ -128,6 +128,24 @@
     </div>
   </main>
 
+  <!-- ══════════ STACKED CARD PAGES (Bishops grid · Region · District) ══════════
+       A reusable overlay that renders card grids, person previews and lists with
+       a back-stack. Built by app.js → Pages. -->
+  <section id="stackpage" class="feature-overlay hidden" aria-modal="true" role="dialog">
+    <div class="feature-backdrop" data-feature-close></div>
+    <div class="feature-shell tall stack-shell">
+      <header class="feature-head">
+        <button id="stack-back" class="pill" type="button" aria-label="Back">
+          <svg viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Back
+        </button>
+        <div><h2 id="stack-title">TITLE</h2><p id="stack-sub">—</p></div>
+        <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </header>
+      <div id="stack-body" class="stack-body"><!-- injected --></div>
+    </div>
+  </section>
+
   <!-- ════════════════════════ SECTION PANEL ════════════════════════ -->
   <!-- Reusable overlay for leadership sections. Icon glyph (no photos for now). -->
   <section id="panel" class="hidden" aria-modal="true" role="dialog">
