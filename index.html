@@ -24,7 +24,7 @@
      ========================================================================== -->
 <title>PMCC 4th Watch — Leadership Directory</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
 
@@ -137,6 +137,9 @@
         <div><h2 id="stack-title">TITLE</h2><p id="stack-sub">—</p></div>
         <button class="feature-x" data-feature-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       </header>
+      <!-- floating corner action (e.g. "Region" inside Bishops) — sits above the
+           scrolling body, top-right, with a looping echo/sonar ring animation -->
+      <div id="stack-fab" class="stack-fab hidden"><!-- injected by app.js --></div>
       <div id="stack-body" class="stack-body"><!-- injected --></div>
     </div>
   </section>
@@ -558,7 +561,7 @@
   <!-- Toast for small confirmations (saved, updated…) -->
   <div id="toast" class="hidden"></div>
 
-<script src="assets/world-land.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="assets/world-land.js?v=11"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
