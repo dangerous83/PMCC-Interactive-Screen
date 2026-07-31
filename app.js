@@ -16,7 +16,7 @@ const ASSISTANT_NAME = "Brother Thomas";   // ← rename your assistant here
 
 /* Bump this number whenever you replace a photo in assets/ — it forces every
    browser/kiosk to fetch the fresh image instead of showing a cached old one. */
-const ASSET_VERSION = 9;
+const ASSET_VERSION = 10;
 const withV = (src) => src + (src.includes("?") ? "&" : "?") + "v=" + ASSET_VERSION;
 
 /* ═══════════════════ 2. LEADERSHIP CONTENT — EDIT ════════════════════ */
@@ -629,11 +629,19 @@ const Carousel = {
   next() { Sound.play("tap"); this.rot = (this.rot + 1) % 3; this.layout(); },
   prev() { Sound.play("tap"); this.rot = (this.rot + 2) % 3; this.layout(); },
   go(i) { this.rotateTo(i); },
+  slotTransform(S) { return `translateX(${S.x}%) translateY(0%) translateZ(${S.z}px) rotateY(${S.ry}deg) scale(${S.s})`; },
+  syncDots() {
+    $$("#hc-dots .hc-dot").forEach((d, i) => {
+      const on = i === this.rot;                        // dot of the front-left card
+      d.classList.toggle("active", on);
+      d.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  },
   layout() {
     if (!this.cards.length) return;
     this.cards.forEach((btn, i) => {
       const S = this.SLOTS[this.slotOf(i)];
-      btn.style.transform = `translateX(${S.x}%) translateZ(${S.z}px) rotateY(${S.ry}deg) scale(${S.s})`;
+      btn.style.transform = this.slotTransform(S);
       btn.style.zIndex = String(S.back ? 5 : 20);
       btn.style.opacity = "1";
       btn.classList.remove("hc-off");
@@ -641,12 +649,41 @@ const Carousel = {
       btn.classList.toggle("hc-back", S.back);        // the back card is blurred
       btn.setAttribute("aria-hidden", S.back ? "true" : "false");
     });
-    $$("#hc-dots .hc-dot").forEach((d, i) => {
-      const on = i === this.rot;                        // dot of the front-left card
-      d.classList.toggle("active", on);
-      d.setAttribute("aria-selected", on ? "true" : "false");
-    });
+    this.syncDots();
     if (orbitExpanded) this.animateConnectors();     // keep the logo↔card links attached
+  },
+  /* Advanced staggered 3D entrance: the cards rise up out of the logo, sweep
+     forward and fan out to their slots with a soft spring — the back card
+     settles first, then the two Apostles glide out to the sides. */
+  reveal() {
+    if (!this.cards.length) return;
+    clearTimeout(this._revealT);
+    this.cards.forEach((btn, i) => {
+      const S = this.SLOTS[this.slotOf(i)];
+      btn.style.zIndex = String(S.back ? 5 : 20);
+      btn.classList.remove("hc-off");
+      btn.classList.toggle("focused", !S.back);
+      btn.classList.toggle("hc-back", S.back);
+      btn.setAttribute("aria-hidden", S.back ? "true" : "false");
+      // start deep behind the logo, small + faded
+      btn.style.transition = "none";
+      btn.style.opacity = "0";
+      btn.style.transform = "translateX(0%) translateY(16%) translateZ(-820px) rotateY(0deg) scale(.4)";
+    });
+    this.syncDots();
+    void this.stage.offsetWidth;                      // commit the start state
+    this.cards.forEach((btn, i) => {
+      const slot = this.slotOf(i), S = this.SLOTS[slot];
+      const order = slot === 2 ? 0 : (slot === 0 ? 1 : 2);   // back → left → right
+      const delay = 90 + order * 160;
+      btn.style.transition =
+        `transform 1.05s cubic-bezier(.19,.9,.28,1.03) ${delay}ms, opacity .7s ease ${delay}ms, filter .9s ease ${delay}ms`;
+      btn.style.transform = this.slotTransform(S);
+      btn.style.opacity = "1";
+    });
+    // hand control back to the CSS transition once the entrance completes
+    this._revealT = setTimeout(() => { this.cards.forEach(b => { b.style.transition = ""; }); }, 90 + 2 * 160 + 1150);
+    this.animateConnectors(1700);                     // draw the links as the cards fly out
   },
   attachGestures() {
     const surf = $("#hero-carousel");
@@ -705,12 +742,12 @@ const Carousel = {
     });
     links.innerHTML = out;
   },
-  animateConnectors() {
+  animateConnectors(dur) {
     cancelAnimationFrame(this._craf);
-    const t0 = performance.now();
+    const D = dur || 760, t0 = performance.now();
     const step = () => {
       this.drawConnectors();
-      if (orbitExpanded && performance.now() - t0 < 760) this._craf = requestAnimationFrame(step);
+      if (orbitExpanded && performance.now() - t0 < D) this._craf = requestAnimationFrame(step);
     };
     this._craf = requestAnimationFrame(step);
   },
@@ -895,8 +932,8 @@ function setOrbit(expand) {
   $("#hud-hint").textContent = expand ? "" : "TAP THE LOGO TO BEGIN";
   // refresh the carousel (pointer-events + connector lines follow the state)
   if (typeof Carousel !== "undefined" && Carousel.cards.length) {
-    Carousel.layout();                 // (re)draws the logo↔card connectors when expanded
-    if (!expand) Carousel.clearConnectors();
+    if (expand) Carousel.reveal();     // advanced staggered 3D entrance
+    else { Carousel.layout(); Carousel.clearConnectors(); }
   }
 }
 
@@ -1221,31 +1258,58 @@ const Globe = (() => {
     if (selected < 0) {
       const regions = (CONTENT.branches || []);
       const totalCountries = regions.reduce((n, r) => n + r.countries.length, 0);
-      const legend = regions.map(r => `
-        <button class="gi-region-row" data-region="${esc(r.region)}">
-          <span class="gi-dot" style="background:${regionColor(r.region)}"></span>
-          <span class="gi-rr-name">${esc(r.region)}</span>
-          <span class="gi-rr-count">${r.countries.length}</span>
-          <span class="gi-rr-list">${r.countries.slice(0, 6).map(esc).join(" · ")}${r.countries.length > 6 ? " …" : ""}</span>
-        </button>`).join("");
+      const flag = (name) => { const c = FLAGS[name]; return c ? (FLAG_SVG[c] || "") : ""; };
+      const legend = regions.map(r => {
+        const rows = r.countries.map(c => {
+          const i = points.findIndex(p => p.name === c);
+          const hq = i >= 0 && points[i].hq;
+          return `<button class="gi-branch" data-idx="${i}">
+              <span class="gi-bflag">${flag(c)}</span>
+              <span class="gi-bname">${esc(c)}${hq ? " · HQ" : ""}</span>
+              <span class="gi-bgo">›</span>
+            </button>`;
+        }).join("");
+        return `<div class="gi-region">
+            <button class="gi-region-row" data-region="${esc(r.region)}" aria-expanded="false">
+              <span class="gi-dot" style="background:${regionColor(r.region)}"></span>
+              <span class="gi-rr-name">${esc(r.region)}</span>
+              <span class="gi-rr-count">${r.countries.length}</span>
+              <span class="gi-rr-chev">›</span>
+            </button>
+            <div class="gi-branches"><div class="gi-branches-inner">${rows}</div></div>
+          </div>`;
+      }).join("");
       box.innerHTML =
         `<div class="gi-head"><div class="gi-kicker">GLOBAL CONGREGATIONS</div><h3 class="gi-title">PMCC 4th Watch worldwide</h3></div>` +
         `<div class="gi-stats"><div class="gi-stat"><b>${totalCountries}</b><span>Countries</span></div><div class="gi-stat"><b>${regions.length}</b><span>Regions</span></div></div>` +
         `<div class="gi-legend">${legend}</div>` +
-        `<p class="gi-note">Tap a region to fly there, tap a glowing point to open a branch, drag to spin, or pinch/scroll to zoom.</p>`;
-      box.querySelectorAll(".gi-region-row").forEach(b => b.addEventListener("click", () => { Sound.play("tap"); selectRegion(b.dataset.region); }));
+        `<p class="gi-note">Tap a region to expand its branches, then tap a branch (by its flag) to fly there and see its details.</p>`;
+      // region → expand / collapse its branch list
+      box.querySelectorAll(".gi-region-row").forEach(b => b.addEventListener("click", () => {
+        Sound.play("tap");
+        const reg = b.closest(".gi-region");
+        const open = reg.classList.toggle("open");
+        b.setAttribute("aria-expanded", open ? "true" : "false");
+      }));
+      // branch → fly to it on the globe + open its detail
+      box.querySelectorAll(".gi-branch").forEach(b => b.addEventListener("click", () => {
+        const i = +b.dataset.idx; if (i >= 0) { select(i); flyTo(i); pause(); }
+      }));
       return;
     }
     const p = points[selected];
     const col = p.color;
     const photo = BRANCH_IMAGES[p.name];
+    const code = FLAGS[p.name] || "";
+    const flagSVG = FLAG_SVG[code] || "";
     box.innerHTML =
       `<button class="gi-back" id="gi-back">‹ All regions</button>` +
       (photo ? `<figure class="gi-photo"><img src="${withV(photo.src)}" alt="${esc(photo.caption || p.name)}" onerror="this.closest('.gi-photo').remove()"><figcaption>${esc(photo.caption || "")}</figcaption></figure>` : "") +
       `<div class="gi-badge" style="border-color:${col};color:${col}"><span class="gi-dot" style="background:${col}"></span>${esc(p.region)}${p.hq ? " · Headquarters" : ""}</div>` +
-      `<div class="gi-name">${esc(p.name)}</div><div class="gi-divider"></div>` +
+      `<div class="gi-nameflag">${flagSVG ? `<span class="gi-flag-lg">${flagSVG}</span>` : ""}<div class="gi-name">${esc(p.name)}</div></div><div class="gi-divider"></div>` +
       `<dl class="gi-field"><dt>Congregation</dt><dd>PMCC (4th Watch) ${esc(p.name)}</dd></dl>` +
       `<dl class="gi-field"><dt>District</dt><dd>${esc(p.region)}</dd></dl>` +
+      (code ? `<dl class="gi-field"><dt>Country</dt><dd>${code.toUpperCase()}</dd></dl>` : "") +
       `<dl class="gi-field"><dt>Coordinates</dt><dd>${p.lat.toFixed(1)}°, ${p.lng.toFixed(1)}°</dd></dl>` +
       `<dl class="gi-field"><dt>Services</dt><dd>Sunday worship · midweek fellowship</dd></dl>` +
       `<dl class="gi-field"><dt>Contact</dt><dd>${esc(p.region.toLowerCase().replace(/[^a-z]/g, "") || "info")}@pmcc4thwatch.org</dd></dl>` +
