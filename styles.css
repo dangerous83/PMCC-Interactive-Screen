@@ -495,6 +495,7 @@ body.carousel-open #focus-scrim{ opacity:.9; }
 #stack-back{ display:flex; align-items:center; gap:1vmin; }
 #stack-back svg{ width:clamp(15px,1.7vmin,30px); height:clamp(15px,1.7vmin,30px); }
 .stack-body{ flex:1; overflow-y:auto; padding:clamp(16px,2.4vmin,44px); }
+.stack-body.has-fab{ padding-top:clamp(60px,8vmin,120px); }
 .stack-body.anim{ animation:sp-fade .4s var(--ease-out); }
 @keyframes sp-fade{ from{ opacity:0; transform:translateY(1.4vmin); } to{ opacity:1; transform:none; } }
 
@@ -534,19 +535,36 @@ body.carousel-open #focus-scrim{ opacity:.9; }
 .sp-extra dt{ font-size:clamp(9px,1vmin,16px); letter-spacing:.16em; color:var(--accent-2); }
 .sp-extra dd{ font-size:clamp(12px,1.35vmin,22px); color:#fff8ea; margin-top:.3vmin; }
 .sp-actions{ margin-top:2.6vmin; display:flex; flex-direction:column; gap:1.4vmin; }
-/* action bar above a card grid (e.g. the Region button inside Bishops) */
-.sp-actionbar{ display:flex; flex-direction:column; gap:1.2vmin; margin-bottom:clamp(16px,2.4vmin,40px); }
-/* the Region button: unmistakably a glowing, gold call-to-action */
-.sp-actionbar .sp-btn.glow{ border-color:var(--accent); border-width:1.5px;
-  background:linear-gradient(158deg, color-mix(in srgb, var(--accent) 20%, rgba(30,48,102,.55)), rgba(10,18,44,.74));
-  animation:sp-region-glow 2.1s ease-in-out infinite; }
-.sp-actionbar .sp-btn.glow .sp-btn-ico{ border-color:var(--accent); background:linear-gradient(158deg, color-mix(in srgb, var(--accent) 42%, transparent), rgba(14,26,60,.9)); }
-.sp-actionbar .sp-btn.glow .sp-btn-ico svg{ stroke:#fff8ea; filter:drop-shadow(0 0 8px var(--accent)); }
-.sp-actionbar .sp-btn.glow .sp-btn-tx b{ color:#fff8ea; letter-spacing:.02em; }
-.sp-actionbar .sp-btn.glow .sp-btn-chev{ color:var(--accent); }
-@keyframes sp-region-glow{
-  0%,100%{ box-shadow:0 14px 34px rgba(0,0,0,.5), 0 0 2.4vmin color-mix(in srgb, var(--accent) 42%, transparent), inset 0 1px 0 rgba(255,255,255,.18); }
-  50%{ box-shadow:0 16px 38px rgba(0,0,0,.5), 0 0 5.6vmin color-mix(in srgb, var(--accent) 88%, transparent), inset 0 1px 0 rgba(255,255,255,.24); }
+/* floating corner action (e.g. the Region button inside Bishops) — pinned to
+   the top-right of the stack panel, above the scrolling body, with a looping
+   sonar/echo ring animation so it keeps drawing the eye. */
+.stack-fab{ position:absolute; top:clamp(70px,10vmin,150px); right:clamp(16px,2.4vmin,40px); z-index:8; transition:opacity .25s ease, transform .25s ease; }
+.stack-fab.hidden{ opacity:0; pointer-events:none; transform:translateY(-6px); }
+.sp-fab-wrap{ display:flex; }
+.sp-fab{
+  position:relative; display:flex; align-items:center; gap:1.1vmin; overflow:visible; cursor:pointer; color:var(--text); text-align:left;
+  padding:clamp(9px,1.15vmin,20px) clamp(16px,2vmin,30px) clamp(9px,1.15vmin,20px) clamp(9px,1.15vmin,20px);
+  border-radius:999px; border:1.5px solid var(--accent);
+  background:linear-gradient(158deg, color-mix(in srgb, var(--accent) 22%, rgba(30,48,102,.6)), rgba(10,18,44,.82));
+  box-shadow:0 14px 34px rgba(0,0,0,.5), 0 0 2.6vmin color-mix(in srgb, var(--accent) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.2);
+  transition:transform .2s var(--ease-spring), box-shadow .25s;
+}
+.sp-fab:hover{ transform:translateY(-2px); }
+.sp-fab:active{ transform:scale(.95); }
+.sp-fab-ico{ position:relative; z-index:2; width:clamp(38px,4vmin,66px); aspect-ratio:1; flex:0 0 auto; display:grid; place-items:center; border-radius:50%;
+  background:linear-gradient(158deg, color-mix(in srgb, var(--accent) 46%, transparent), rgba(14,26,60,.9)); border:1px solid var(--accent); }
+.sp-fab-ico svg{ width:56%; height:56%; stroke:#fff8ea; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 8px var(--accent)); }
+.sp-fab-tx{ position:relative; z-index:2; display:flex; flex-direction:column; gap:.2vmin; }
+.sp-fab-tx b{ font-size:clamp(13px,1.5vmin,26px); font-weight:800; color:#fff8ea; letter-spacing:.02em; white-space:nowrap; }
+.sp-fab-tx i{ font-style:normal; font-size:clamp(9px,1.05vmin,18px); color:var(--accent); letter-spacing:.03em; white-space:nowrap; }
+/* looping echo/sonar rings expanding outward from the icon, repeating forever */
+.sp-fab-echo{ position:absolute; left:clamp(9px,1.15vmin,20px); top:50%; width:clamp(38px,4vmin,66px); aspect-ratio:1; translate:0 -50%;
+  border-radius:50%; border:1.5px solid var(--accent); opacity:0; pointer-events:none; z-index:1;
+  animation:sp-fab-echo 2.4s cubic-bezier(.2,.7,.4,1) infinite; }
+.sp-fab-echo2{ animation-delay:1.2s; }
+@keyframes sp-fab-echo{
+  0%{ transform:scale(1); opacity:.75; }
+  100%{ transform:scale(2.2); opacity:0; }
 }
 
 /* action button (Locale Churches) */

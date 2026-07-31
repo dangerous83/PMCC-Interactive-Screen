@@ -16,7 +16,7 @@ const ASSISTANT_NAME = "Brother Thomas";   // ← rename your assistant here
 
 /* Bump this number whenever you replace a photo in assets/ — it forces every
    browser/kiosk to fetch the fresh image instead of showing a cached old one. */
-const ASSET_VERSION = 10;
+const ASSET_VERSION = 11;
 const withV = (src) => src + (src.includes("?") ? "&" : "?") + "v=" + ASSET_VERSION;
 
 /* ═══════════════════ 2. LEADERSHIP CONTENT — EDIT ════════════════════ */
@@ -786,23 +786,29 @@ const Pages = {
       : `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Close`;
     const body = $("#stack-body"); body.innerHTML = "";
     body.classList.remove("anim"); void body.offsetWidth; body.classList.add("anim");
-    if (v.type === "cards") {
-      if (v.actions && v.actions.length) body.appendChild(this._actionbar(v.actions));
-      body.appendChild(this._cards(v.cards));
-    }
+    if (v.type === "cards")       body.appendChild(this._cards(v.cards));
     else if (v.type === "person") body.appendChild(this._person(v));
     else if (v.type === "list")   body.appendChild(this._list(v.items));
+    // floating corner action (e.g. "Region") — top-right, above the body
+    const fab = $("#stack-fab"); fab.innerHTML = "";
+    const hasFab = !!(v.actions && v.actions.length);
+    if (hasFab) { fab.appendChild(this._fab(v.actions)); fab.classList.remove("hidden"); }
+    else fab.classList.add("hidden");
+    body.classList.toggle("has-fab", hasFab);   // extra top clearance so the FAB never overlaps content
   },
-  _actionbar(actions) {
-    const bar = document.createElement("div"); bar.className = "sp-actionbar";
+  _fab(actions) {
+    const wrap = document.createElement("div"); wrap.className = "sp-fab-wrap";
     actions.forEach(a => {
       const b = document.createElement("button");
-      b.className = "sp-btn" + (a.glow ? " glow" : "");
-      b.innerHTML = `<span class="sp-btn-ico">${svg(ICONS[a.icon] || ICONS.region)}</span><span class="sp-btn-tx"><b>${esc(a.label)}</b>${a.sub ? `<i>${esc(a.sub)}</i>` : ""}</span><span class="sp-btn-chev">›</span>`;
+      b.className = "sp-fab" + (a.glow ? " glow" : "");
+      b.innerHTML =
+        `<span class="sp-fab-echo"></span><span class="sp-fab-echo sp-fab-echo2"></span>` +
+        `<span class="sp-fab-ico">${svg(ICONS[a.icon] || ICONS.region)}</span>` +
+        `<span class="sp-fab-tx"><b>${esc(a.label)}</b>${a.sub ? `<i>${esc(a.sub)}</i>` : ""}</span>`;
       b.addEventListener("click", () => { Sound.play("open"); a.onClick(); });
-      bar.appendChild(b);
+      wrap.appendChild(b);
     });
-    return bar;
+    return wrap;
   },
   _cards(cards) {
     const grid = document.createElement("div"); grid.className = "sp-grid";
