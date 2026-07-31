@@ -336,10 +336,10 @@ input{ font-family:inherit; }
 .hero-carousel{
   position:absolute; left:50%; top:47%; translate:-50% -50%;
   width:min(94%, 1500px); height:54%;
-  perspective:1700px; z-index:3;
+  perspective:1900px; perspective-origin:50% 42%; z-index:3;
   opacity:0; pointer-events:none;
-  transform:scale(.7); transform-origin:center;
-  transition:opacity .55s ease, transform .7s var(--ease-out);
+  transform:scale(.965); transform-origin:center;
+  transition:opacity .7s ease, transform .9s var(--ease-out);
 }
 #orbit-stage.expanded .hero-carousel{ opacity:1; pointer-events:auto; transform:none; }
 
@@ -536,6 +536,18 @@ body.carousel-open #focus-scrim{ opacity:.9; }
 .sp-actions{ margin-top:2.6vmin; display:flex; flex-direction:column; gap:1.4vmin; }
 /* action bar above a card grid (e.g. the Region button inside Bishops) */
 .sp-actionbar{ display:flex; flex-direction:column; gap:1.2vmin; margin-bottom:clamp(16px,2.4vmin,40px); }
+/* the Region button: unmistakably a glowing, gold call-to-action */
+.sp-actionbar .sp-btn.glow{ border-color:var(--accent); border-width:1.5px;
+  background:linear-gradient(158deg, color-mix(in srgb, var(--accent) 20%, rgba(30,48,102,.55)), rgba(10,18,44,.74));
+  animation:sp-region-glow 2.1s ease-in-out infinite; }
+.sp-actionbar .sp-btn.glow .sp-btn-ico{ border-color:var(--accent); background:linear-gradient(158deg, color-mix(in srgb, var(--accent) 42%, transparent), rgba(14,26,60,.9)); }
+.sp-actionbar .sp-btn.glow .sp-btn-ico svg{ stroke:#fff8ea; filter:drop-shadow(0 0 8px var(--accent)); }
+.sp-actionbar .sp-btn.glow .sp-btn-tx b{ color:#fff8ea; letter-spacing:.02em; }
+.sp-actionbar .sp-btn.glow .sp-btn-chev{ color:var(--accent); }
+@keyframes sp-region-glow{
+  0%,100%{ box-shadow:0 14px 34px rgba(0,0,0,.5), 0 0 2.4vmin color-mix(in srgb, var(--accent) 42%, transparent), inset 0 1px 0 rgba(255,255,255,.18); }
+  50%{ box-shadow:0 16px 38px rgba(0,0,0,.5), 0 0 5.6vmin color-mix(in srgb, var(--accent) 88%, transparent), inset 0 1px 0 rgba(255,255,255,.24); }
+}
 
 /* action button (Locale Churches) */
 .sp-btn{ display:flex; align-items:center; gap:1.6vmin; text-align:left; padding:clamp(12px,1.6vmin,26px) clamp(16px,2vmin,32px); cursor:pointer; color:var(--text);
@@ -1005,13 +1017,34 @@ body.carousel-open #focus-scrim{ opacity:.9; }
 .gi-stat b{ display:block; font-size:clamp(22px,2.8vmin,58px); font-weight:800; color:var(--accent); line-height:1; }
 .gi-stat span{ font-size:clamp(9px,1vmin,20px); letter-spacing:.2em; text-transform:uppercase; color:var(--text-dim); }
 .gi-legend{ display:flex; flex-direction:column; gap:.8vmin; }
-.gi-region-row{ display:grid; grid-template-columns:auto 1fr auto; grid-template-areas:"dot name count" "dot list list"; column-gap:1vmin; row-gap:.2vmin; align-items:center; text-align:left; width:100%; padding:clamp(9px,1.2vmin,22px) clamp(11px,1.4vmin,26px); background:var(--glass); border:1px solid var(--glass-line); border-left:3px solid transparent; border-radius:calc(var(--radius)*.45); color:var(--text); transition:background .2s, border-color .2s, transform .15s var(--ease-spring); cursor:pointer; }
-.gi-region-row:hover{ background:var(--glass-2); transform:translateX(3px); }
-.gi-region-row:active{ transform:scale(.98); }
-.gi-dot{ grid-area:dot; width:1.1em; height:1.1em; border-radius:50%; box-shadow:0 0 8px currentColor; align-self:start; margin-top:.25em; }
-.gi-rr-name{ grid-area:name; font-weight:700; letter-spacing:.03em; font-size:clamp(13px,1.5vmin,30px); }
-.gi-rr-count{ grid-area:count; font-weight:800; color:var(--accent); font-size:clamp(13px,1.5vmin,30px); }
-.gi-rr-list{ grid-area:list; font-size:clamp(10px,1.15vmin,22px); color:var(--text-dim); line-height:1.4; }
+.gi-region{ border:1px solid var(--glass-line); border-radius:calc(var(--radius)*.5); overflow:hidden; background:var(--glass); }
+.gi-region-row{ display:grid; grid-template-columns:auto 1fr auto auto; column-gap:1.1vmin; align-items:center; text-align:left; width:100%; padding:clamp(9px,1.2vmin,22px) clamp(11px,1.4vmin,26px); background:none; border:none; border-left:3px solid transparent; color:var(--text); transition:background .2s, border-color .2s; cursor:pointer; }
+.gi-region-row:hover{ background:var(--glass-2); }
+.gi-region.open > .gi-region-row{ border-left-color:var(--accent); background:var(--glass-2); }
+.gi-dot{ width:1.1em; height:1.1em; border-radius:50%; box-shadow:0 0 8px currentColor; }
+.gi-rr-name{ font-weight:700; letter-spacing:.03em; font-size:clamp(13px,1.5vmin,30px); }
+.gi-rr-count{ font-weight:800; color:var(--accent); font-size:clamp(13px,1.5vmin,30px); min-width:1.6em; text-align:right; }
+.gi-rr-chev{ color:var(--accent-2); font-size:clamp(16px,1.8vmin,30px); transition:transform .25s var(--ease-spring); }
+.gi-region.open .gi-rr-chev{ transform:rotate(90deg); }
+/* collapsible branch list */
+.gi-branches{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .35s var(--ease-out); }
+.gi-region.open .gi-branches{ grid-template-rows:1fr; }
+.gi-branches > *{ min-height:0; overflow:hidden; }
+.gi-branches{ overflow:hidden; }
+.gi-branches-inner, .gi-branches > .gi-branch:first-child{ margin-top:0; }
+.gi-branch{ display:flex; align-items:center; gap:1.1vmin; width:100%; text-align:left; padding:clamp(7px,.95vmin,16px) clamp(11px,1.4vmin,26px) clamp(7px,.95vmin,16px) clamp(20px,2.6vmin,44px);
+  background:none; border:none; border-top:1px solid rgba(255,255,255,.06); color:var(--text); cursor:pointer; transition:background .18s, transform .15s var(--ease-spring); }
+.gi-branch:hover{ background:color-mix(in srgb, var(--accent) 14%, transparent); transform:translateX(3px); }
+.gi-branch:active{ transform:scale(.98); }
+.gi-bflag{ flex:0 0 auto; width:clamp(26px,2.8vmin,44px); aspect-ratio:4/3; border-radius:14%; overflow:hidden; display:block; box-shadow:0 1px 4px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.08); }
+.gi-bflag svg{ width:100%; height:100%; display:block; object-fit:cover; }
+.gi-bname{ flex:1; font-size:clamp(12px,1.35vmin,26px); font-weight:600; color:#eef4ff; }
+.gi-bgo{ color:var(--accent-2); font-size:clamp(15px,1.6vmin,28px); opacity:.6; }
+.gi-branch:hover .gi-bgo{ opacity:1; }
+/* flag beside the branch name in the detail view */
+.gi-nameflag{ display:flex; align-items:center; gap:1.4vmin; margin-top:.5vmin; }
+.gi-flag-lg{ flex:0 0 auto; width:clamp(40px,4.6vmin,72px); aspect-ratio:4/3; border-radius:12%; overflow:hidden; display:block; box-shadow:0 3px 10px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.1); }
+.gi-flag-lg svg{ width:100%; height:100%; display:block; object-fit:cover; }
 /* — selected branch card — */
 .gi-back{ display:inline-flex; align-items:center; margin-bottom:1.4vmin; padding:.5em 1em; background:var(--glass); border:1px solid var(--glass-line); border-radius:999px; color:var(--accent-2); font-size:clamp(11px,1.25vmin,26px); letter-spacing:.08em; cursor:pointer; transition:background .2s; }
 .gi-back:hover{ background:var(--glass-2); }
